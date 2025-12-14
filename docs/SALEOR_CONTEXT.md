@@ -45,11 +45,16 @@ This fork extends the upstream Saleor platform while maintaining the ability to 
 
 ```
 /home/michael/saleor-platform/
-├── docker-compose.yml          # Main orchestration (7 services)
+├── docker-compose.yml          # Main orchestration (8 services)
 ├── backend.env                 # Backend service configuration
 ├── common.env                  # Shared environment variables
 ├── replica_user.sql            # PostgreSQL replica user setup
 ├── setup-e2e-db.sh             # E2E testing database helper
+├── storefront/                 # Next.js storefront (customer-facing)
+│   ├── src/                    # Application source code
+│   ├── Dockerfile              # Production build
+│   ├── package.json            # Dependencies
+│   └── ...
 ├── .github/
 │   └── workflows/
 │       └── test-platform.yml   # CI/CD pipeline (pytest)
@@ -85,35 +90,35 @@ docker/
 │                    Network: saleor-backend-tier                      │
 └─────────────────────────────────────────────────────────────────────┘
 
-     ┌──────────────┐                    ┌──────────────┐
-     │   Dashboard  │                    │   Clients    │
-     │   (React)    │                    │  (Browser/   │
-     │  Port: 9000  │                    │   Mobile)    │
-     └──────┬───────┘                    └──────┬───────┘
-            │                                   │
-            │         GraphQL Queries           │
-            └──────────────┬────────────────────┘
-                           │
-                    ┌──────▼───────┐
-                    │     API      │
-                    │   (Saleor    │
-                    │    Core)     │
-                    │  Port: 8000  │
-                    └──────┬───────┘
-                           │
-       ┌───────────────────┼───────────────────┐
-       │                   │                   │
-┌──────▼──────┐     ┌──────▼──────┐     ┌──────▼──────┐
-│  PostgreSQL │     │   Valkey    │     │   Worker    │
-│     (db)    │     │   (cache)   │     │  (Celery)   │
-│ Port: 5432  │     │ Port: 6379  │     │             │
-└─────────────┘     └─────────────┘     └──────┬──────┘
-                                               │
-                                        ┌──────▼──────┐
-                                        │   Mailpit   │
-                                        │   (SMTP)    │
-                                        │ Port: 8025  │
-                                        └─────────────┘
+  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+  │  Storefront  │   │   Dashboard  │   │   Clients    │
+  │  (Next.js)   │   │   (React)    │   │  (Browser/   │
+  │  Port: 3000  │   │  Port: 9000  │   │   Mobile)    │
+  └──────┬───────┘   └──────┬───────┘   └──────┬───────┘
+         │                  │                  │
+         │          GraphQL Queries            │
+         └──────────────────┼──────────────────┘
+                            │
+                     ┌──────▼───────┐
+                     │     API      │
+                     │   (Saleor    │
+                     │    Core)     │
+                     │  Port: 8000  │
+                     └──────┬───────┘
+                            │
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+ ┌──────▼──────┐     ┌──────▼──────┐     ┌──────▼──────┐
+ │  PostgreSQL │     │   Valkey    │     │   Worker    │
+ │     (db)    │     │   (cache)   │     │  (Celery)   │
+ │ Port: 5432  │     │ Port: 6379  │     │             │
+ └─────────────┘     └─────────────┘     └──────┬──────┘
+                                                │
+                                         ┌──────▼──────┐
+                                         │   Mailpit   │
+                                         │   (SMTP)    │
+                                         │ Port: 8025  │
+                                         └─────────────┘
 
 Observability:
 ┌─────────────┐
@@ -127,6 +132,7 @@ Observability:
 
 | Service | Image | Ports | Purpose |
 |---------|-------|-------|---------|
+| **storefront** | `saleor-storefront:local` | 3000 | Customer-facing webstore (Next.js 15) |
 | **api** | `ghcr.io/saleor/saleor:3.22` | 8000 | GraphQL API server (Django) |
 | **dashboard** | `ghcr.io/saleor/saleor-dashboard:latest` | 9000 | Admin UI (React SPA) |
 | **db** | `postgres:15-alpine` | 5432 | Primary relational database |
@@ -163,9 +169,20 @@ Observability:
 | **Cache** | Valkey | 8.1-alpine | Redis-compatible fork |
 | **Task Queue** | Celery | - | Async job processing |
 | **Dashboard** | React | - | Admin SPA |
+| **Storefront** | Next.js 15 | React 19 | Customer-facing webstore |
 | **Tracing** | OpenTelemetry | - | Observability standard |
 | **APM** | Jaeger | - | Trace visualization |
 | **Container** | Docker Compose | - | Local orchestration |
+
+### Storefront Stack Details
+
+The storefront (`storefront/`) uses:
+- **Next.js 15** with App Router and server components
+- **React 19**
+- **TypeScript** (strict mode)
+- **TailwindCSS** for styling
+- **GraphQL Codegen** for type-safe API queries
+- **pnpm** as package manager
 
 ### Why Valkey Instead of Redis?
 
@@ -339,18 +356,52 @@ docker compose up -d db cache
 # 2. Run database migrations
 docker compose run --rm api python3 manage.py migrate
 
-# 3. Populate sample data and create admin user
-docker compose run --rm api python3 manage.py populatedb --createsuperuser
-# Creates: admin@example.com / admin
+# 3. Create admin user (without sample data)
+docker compose run --rm -e DJANGO_SUPERUSER_PASSWORD=admin api \
+  python3 manage.py createsuperuser --email admin@example.com --noinput
 
 # 4. Start all services
 docker compose up
 ```
 
+### Building the Storefront
+
+The storefront requires a local Docker image build (not pulled from registry):
+
+```bash
+# Build storefront image (requires API to be running for GraphQL schema)
+docker compose up -d api  # Ensure API is running first
+
+docker build --network=host \
+  --build-arg NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/ \
+  --build-arg NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000 \
+  --build-arg NEXT_PUBLIC_DEFAULT_CHANNEL=default-channel \
+  -t saleor-storefront:local ./storefront
+
+# Start storefront
+docker compose up -d storefront
+```
+
+**Important**: The storefront uses `extra_hosts: "localhost:host-gateway"` in docker-compose.yml to route `localhost` inside the container to the host machine. This allows server-side rendering to reach the API.
+
+### Regenerating GraphQL Types
+
+If the API schema changes, regenerate types:
+
+```bash
+docker run --rm --network=host \
+  -v $(pwd)/storefront:/app -w /app \
+  -e NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/ \
+  node:20-alpine sh -c "corepack enable && pnpm install && pnpm generate"
+```
+
+Then rebuild the storefront image.
+
 ### Service Endpoints
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
+| **Storefront** | http://localhost:3000 | - |
 | **GraphQL API** | http://localhost:8000/graphql/ | - |
 | **Dashboard** | http://localhost:9000 | admin@example.com / admin |
 | **Jaeger UI** | http://localhost:16686 | - |
@@ -491,18 +542,26 @@ BRANCHES:
   feature/*      → Development branches
 
 SERVICES:
-  API:       localhost:8000  (GraphQL)
-  Dashboard: localhost:9000  (Admin UI)
-  Jaeger:    localhost:16686 (Tracing)
-  Mailpit:   localhost:8025  (Email UI)
-  DB:        localhost:5432  (PostgreSQL)
-  Cache:     localhost:6379  (Valkey)
+  Storefront: localhost:3000  (Customer webstore)
+  API:        localhost:8000  (GraphQL)
+  Dashboard:  localhost:9000  (Admin UI)
+  Jaeger:     localhost:16686 (Tracing)
+  Mailpit:    localhost:8025  (Email UI)
+  DB:         localhost:5432  (PostgreSQL)
+  Cache:      localhost:6379  (Valkey)
 
 COMMANDS:
   docker compose up                    # Start all
   docker compose logs -f <service>     # View logs
   docker compose run --rm api <cmd>    # Run Django command
   docker compose down -v               # Full reset
+
+STOREFRONT BUILD:
+  docker build --network=host \
+    --build-arg NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/ \
+    --build-arg NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000 \
+    --build-arg NEXT_PUBLIC_DEFAULT_CHANNEL=default-channel \
+    -t saleor-storefront:local ./storefront
 
 EXTENSION PRIORITY:
   1. Apps (external)
@@ -515,6 +574,24 @@ EXTENSION PRIORITY:
 
 ---
 
+## Known Limitations
+
+### POS (Point of Sale)
+
+**No official Saleor POS exists.** If POS functionality is needed:
+
+1. **Build custom POS app** - Use the GraphQL API to create transactions
+2. **Third-party integration** - Connect external POS via API
+3. **Community solutions** - Check for open-source projects
+
+A POS would interact with the same GraphQL API, handling:
+- Product lookup
+- Cart/checkout creation
+- Payment processing
+- Order creation
+
+---
+
 *Document created: 2024*
-*Last updated: Session initialization*
+*Last updated: December 2024 - Added storefront integration*
 *Maintained for: Claude Code context preservation*
