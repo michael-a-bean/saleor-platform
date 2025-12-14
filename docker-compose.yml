@@ -90,6 +90,22 @@ services:
     networks:
       - saleor-backend-tier
 
+  storefront:
+    image: saleor-storefront:local
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    extra_hosts:
+      - "localhost:host-gateway"
+    depends_on:
+      - api
+    environment:
+      - NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/
+      - NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
+      - NEXT_PUBLIC_DEFAULT_CHANNEL=default-channel
+
 volumes:
   saleor-db:
     driver: local
