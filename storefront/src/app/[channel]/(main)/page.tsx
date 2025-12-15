@@ -1,10 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { SearchIcon } from "lucide-react";
-import { ProductListDocument } from "@/gql/graphql";
-import { executeGraphQL } from "@/lib/graphql";
 import { ProductList } from "@/ui/components/ProductList";
-import { getLatestSets } from "@/lib/filters";
+import { getLatestSets, getTrendingProducts } from "@/lib/filters";
 
 // Force dynamic rendering for pages with dynamic nav components
 export const dynamic = "force-dynamic";
@@ -18,19 +16,11 @@ export const metadata = {
 export default async function Page(props: { params: Promise<{ channel: string }> }) {
 	const params = await props.params;
 
-	// Fetch recent products and latest sets in parallel
-	const [data, latestSets] = await Promise.all([
-		executeGraphQL(ProductListDocument, {
-			variables: {
-				first: 12,
-				channel: params.channel,
-			},
-			revalidate: 60,
-		}),
+	// Fetch trending products and latest sets in parallel
+	const [trendingProducts, latestSets] = await Promise.all([
+		getTrendingProducts(params.channel, 12),
 		getLatestSets(params.channel, 9),
 	]);
-
-	const products = data.products?.edges.map(({ node }) => node) ?? [];
 
 	async function handleSearch(formData: FormData) {
 		"use server";
@@ -114,10 +104,10 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 				</section>
 			)}
 
-			{/* Recent Products */}
+			{/* Trending Products */}
 			<section className="mx-auto max-w-7xl p-8 pb-16">
 				<div className="mb-8 flex items-center justify-between">
-					<h2 className="text-2xl font-bold text-neutral-900">Recent Cards</h2>
+					<h2 className="text-2xl font-bold text-neutral-900">Trending Cards</h2>
 					<Link
 						href={`/${params.channel}/products`}
 						className="text-sm font-medium text-amber-600 hover:text-amber-700"
@@ -125,8 +115,8 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 						View all cards →
 					</Link>
 				</div>
-				{products.length > 0 ? (
-					<ProductList products={products} />
+				{trendingProducts.length > 0 ? (
+					<ProductList products={trendingProducts} />
 				) : (
 					<p className="py-12 text-center text-neutral-500">No products found</p>
 				)}
