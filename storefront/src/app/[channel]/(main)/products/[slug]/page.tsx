@@ -108,6 +108,11 @@ export default async function Page(props: {
 	async function addItem() {
 		"use server";
 
+		// Validate stock is available before adding to cart
+		if (!selectedVariantID || !selectedVariant?.quantityAvailable) {
+			return;
+		}
+
 		const checkout = await Checkout.findOrCreate({
 			checkoutId: await Checkout.getIdFromCookies(params.channel),
 			channel: params.channel,
@@ -115,10 +120,6 @@ export default async function Page(props: {
 		invariant(checkout, "This should never happen");
 
 		await Checkout.saveIdToCookie(params.channel, checkout.id);
-
-		if (!selectedVariantID) {
-			return;
-		}
 
 		// TODO: error handling
 		await executeGraphQL(CheckoutAddLineDocument, {
@@ -216,7 +217,7 @@ export default async function Page(props: {
 								channel={params.channel}
 							/>
 						)}
-						<AvailabilityMessage isAvailable={isAvailable} />
+						<AvailabilityMessage isAvailable={isAvailable} quantity={selectedVariant?.quantityAvailable} />
 						<div className="mt-8">
 							<AddButton disabled={!selectedVariantID || !selectedVariant?.quantityAvailable} />
 						</div>
