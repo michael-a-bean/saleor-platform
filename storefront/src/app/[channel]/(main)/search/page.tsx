@@ -5,6 +5,9 @@ import { Pagination } from "@/ui/components/Pagination";
 import { ProductList } from "@/ui/components/ProductList";
 import { getPaginatedListVariables } from "@/lib/utils";
 
+// Force dynamic rendering since this page uses notFound() and redirect()
+export const dynamic = "force-dynamic";
+
 export const metadata = {
 	title: "Search products · Saleor Storefront example",
 	description: "Search products in Saleor Storefront example",

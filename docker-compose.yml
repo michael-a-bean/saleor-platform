@@ -104,7 +104,7 @@ services:
     environment:
       - NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/
       - NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
-      - NEXT_PUBLIC_DEFAULT_CHANNEL=default-channel
+      - NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
 
 volumes:
   saleor-db:
