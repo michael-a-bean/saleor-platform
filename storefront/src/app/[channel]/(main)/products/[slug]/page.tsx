@@ -8,6 +8,7 @@ import { type WithContext, type Product } from "schema-dts";
 import { AddButton } from "./AddButton";
 import { VariantSelector } from "@/ui/components/VariantSelector";
 import { ProductImageWrapper } from "@/ui/atoms/ProductImageWrapper";
+import { MTGCardAttributes } from "@/ui/components/MTGCardAttributes";
 import { executeGraphQL } from "@/lib/graphql";
 import { formatMoney, formatMoneyRange } from "@/lib/utils";
 import { CheckoutAddLineDocument, ProductDetailsDocument, ProductListDocument } from "@/gql/graphql";
@@ -226,6 +227,7 @@ export default async function Page(props: {
 								))}
 							</div>
 						)}
+						{product.attributes && <MTGCardAttributes attributes={product.attributes} />}
 					</div>
 				</div>
 			</form>

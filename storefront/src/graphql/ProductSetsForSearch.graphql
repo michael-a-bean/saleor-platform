@@ -1,0 +1,16 @@
+query ProductSetsForSearch($channel: String!, $search: String!, $first: Int = 100) {
+	products(first: $first, channel: $channel, filter: { search: $search }) {
+		edges {
+			node {
+				attributes {
+					attribute {
+						slug
+					}
+					values {
+						name
+					}
+				}
+			}
+		}
+	}
+}

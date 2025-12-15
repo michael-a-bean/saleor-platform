@@ -5,5 +5,7 @@ export { FilterSection } from "./FilterSection";
 export { MultiSelectFilter } from "./MultiSelectFilter";
 export { RangeFilter } from "./RangeFilter";
 export { BooleanFilter } from "./BooleanFilter";
+export { TextFilter } from "./TextFilter";
+export { SetFilterDropdown } from "./SetFilterDropdown";
 export { useFilters } from "./useFilters";
 export { useMobileFilters } from "./useMobileFilters";

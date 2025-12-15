@@ -18,6 +18,16 @@ query ProductDetails($slug: String!, $channel: String!) {
 			id
 			name
 		}
+		attributes {
+			attribute {
+				slug
+				name
+			}
+			values {
+				slug
+				name
+			}
+		}
 		variants {
 			...VariantDetails
 		}

@@ -16,11 +16,11 @@ export function buildProductFilter(filters: MTGFilterState): ProductFilterInput 
 		});
 	}
 
-	// Set Name filter
-	if (filters.setName.length > 0) {
+	// Color identity filter (multiselect attribute)
+	if (filters.colorIdentity.length > 0) {
 		attributeFilters.push({
-			slug: ATTRIBUTE_SLUGS.setName,
-			values: filters.setName,
+			slug: ATTRIBUTE_SLUGS.colorIdentity,
+			values: filters.colorIdentity,
 		});
 	}
 
@@ -62,12 +62,34 @@ export function buildProductFilter(filters: MTGFilterState): ProductFilterInput 
 		};
 	}
 
-	// Add type line as search (text search)
+	// Add search terms for type line and set name
+	// These are combined into a search string since exact attribute matching doesn't work for plain-text fields
+	const searchTerms: string[] = [];
 	if (filters.typeLine) {
-		filter.search = filters.typeLine;
+		searchTerms.push(filters.typeLine);
+	}
+	if (filters.setName) {
+		searchTerms.push(filters.setName);
+	}
+	if (searchTerms.length > 0) {
+		filter.search = searchTerms.join(" ");
 	}
 
 	return filter;
+}
+
+/**
+ * Get the search string from filters (for combining with user search query)
+ */
+export function getFilterSearchTerms(filters: MTGFilterState): string {
+	const terms: string[] = [];
+	if (filters.typeLine) {
+		terms.push(filters.typeLine);
+	}
+	if (filters.setName) {
+		terms.push(filters.setName);
+	}
+	return terms.join(" ");
 }
 
 /**

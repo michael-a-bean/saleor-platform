@@ -10,6 +10,27 @@ export const RARITY_OPTIONS: FilterOption[] = [
 	{ value: "mtg-rarity-bonus", label: "Bonus", color: "#6b5b95" },
 ];
 
+// Color identity options (WUBRG)
+export const COLOR_IDENTITY_OPTIONS: FilterOption[] = [
+	{ value: "mtg-color-w", label: "White", color: "#F9FAF4" },
+	{ value: "mtg-color-u", label: "Blue", color: "#0E68AB" },
+	{ value: "mtg-color-b", label: "Black", color: "#150B00" },
+	{ value: "mtg-color-r", label: "Red", color: "#D3202A" },
+	{ value: "mtg-color-g", label: "Green", color: "#00733E" },
+];
+
+// Common card type options (used for search filtering)
+export const CARD_TYPE_OPTIONS: FilterOption[] = [
+	{ value: "Creature", label: "Creature" },
+	{ value: "Instant", label: "Instant" },
+	{ value: "Sorcery", label: "Sorcery" },
+	{ value: "Artifact", label: "Artifact" },
+	{ value: "Enchantment", label: "Enchantment" },
+	{ value: "Planeswalker", label: "Planeswalker" },
+	{ value: "Land", label: "Land" },
+	{ value: "Battle", label: "Battle" },
+];
+
 export const BOOLEAN_FILTER_OPTIONS = [
 	{ value: "true", label: "Yes" },
 	{ value: "false", label: "No" },
@@ -18,9 +39,7 @@ export const BOOLEAN_FILTER_OPTIONS = [
 // Attribute slugs as defined in Saleor (with mtg- prefix)
 export const ATTRIBUTE_SLUGS = {
 	rarity: "mtg-rarity",
-	setName: "mtg-set-name",
-	manaValue: "mtg-mana-value",
-	typeLine: "mtg-type-line",
+	colorIdentity: "mtg-color-identity",
 	reservedList: "mtg-reserved",
 	isPromo: "mtg-is-promo",
 	isFullArt: "mtg-is-full-art",
@@ -29,6 +48,7 @@ export const ATTRIBUTE_SLUGS = {
 // URL parameter names
 export const URL_PARAMS = {
 	rarity: "rarity",
+	colorIdentity: "color",
 	setName: "set",
 	manaValueMin: "cmc_min",
 	manaValueMax: "cmc_max",
