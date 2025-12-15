@@ -15,3 +15,4 @@ saleor-apps/
 # Environment files with secrets
 stripe.env
 *.env.local
+backups/

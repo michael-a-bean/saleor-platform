@@ -50,9 +50,11 @@ export function CheckoutForm() {
 				return;
 			}
 
-			// Extract selectedPaymentMethod from submit result
-			const selectedPaymentMethod = (submitResult as { selectedPaymentMethod?: string })
-				.selectedPaymentMethod;
+			// Note: elements.submit() doesn't return selectedPaymentMethod in Stripe.js
+			// The Payment Element handles multiple payment methods, but for transaction initialization
+			// we default to "card" which is the most common. The actual payment method type will be
+			// determined by Stripe when processing the payment.
+			const selectedPaymentMethod = "card";
 
 			// Initialize transaction with Saleor
 			const initializeResult = await transactionInitialize({
