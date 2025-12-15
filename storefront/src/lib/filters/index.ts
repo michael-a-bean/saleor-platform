@@ -4,3 +4,4 @@ export * from "./buildGraphQLFilter";
 export * from "./mtgConstants";
 export * from "./getAvailableSets";
 export * from "./getLatestSets";
+export * from "./getTrendingProducts";
