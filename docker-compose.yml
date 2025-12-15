@@ -8,6 +8,8 @@ services:
       - saleor-backend-tier
     stdin_open: true
     tty: true
+    extra_hosts:
+      - "localhost:host-gateway"
     depends_on:
       - db
       - cache
@@ -22,7 +24,7 @@ services:
       - backend.env
     environment:
       - DASHBOARD_URL=http://localhost:9000/
-      - ALLOWED_HOSTS=localhost,127.0.0.1,api
+      - ALLOWED_HOSTS=localhost,127.0.0.1,api,stripe-app,host.docker.internal
 
   dashboard:
     image: ghcr.io/saleor/saleor-dashboard:latest
@@ -108,12 +110,55 @@ services:
       - NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
       - NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
 
+  # Stripe Payment App
+  stripe-app:
+    build:
+      context: ./saleor-apps
+      dockerfile: apps/stripe/Dockerfile
+    ports:
+      - 3001:3001
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    extra_hosts:
+      - "localhost:host-gateway"
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - api
+      - dynamodb-local
+    volumes:
+      - stripe-app-data:/app/apps/stripe
+    environment:
+      - SECRET_KEY=677a28c7a3f6f9b615a3dbe4657d0cf816080e482a432892f0b4c5f07dce0b54
+      - ALLOWED_DOMAIN_PATTERN=/.*/
+      - APP_IFRAME_BASE_URL=http://localhost:3001
+      - APP_API_BASE_URL=http://localhost:3001
+      - APP_LOG_LEVEL=debug
+      - APL=file
+      - AWS_REGION=localhost
+      - AWS_ACCESS_KEY_ID=local
+      - AWS_SECRET_ACCESS_KEY=local
+      - AWS_ENDPOINT_URL=http://dynamodb-local:8000
+      - DYNAMODB_MAIN_TABLE_NAME=stripe-main-table
+
+  # Local DynamoDB for Stripe app storage
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
+    ports:
+      - 8001:8000
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+
 volumes:
   saleor-db:
     driver: local
   saleor-cache:
     driver: local
   saleor-media:
+  stripe-app-data:
+    driver: local
 
 networks:
   saleor-backend-tier:
