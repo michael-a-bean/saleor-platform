@@ -8,3 +8,10 @@ storefront/.pnpm-store/
 storefront/.env
 storefront/.env*.local
 docs/all-cards-20251214224928.json
+
+# Stripe app (external repo clone)
+saleor-apps/
+
+# Environment files with secrets
+stripe.env
+*.env.local
