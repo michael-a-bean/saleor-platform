@@ -7,9 +7,10 @@ import { FilterSection } from "./FilterSection";
 import { MultiSelectFilter } from "./MultiSelectFilter";
 import { RangeFilter } from "./RangeFilter";
 import { BooleanFilter } from "./BooleanFilter";
+import { SetFilterDropdown } from "./SetFilterDropdown";
 import { useFilters } from "./useFilters";
 import { useMobileFilters } from "./useMobileFilters";
-import { RARITY_OPTIONS } from "@/lib/filters";
+import { RARITY_OPTIONS, CARD_TYPE_OPTIONS, COLOR_IDENTITY_OPTIONS } from "@/lib/filters";
 
 export const MobileFilterModal = () => {
 	const { isOpen, openFilters, closeFilters } = useMobileFilters();
@@ -67,11 +68,35 @@ export const MobileFilterModal = () => {
 
 							{/* Filter content */}
 							<div className="flex-1 overflow-y-auto px-4">
+								<FilterSection title="Card Type">
+									<MultiSelectFilter
+										options={CARD_TYPE_OPTIONS}
+										value={filters.typeLine ? [filters.typeLine] : []}
+										onChange={(v) => updateFilter("typeLine", v[0] || "")}
+										singleSelect
+									/>
+								</FilterSection>
+
 								<FilterSection title="Rarity">
 									<MultiSelectFilter
 										options={RARITY_OPTIONS}
 										value={filters.rarity}
 										onChange={(v) => updateFilter("rarity", v)}
+									/>
+								</FilterSection>
+
+								<FilterSection title="Color Identity">
+									<MultiSelectFilter
+										options={COLOR_IDENTITY_OPTIONS}
+										value={filters.colorIdentity}
+										onChange={(v) => updateFilter("colorIdentity", v)}
+									/>
+								</FilterSection>
+
+								<FilterSection title="Set">
+									<SetFilterDropdown
+										value={filters.setName}
+										onChange={(v) => updateFilter("setName", v)}
 									/>
 								</FilterSection>
 

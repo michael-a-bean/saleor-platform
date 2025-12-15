@@ -7,7 +7,7 @@ import { URL_PARAMS } from "./mtgConstants";
 export function parseFiltersFromURL(searchParams: URLSearchParams): MTGFilterState {
 	return {
 		rarity: parseArrayParam(searchParams.get(URL_PARAMS.rarity)),
-		setName: parseArrayParam(searchParams.get(URL_PARAMS.setName)),
+		colorIdentity: parseArrayParam(searchParams.get(URL_PARAMS.colorIdentity)),
 		manaValue: {
 			min: parseNumberParam(searchParams.get(URL_PARAMS.manaValueMin)),
 			max: parseNumberParam(searchParams.get(URL_PARAMS.manaValueMax)),
@@ -17,6 +17,7 @@ export function parseFiltersFromURL(searchParams: URLSearchParams): MTGFilterSta
 			max: parseNumberParam(searchParams.get(URL_PARAMS.priceMax)),
 		},
 		typeLine: searchParams.get(URL_PARAMS.typeLine) || "",
+		setName: searchParams.get(URL_PARAMS.setName) || "",
 		reservedList: parseBooleanParam(searchParams.get(URL_PARAMS.reservedList)),
 		isPromo: parseBooleanParam(searchParams.get(URL_PARAMS.isPromo)),
 		isFullArt: parseBooleanParam(searchParams.get(URL_PARAMS.isFullArt)),
@@ -39,8 +40,16 @@ export function serializeFiltersToURL(
 	if (filters.rarity.length > 0) {
 		params.set(URL_PARAMS.rarity, filters.rarity.join(","));
 	}
-	if (filters.setName.length > 0) {
-		params.set(URL_PARAMS.setName, filters.setName.join(","));
+	if (filters.colorIdentity.length > 0) {
+		params.set(URL_PARAMS.colorIdentity, filters.colorIdentity.join(","));
+	}
+
+	// Set text params
+	if (filters.typeLine) {
+		params.set(URL_PARAMS.typeLine, filters.typeLine);
+	}
+	if (filters.setName) {
+		params.set(URL_PARAMS.setName, filters.setName);
 	}
 
 	// Set range params
@@ -55,11 +64,6 @@ export function serializeFiltersToURL(
 	}
 	if (filters.price.max !== undefined) {
 		params.set(URL_PARAMS.priceMax, filters.price.max.toString());
-	}
-
-	// Set text params
-	if (filters.typeLine) {
-		params.set(URL_PARAMS.typeLine, filters.typeLine);
 	}
 
 	// Set boolean params
@@ -83,10 +87,11 @@ export function getActiveFilterCount(filters: MTGFilterState): number {
 	let count = 0;
 
 	if (filters.rarity.length > 0) count++;
-	if (filters.setName.length > 0) count++;
+	if (filters.colorIdentity.length > 0) count++;
+	if (filters.typeLine) count++;
+	if (filters.setName) count++;
 	if (filters.manaValue.min !== undefined || filters.manaValue.max !== undefined) count++;
 	if (filters.price.min !== undefined || filters.price.max !== undefined) count++;
-	if (filters.typeLine) count++;
 	if (filters.reservedList !== null) count++;
 	if (filters.isPromo !== null) count++;
 	if (filters.isFullArt !== null) count++;

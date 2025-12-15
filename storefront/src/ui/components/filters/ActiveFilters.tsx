@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 import { useFilters } from "./useFilters";
-import { RARITY_OPTIONS } from "@/lib/filters";
+import { RARITY_OPTIONS, COLOR_IDENTITY_OPTIONS } from "@/lib/filters";
 
 export const ActiveFilters = () => {
 	const { filters, removeFilterValue, clearAllFilters, activeCount } = useFilters();
@@ -13,6 +13,9 @@ export const ActiveFilters = () => {
 		if (key === "rarity") {
 			return RARITY_OPTIONS.find((o) => o.value === value)?.label || value;
 		}
+		if (key === "colorIdentity") {
+			return COLOR_IDENTITY_OPTIONS.find((o) => o.value === value)?.label || value;
+		}
 		return value;
 	};
 
@@ -20,7 +23,15 @@ export const ActiveFilters = () => {
 		<div className="mb-4 flex flex-wrap items-center gap-2">
 			<span className="text-sm text-neutral-500">Active filters:</span>
 
-			{/* Array filters */}
+			{/* Card Type filter */}
+			{filters.typeLine && (
+				<FilterTag
+					label={`Type: ${filters.typeLine}`}
+					onRemove={() => removeFilterValue("typeLine", "")}
+				/>
+			)}
+
+			{/* Rarity filters */}
 			{filters.rarity.map((v) => (
 				<FilterTag
 					key={`rarity-${v}`}
@@ -29,18 +40,27 @@ export const ActiveFilters = () => {
 				/>
 			))}
 
-			{filters.setName.map((v) => (
+			{/* Color Identity filters */}
+			{filters.colorIdentity.map((v) => (
 				<FilterTag
-					key={`setName-${v}`}
-					label={`Set: ${v}`}
-					onRemove={() => removeFilterValue("setName", v)}
+					key={`color-${v}`}
+					label={`Color: ${getLabel("colorIdentity", v)}`}
+					onRemove={() => removeFilterValue("colorIdentity", v)}
 				/>
 			))}
+
+			{/* Set Name filter */}
+			{filters.setName && (
+				<FilterTag
+					label={`Set: ${filters.setName}`}
+					onRemove={() => removeFilterValue("setName", "")}
+				/>
+			)}
 
 			{/* Range filters */}
 			{(filters.price.min !== undefined || filters.price.max !== undefined) && (
 				<FilterTag
-					label={`Price: ${filters.price.min ?? "0"} - ${filters.price.max ?? "Any"}`}
+					label={`Price: $${filters.price.min ?? "0"} - $${filters.price.max ?? "Any"}`}
 					onRemove={() => removeFilterValue("price", "")}
 				/>
 			)}
@@ -49,14 +69,6 @@ export const ActiveFilters = () => {
 				<FilterTag
 					label={`CMC: ${filters.manaValue.min ?? "0"} - ${filters.manaValue.max ?? "Any"}`}
 					onRemove={() => removeFilterValue("manaValue", "")}
-				/>
-			)}
-
-			{/* Text filter */}
-			{filters.typeLine && (
-				<FilterTag
-					label={`Type: ${filters.typeLine}`}
-					onRemove={() => removeFilterValue("typeLine", "")}
 				/>
 			)}
 

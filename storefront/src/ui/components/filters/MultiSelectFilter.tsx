@@ -1,20 +1,37 @@
 "use client";
 
-import clsx from "clsx";
 import type { FilterOption } from "@/lib/filters";
 
 interface MultiSelectFilterProps {
 	options: FilterOption[];
 	value: string[];
 	onChange: (value: string[]) => void;
+	showColorDot?: boolean;
+	singleSelect?: boolean;
 }
 
-export const MultiSelectFilter = ({ options, value, onChange }: MultiSelectFilterProps) => {
+export const MultiSelectFilter = ({
+	options,
+	value,
+	onChange,
+	showColorDot = false,
+	singleSelect = false,
+}: MultiSelectFilterProps) => {
 	const toggleValue = (optionValue: string) => {
-		if (value.includes(optionValue)) {
-			onChange(value.filter((v) => v !== optionValue));
+		if (singleSelect) {
+			// Single select: toggle off if already selected, otherwise select only this one
+			if (value.includes(optionValue)) {
+				onChange([]);
+			} else {
+				onChange([optionValue]);
+			}
 		} else {
-			onChange([...value, optionValue]);
+			// Multi select: add or remove from array
+			if (value.includes(optionValue)) {
+				onChange(value.filter((v) => v !== optionValue));
+			} else {
+				onChange([...value, optionValue]);
+			}
 		}
 	};
 
@@ -28,28 +45,21 @@ export const MultiSelectFilter = ({ options, value, onChange }: MultiSelectFilte
 						className="flex cursor-pointer items-center gap-2 text-sm text-neutral-700 hover:text-neutral-900"
 					>
 						<input
-							type="checkbox"
+							type={singleSelect ? "radio" : "checkbox"}
 							checked={isSelected}
 							onChange={() => toggleValue(option.value)}
 							className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500"
+							name={singleSelect ? "single-select-filter" : undefined}
 						/>
-						{option.icon && (
+						{showColorDot && option.color && (
 							<span
-								className={clsx(
-									"flex h-5 w-5 items-center justify-center rounded text-xs font-bold",
-									option.value === "W" && "bg-amber-100 text-amber-800",
-									option.value === "U" && "bg-blue-100 text-blue-800",
-									option.value === "B" && "bg-neutral-800 text-neutral-100",
-									option.value === "R" && "bg-red-100 text-red-800",
-									option.value === "G" && "bg-green-100 text-green-800",
-								)}
-							>
-								{option.icon}
-							</span>
+								className="h-4 w-4 rounded-full border border-neutral-300"
+								style={{ backgroundColor: option.color }}
+							/>
 						)}
 						<span
-							className={clsx(option.color && "font-medium")}
-							style={option.color ? { color: option.color } : undefined}
+							className={option.color && !showColorDot ? "font-medium" : undefined}
+							style={option.color && !showColorDot ? { color: option.color } : undefined}
 						>
 							{option.label}
 						</span>
