@@ -21,6 +21,10 @@ mutation CheckoutCreate($channel: String!) {
 							url
 							alt
 						}
+						media {
+							url
+							alt
+						}
 						category {
 							name
 						}

@@ -14,6 +14,9 @@ import { CheckoutAddLineDocument, ProductDetailsDocument, ProductListDocument } 
 import * as Checkout from "@/lib/checkout";
 import { AvailabilityMessage } from "@/ui/components/AvailabilityMessage";
 
+// Force dynamic rendering since this page uses notFound() and server actions
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(
 	props: {
 		params: Promise<{ slug: string; channel: string }>;
@@ -39,6 +42,9 @@ export async function generateMetadata(
 	const variantName = product.variants?.find(({ id }) => id === searchParams.variant)?.name;
 	const productNameAndVariant = variantName ? `${productName} - ${variantName}` : productName;
 
+	// Prefer media URL (external images) over thumbnail URL (Saleor-generated)
+	const imageUrl = product.media?.[0]?.url || product.thumbnail?.url;
+
 	return {
 		title: `${product.name} | ${product.seoTitle || (await parent).title?.absolute}`,
 		description: product.seoDescription || productNameAndVariant,
@@ -47,11 +53,11 @@ export async function generateMetadata(
 				? process.env.NEXT_PUBLIC_STOREFRONT_URL + `/products/${encodeURIComponent(params.slug)}`
 				: undefined,
 		},
-		openGraph: product.thumbnail
+		openGraph: imageUrl
 			? {
 					images: [
 						{
-							url: product.thumbnail.url,
+							url: imageUrl,
 							alt: product.name,
 						},
 					],
@@ -90,7 +96,8 @@ export default async function Page(props: {
 		notFound();
 	}
 
-	const firstImage = product.thumbnail;
+	// Prefer media URL (external images) over thumbnail URL (Saleor-generated)
+	const firstImage = product.media?.[0] || product.thumbnail;
 	const description = product?.description ? parser.parse(JSON.parse(product?.description)) : null;
 
 	const variants = product.variants;
@@ -138,33 +145,36 @@ export default async function Page(props: {
 	const productJsonLd: WithContext<Product> = {
 		"@context": "https://schema.org",
 		"@type": "Product",
-		image: product.thumbnail?.url,
+		image: firstImage?.url,
 		...(selectedVariant
 			? {
 					name: `${product.name} - ${selectedVariant.name}`,
 					description: product.seoDescription || `${product.name} - ${selectedVariant.name}`,
-					offers: {
-						"@type": "Offer",
-						availability: selectedVariant.quantityAvailable
-							? "https://schema.org/InStock"
-							: "https://schema.org/OutOfStock",
-						priceCurrency: selectedVariant.pricing?.price?.gross.currency,
-						price: selectedVariant.pricing?.price?.gross.amount,
-					},
+					offers: selectedVariant.pricing?.price?.gross
+						? {
+								"@type": "Offer",
+								availability: selectedVariant.quantityAvailable
+									? "https://schema.org/InStock"
+									: "https://schema.org/OutOfStock",
+								priceCurrency: selectedVariant.pricing.price.gross.currency,
+								price: selectedVariant.pricing.price.gross.amount,
+							}
+						: undefined,
 				}
 			: {
 					name: product.name,
-
 					description: product.seoDescription || product.name,
-					offers: {
-						"@type": "AggregateOffer",
-						availability: product.variants?.some((variant) => variant.quantityAvailable)
-							? "https://schema.org/InStock"
-							: "https://schema.org/OutOfStock",
-						priceCurrency: product.pricing?.priceRange?.start?.gross.currency,
-						lowPrice: product.pricing?.priceRange?.start?.gross.amount,
-						highPrice: product.pricing?.priceRange?.stop?.gross.amount,
-					},
+					offers: product.pricing?.priceRange?.start?.gross
+						? {
+								"@type": "AggregateOffer",
+								availability: product.variants?.some((variant) => variant.quantityAvailable)
+									? "https://schema.org/InStock"
+									: "https://schema.org/OutOfStock",
+								priceCurrency: product.pricing.priceRange.start.gross.currency,
+								lowPrice: product.pricing.priceRange.start.gross.amount,
+								highPrice: product.pricing.priceRange.stop?.gross.amount,
+							}
+						: undefined,
 				}),
 	};
 

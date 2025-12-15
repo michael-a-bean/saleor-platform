@@ -41,13 +41,18 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 					role="list"
 					className="divide-y divide-neutral-200 border-b border-t border-neutral-200"
 				>
-					{checkout.lines.map((item) => (
+					{checkout.lines.map((item) => {
+						// Prefer media URL (external images) over thumbnail URL (Saleor-generated)
+						const imageUrl = item.variant?.product?.media?.[0]?.url || item.variant?.product?.thumbnail?.url;
+						const imageAlt = item.variant?.product?.media?.[0]?.alt || item.variant?.product?.thumbnail?.alt || "";
+
+						return (
 						<li key={item.id} className="flex py-4">
 							<div className="aspect-square h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border bg-neutral-50 sm:h-32 sm:w-32">
-								{item.variant?.product?.thumbnail?.url && (
+								{imageUrl && (
 									<Image
-										src={item.variant.product.thumbnail.url}
-										alt={item.variant.product.thumbnail.alt ?? ""}
+										src={imageUrl}
+										alt={imageAlt}
 										width={200}
 										height={200}
 										className="h-full w-full object-contain object-center"
@@ -80,7 +85,8 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 								</div>
 							</div>
 						</li>
-					))}
+					);
+					})}
 				</ul>
 
 				<div className="mt-12">

@@ -26,4 +26,8 @@ fragment ProductListItem on Product {
 		url
 		alt
 	}
+	media {
+		url
+		alt
+	}
 }

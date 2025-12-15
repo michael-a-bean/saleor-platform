@@ -20,6 +20,10 @@ query CheckoutFind($id: ID!) {
 						url
 						alt
 					}
+					media {
+						url
+						alt
+					}
 					category {
 						name
 					}
