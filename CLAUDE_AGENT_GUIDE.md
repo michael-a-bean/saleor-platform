@@ -1,12 +1,19 @@
 # Claude Code Agent Guide for Saleor Platform
 
+> **Note**: This is supplementary documentation. For quick reference, see:
+> - `CLAUDE.md` - Concise instructions and commands
+> - `.claude/rules/` - Topic-specific rules
+> - `docs/SALEOR_CONTEXT.md` - Architecture reference
+
 ## Purpose
-This guide defines **mandatory best practices** for using Claude Code inside a fork of `saleor/saleor-platform`.
+
+This guide defines the **philosophy and detailed procedures** for maintaining this Saleor platform fork.
 The primary goal is to keep upstream Saleor fully updateable while allowing clean, versioned customization.
 
 ---
 
-## Repository Reality
+## Repository Structure
+
 - **Upstream**: `saleor/saleor-platform`
 - **Fork**: your GitHub fork
 - **Branches**:
@@ -14,17 +21,15 @@ The primary goal is to keep upstream Saleor fully updateable while allowing clea
   - `platform/main` → deployable product branch
   - `feature/*` → short‑lived development branches
 
-Claude Code **must respect this structure** at all times.
-
 ---
 
-## Hard Rules (Do Not Violate)
+## Hard Rules
 
-1. **Never commit to `main`.**
-2. **Never modify upstream code unless no extension point exists.**
-3. **All work happens on `platform/main` or `feature/*`.**
-4. **Prefer additive extensions over invasive changes.**
-5. **Document every customization.**
+1. **Never commit to `main`** - It mirrors upstream exactly
+2. **Never modify upstream code** unless no extension point exists
+3. **All work happens on `platform/main` or `feature/*`**
+4. **Prefer additive extensions** over invasive changes
+5. **Document every customization**
 
 If uncertain, stop and ask before changing code.
 
