@@ -53,7 +53,18 @@ After restoring the database, rebuild the search indexes:
 docker compose exec api python manage.py update_search_indexes
 ```
 
-### 5. Build and Start Storefront
+### 5. Generate GraphQL Types (if missing)
+
+The `storefront/src/gql/` directory is gitignored. If it doesn't exist, generate types:
+
+```bash
+docker run --rm --network=host \
+  -v "$(pwd)/storefront:/app" -w /app \
+  -e "NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/" \
+  node:20-alpine sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm run generate"
+```
+
+### 6. Build and Start Storefront
 
 The storefront needs to be built with access to the running API:
 

@@ -75,6 +75,8 @@ A Docker Compose orchestration layer running the complete Saleor stack, configur
 | worker | `ghcr.io/saleor/saleor:3.22` | - | Async tasks |
 | jaeger | `jaegertracing/jaeger` | 16686 | Tracing |
 | mailpit | `axllent/mailpit` | 8025 | Email testing |
+| stripe-app | `saleor-platform-stripe-app` | 3001 | Stripe payments |
+| dynamodb-local | `amazon/dynamodb-local` | 8001 | Stripe config storage |
 
 ### Data Flow
 
@@ -265,6 +267,75 @@ mutation { checkoutLinesAdd(id: "...", lines: [{ variantId: "...", quantity: 1 }
 | `product_productchannellisting` | Channel visibility |
 | `product_productvariantchannellisting` | Variant pricing |
 | `attribute_assignedproductattributevalue` | Attribute values |
+
+---
+
+## Stripe Payment Integration
+
+### Architecture
+
+The Stripe payment app is built from the official `saleor/apps` monorepo:
+
+```
+saleor-apps/                    # Clone of github.com/saleor/apps
+├── apps/stripe/               # Stripe payment app
+│   ├── Dockerfile             # Custom production Dockerfile
+│   └── src/                   # Next.js app source
+└── packages/                  # Shared monorepo packages
+```
+
+### Configuration Storage
+
+Stripe app uses DynamoDB for storing:
+- **APL (Auth)**: App authentication tokens from Saleor
+- **StripeConfig**: API keys (encrypted) and webhook secrets
+- **ChannelConfigMapping**: Links Saleor channels to Stripe configs
+
+### Key Environment Variables
+
+```bash
+# docker-compose.yml stripe-app service
+APP_API_BASE_URL=http://host.docker.internal:3001  # Must use host.docker.internal
+APP_IFRAME_BASE_URL=http://host.docker.internal:3001
+APL=dynamodb                                        # NOT file (permission issues)
+AWS_ENDPOINT_URL=http://dynamodb-local:8000
+DYNAMODB_MAIN_TABLE_NAME=stripe-main-table
+SECRET_KEY=<64-char-hex>                           # For encrypting Stripe keys
+```
+
+### DynamoDB Table Schema
+
+```
+Table: stripe-main-table
+├── PK: "http://localhost:8000/graphql/"  SK: "APL"           # Auth data
+├── PK: "{saleorApiUrl}#{appId}"          SK: "CONFIG_ID#..." # Stripe config
+└── PK: "{saleorApiUrl}#{appId}"          SK: "CHANNEL_ID#..." # Channel mapping
+```
+
+### Manual Configuration
+
+If the Stripe app UI doesn't work, insert config directly via AWS CLI:
+
+```bash
+# Create DynamoDB table
+docker run --rm --network saleor-platform_saleor-backend-tier \
+  -e AWS_ACCESS_KEY_ID=local -e AWS_SECRET_ACCESS_KEY=local \
+  amazon/aws-cli dynamodb create-table \
+    --endpoint-url http://dynamodb-local:8000 \
+    --table-name stripe-main-table \
+    --attribute-definitions AttributeName=PK,AttributeType=S AttributeName=SK,AttributeType=S \
+    --key-schema AttributeName=PK,KeyType=HASH AttributeName=SK,KeyType=RANGE \
+    --billing-mode PAY_PER_REQUEST --region localhost
+```
+
+### Troubleshooting
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| "Failed to connect to app" | API can't reach stripe-app | Use `host.docker.internal` URLs |
+| "Failed to set APL" | File permission issue | Set `APL=dynamodb` |
+| "Config for channel not found" | No Stripe config for channel | Insert config into DynamoDB |
+| "Invalid input" during fetch | Empty `stripeWhSecret` | Must be non-empty encrypted value |
 
 ---
 
