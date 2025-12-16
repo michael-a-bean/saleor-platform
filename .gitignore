@@ -9,11 +9,7 @@ storefront/.env
 storefront/.env*.local
 docs/all-cards-20251214224928.json
 
-# Saleor apps monorepo (external clone) - track only custom apps
-saleor-apps/*
-!saleor-apps/apps/
-saleor-apps/apps/*
-!saleor-apps/apps/inventory-ops/
+# Saleor apps monorepo - see saleor-apps/.gitignore for nested rules
 
 # Environment files with secrets
 stripe.env
