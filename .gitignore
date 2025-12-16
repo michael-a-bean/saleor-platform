@@ -15,3 +15,7 @@ docs/all-cards-20251214224928.json
 stripe.env
 *.env.local
 backups/
+
+# Database backups
+*.sql.gz
+saleor_backup_*.sql.gz
