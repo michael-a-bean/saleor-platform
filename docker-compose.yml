@@ -25,6 +25,7 @@ services:
     environment:
       - DASHBOARD_URL=http://localhost:9000/
       - ALLOWED_HOSTS=localhost,127.0.0.1,api,stripe-app,inventory-ops-app,host.docker.internal
+      - HTTP_IP_FILTER_ENABLED=False
 
   dashboard:
     image: ghcr.io/saleor/saleor-dashboard:latest
@@ -65,6 +66,8 @@ services:
     env_file:
       - common.env
       - backend.env
+    environment:
+      - HTTP_IP_FILTER_ENABLED=False
     depends_on:
       - cache
       - mailpit
