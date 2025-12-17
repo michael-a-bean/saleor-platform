@@ -1,19 +1,21 @@
 import { type StripeV2GatewayId } from "./StripeV2DropIn/types";
 import { type DummyGatewayId } from "./DummyDropIn/types";
+import { type LegacyDummyGatewayId } from "./LegacyDummyDropIn/types";
 import { type PaymentGatewayConfig } from "@/checkout/graphql";
 import {
 	type AdyenGatewayId,
 	type AdyenGatewayInitializePayload,
 } from "@/checkout/sections/PaymentSection/AdyenDropIn/types";
 
-export type PaymentGatewayId = AdyenGatewayId | StripeV2GatewayId | DummyGatewayId;
+export type PaymentGatewayId = AdyenGatewayId | StripeV2GatewayId | DummyGatewayId | LegacyDummyGatewayId;
 
 export type ParsedAdyenGateway = ParsedPaymentGateway<AdyenGatewayId, AdyenGatewayInitializePayload>;
 export type ParsedStripeGateway = ParsedPaymentGateway<StripeV2GatewayId, { stripePublishableKey?: string }>;
 export type ParsedDummyGateway = ParsedPaymentGateway<DummyGatewayId, {}>;
+export type ParsedLegacyDummyGateway = ParsedPaymentGateway<LegacyDummyGatewayId, {}>;
 
 export type ParsedPaymentGateways = ReadonlyArray<
-	ParsedAdyenGateway | ParsedStripeGateway | ParsedDummyGateway
+	ParsedAdyenGateway | ParsedStripeGateway | ParsedDummyGateway | ParsedLegacyDummyGateway
 >;
 
 export interface ParsedPaymentGateway<ID extends string, TData extends Record<string, any>>

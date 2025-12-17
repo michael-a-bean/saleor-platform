@@ -1,5 +1,6 @@
 import { compact } from "lodash-es";
 import { adyenGatewayId } from "./AdyenDropIn/types";
+import { legacyDummyGatewayId } from "./LegacyDummyDropIn/types";
 import { stripeV2GatewayId } from "./StripeV2DropIn/types";
 import {
 	type CheckoutAuthorizeStatusEnum,
@@ -12,7 +13,12 @@ import { type MightNotExist } from "@/checkout/lib/globalTypes";
 import { getUrl, type ParamBasicValue } from "@/checkout/lib/utils/url";
 import { type PaymentStatus } from "@/checkout/sections/PaymentSection/types";
 
+// Transaction-based payment gateways that use paymentGatewayInitializeSession webhook
 export const supportedPaymentGateways = [adyenGatewayId, stripeV2GatewayId] as const;
+
+// Legacy payment gateways that use the old checkoutPaymentCreate flow
+// These don't require the paymentGatewayInitializeSession webhook
+export const legacyPaymentGateways = [legacyDummyGatewayId] as const;
 
 export const getFilteredPaymentGateways = (
 	paymentGateways: MightNotExist<PaymentGateway[]>,
@@ -21,8 +27,19 @@ export const getFilteredPaymentGateways = (
 		return [];
 	}
 
-	// we want to use only payment apps, not plugins
+	// Filter to only transaction-based payment apps (not legacy plugins)
 	return compact(paymentGateways).filter(({ id }) => supportedPaymentGateways.includes(id));
+};
+
+export const getLegacyPaymentGateways = (
+	paymentGateways: MightNotExist<PaymentGateway[]>,
+): PaymentGateway[] => {
+	if (!paymentGateways) {
+		return [];
+	}
+
+	// Filter to only legacy payment gateways
+	return compact(paymentGateways).filter(({ id }) => legacyPaymentGateways.includes(id as typeof legacyDummyGatewayId));
 };
 
 export const getUrlForTransactionInitialize = (extraQuery?: Record<string, ParamBasicValue>) =>
