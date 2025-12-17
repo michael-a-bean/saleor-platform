@@ -43,6 +43,8 @@ docker compose exec db psql -U saleor -d saleor
 | Storefront | http://localhost:3000 |
 | GraphQL API | http://localhost:8000/graphql/ |
 | Dashboard | http://localhost:9000 |
+| Inventory Ops | http://localhost:3002 (via Dashboard Apps) |
+| Stripe App | http://localhost:3001 (via Dashboard Apps) |
 | Mailpit | http://localhost:8025 |
 | Jaeger | http://localhost:16686 |
 
@@ -60,6 +62,9 @@ storefront/src/           # Next.js customer-facing app
   ui/components/          # React components
   lib/                    # Utilities and helpers
   graphql/                # GraphQL queries/fragments
+saleor-apps/apps/         # Saleor apps (submodule)
+  inventory-ops/          # Inventory management app
+  stripe/                 # Stripe payment app
 scripts/                  # Custom scripts (MTG import, etc.)
 docs/                     # Reference documentation
 ```
@@ -75,10 +80,12 @@ Project-specific skills are available in `.claude/skills/`:
 | `storefront-dev` | Next.js development and builds |
 | `docker-ops` | Container management |
 | `mtg-catalog` | MTG card data queries |
+| `inventory-ops` | Inventory management app (POs, GRs, WAC, COGS) |
 
 ## References
 
 - `docs/SALEOR_CONTEXT.md` - Full architecture and troubleshooting reference
+- `docs/INVENTORY_OPS_SETUP.md` - Inventory Ops app setup and architecture
 - `CLAUDE_AGENT_GUIDE.md` - Detailed git workflow and customization guide
 - `.claude/rules/` - Topic-specific instructions
 - `.claude/skills/` - Executable skill guides

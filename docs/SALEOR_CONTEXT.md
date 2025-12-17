@@ -77,6 +77,8 @@ A Docker Compose orchestration layer running the complete Saleor stack, configur
 | mailpit | `axllent/mailpit` | 8025 | Email testing |
 | stripe-app | `saleor-platform-stripe-app` | 3001 | Stripe payments |
 | dynamodb-local | `amazon/dynamodb-local` | 8001 | Stripe config storage |
+| inventory-ops-app | `saleor-platform-inventory-ops-app` | 3002 | Inventory management |
+| inventory-ops-db | `postgres:15-alpine` | 5433 | Inventory Ops database |
 
 ### Data Flow
 
@@ -336,6 +338,92 @@ docker run --rm --network saleor-platform_saleor-backend-tier \
 | "Failed to set APL" | File permission issue | Set `APL=dynamodb` |
 | "Config for channel not found" | No Stripe config for channel | Insert config into DynamoDB |
 | "Invalid input" during fetch | Empty `stripeWhSecret` | Must be non-empty encrypted value |
+
+---
+
+## Inventory Ops App
+
+### Overview
+
+Custom Saleor app for inventory management with purchase orders, goods receipts, and cost tracking using Weighted Average Cost (WAC).
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  Inventory Ops App                           │
+│                  (localhost:3002)                            │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │   Pages     │  │  tRPC API   │  │   Saleor GraphQL    │  │
+│  │  (Next.js)  │──│  (Router)   │──│     Client          │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+│                          │                    │              │
+│                          ▼                    ▼              │
+│                   ┌─────────────┐      ┌─────────────┐      │
+│                   │   Prisma    │      │  Saleor API │      │
+│                   │   Client    │      │ (port 8000) │      │
+│                   └─────────────┘      └─────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+              ┌─────────────────────┐
+              │  PostgreSQL DB      │
+              │  (port 5433)        │
+              │  inventory_ops      │
+              └─────────────────────┘
+```
+
+### Services
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| inventory-ops-app | 3002 | Next.js app (tRPC + UI) |
+| inventory-ops-db | 5433 | PostgreSQL database |
+
+### Database Schema
+
+| Table | Purpose |
+|-------|---------|
+| `AppInstallation` | Multi-tenant app tracking |
+| `Supplier` | Vendor master data |
+| `PurchaseOrder` | PO header with status workflow |
+| `PurchaseOrderLine` | PO line items |
+| `GoodsReceipt` | Receipt header |
+| `GoodsReceiptLine` | Receipt line items |
+| `CostLayerEvent` | Append-only cost ledger (WAC) |
+| `LandedCost` | Freight/duty/other costs |
+| `LandedCostAllocation` | Cost allocation per line |
+| `SaleEvent` | Fulfilled orders for COGS |
+| `SaleorPostingRecord` | Idempotency for stock updates |
+| `AuditEvent` | Audit trail |
+
+### Key Features
+
+| Feature | Implementation |
+|---------|----------------|
+| **Purchase Orders** | Full lifecycle: Draft → Pending → Approved → Received |
+| **Goods Receipts** | Partial receiving, Saleor stock posting, reversals |
+| **WAC Calculation** | Append-only cost layer events |
+| **Landed Costs** | Allocate by value or quantity |
+| **COGS Tracking** | ORDER_FULFILLED webhook |
+| **Reports** | Inventory value, cost history, sales, profitability |
+
+### Webhook
+
+The app subscribes to `ORDER_FULFILLED` events to automatically:
+1. Look up current WAC for each fulfilled variant
+2. Create SALE cost layer events (negative qty)
+3. Calculate and store COGS for profitability reporting
+
+### Environment Variables
+
+```bash
+DATABASE_URL=postgresql://inventory:inventory@inventory-ops-db:5432/inventory_ops
+SECRET_KEY=<32+ char secret>
+APP_API_BASE_URL=http://inventory-ops-app:3002
+APP_IFRAME_BASE_URL=http://localhost:3002
+DEFAULT_CURRENCY=USD
+```
 
 ---
 

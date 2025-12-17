@@ -145,24 +145,70 @@ The app uses these environment variables (configured in docker-compose.yml):
 ## Development Status
 
 - [x] Phase 1: App Scaffolding
-- [ ] Phase 2: Supplier Management (CRUD)
-- [ ] Phase 3: Purchase Orders lifecycle
-- [ ] Phase 4: Goods Receipt + Stock Posting
-- [ ] Phase 5: Cost Layer Ledger + WAC
-- [ ] Phase 6: Landed Cost Allocation
-- [ ] Phase 7: GR Reversal
-- [ ] Phase 8: UI Polish + Testing
+- [x] Phase 2: Supplier Management (CRUD)
+- [x] Phase 3: Purchase Orders lifecycle
+- [x] Phase 4: Goods Receipt + Stock Posting
+- [x] Phase 5: Cost Layer Ledger + WAC
+- [x] Phase 6: Landed Cost Allocation
+- [x] Phase 7: GR Reversal
+- [x] Phase 8: Sales/COGS Tracking (ORDER_FULFILLED webhook)
+- [x] Phase 9: Reports UI (Inventory Value, Cost History, Sales, Profitability)
+- [ ] Phase 10: Unit Tests (optional)
+- [ ] Phase 11: E2E Tests (optional)
 
 ## Files Reference
 
 ```
 saleor-apps/apps/inventory-ops/
-├── prisma/schema.prisma          # Database schema
+├── prisma/schema.prisma          # Database schema (12 tables)
 ├── src/
-│   ├── app/api/                  # API routes (manifest, register, trpc)
-│   ├── lib/                      # Utilities (env, prisma, logger)
-│   ├── modules/trpc/             # tRPC router and procedures
-│   └── pages/                    # UI pages
+│   ├── app/api/                  # API routes
+│   │   ├── manifest/             # App manifest
+│   │   ├── register/             # App registration
+│   │   ├── trpc/                 # tRPC endpoint
+│   │   └── webhooks/saleor/      # Saleor webhooks
+│   │       └── order-fulfilled/  # COGS tracking webhook
+│   ├── lib/                      # Utilities
+│   │   ├── prisma.ts             # Database client
+│   │   ├── saleor-client.ts      # GraphQL client for Saleor
+│   │   └── logger.ts             # Structured logging
+│   ├── modules/                  # Domain modules
+│   │   ├── suppliers/            # Supplier CRUD
+│   │   ├── purchase-orders/      # PO lifecycle
+│   │   ├── goods-receipts/       # GR + stock posting
+│   │   ├── cost-layers/          # WAC calculation
+│   │   ├── landed-costs/         # Cost allocation
+│   │   ├── sales/                # COGS/profitability
+│   │   ├── reporting/            # Reports API
+│   │   └── trpc/                 # Router setup
+│   ├── pages/                    # UI pages
+│   │   ├── purchase-orders/      # PO management
+│   │   ├── suppliers/            # Supplier management
+│   │   ├── goods-receipts/       # GR management
+│   │   └── reports/              # Reports UI
+│   └── ui/components/            # Shared components
 ├── Dockerfile                    # Multi-stage Docker build
 └── package.json                  # Dependencies
 ```
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **Purchase Orders** | Create, edit, submit, approve, track POs with line items |
+| **Suppliers** | Vendor master data management |
+| **Goods Receipts** | Receive against POs, partial receiving, post to Saleor stock |
+| **WAC Calculation** | Weighted Average Cost with append-only cost ledger |
+| **Landed Costs** | Allocate freight/duty/other costs by value or quantity |
+| **GR Reversals** | Reverse posted receipts with automatic cost layer adjustments |
+| **COGS Tracking** | Automatic ORDER_FULFILLED webhook captures sales at WAC |
+| **Reports** | Inventory valuation, cost history, sales/COGS, profitability |
+
+## API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/manifest` | GET | App manifest for installation |
+| `/api/register` | POST | App registration callback |
+| `/api/trpc/*` | GET/POST | tRPC API for all operations |
+| `/api/webhooks/saleor/order-fulfilled` | POST | COGS tracking webhook |
