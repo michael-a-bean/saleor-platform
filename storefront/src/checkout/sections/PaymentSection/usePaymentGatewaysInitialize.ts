@@ -3,8 +3,9 @@ import { type CountryCode, usePaymentGatewaysInitializeMutation } from "@/checko
 import { useCheckout } from "@/checkout/hooks/useCheckout";
 import { useSubmit } from "@/checkout/hooks/useSubmit";
 import { type MightNotExist } from "@/checkout/lib/globalTypes";
-import { type ParsedPaymentGateways } from "@/checkout/sections/PaymentSection/types";
-import { getFilteredPaymentGateways } from "@/checkout/sections/PaymentSection/utils";
+import { type ParsedLegacyDummyGateway, type ParsedPaymentGateways } from "@/checkout/sections/PaymentSection/types";
+import { getFilteredPaymentGateways, getLegacyPaymentGateways } from "@/checkout/sections/PaymentSection/utils";
+import { type LegacyDummyGatewayId } from "./LegacyDummyDropIn/types";
 
 export const usePaymentGatewaysInitialize = () => {
 	const {
@@ -21,47 +22,79 @@ export const usePaymentGatewaysInitialize = () => {
 
 	const [{ fetching }, paymentGatewaysInitialize] = usePaymentGatewaysInitializeMutation();
 
+	// Get legacy gateways that don't need initialization (use old checkoutPaymentCreate flow)
+	const legacyGateways = useMemo(
+		() => getLegacyPaymentGateways(availablePaymentGateways),
+		[availablePaymentGateways],
+	);
+
+	// Convert legacy gateways to ParsedPaymentGateways format
+	const legacyGatewayConfigs = useMemo<ParsedLegacyDummyGateway[]>(
+		() =>
+			legacyGateways.map((gateway) => ({
+				id: gateway.id as LegacyDummyGatewayId,
+				data: {},
+				errors: [],
+			})),
+		[legacyGateways],
+	);
+
+	const transactionBasedGateways = useMemo(
+		() => getFilteredPaymentGateways(availablePaymentGateways),
+		[availablePaymentGateways],
+	);
+
 	const onSubmit = useSubmit<{}, typeof paymentGatewaysInitialize>(
 		useMemo(
 			() => ({
 				hideAlerts: true,
 				scope: "paymentGatewaysInitialize",
-				shouldAbort: () => !availablePaymentGateways.length,
+				// Only abort if no transaction-based gateways (legacy gateways handled separately)
+				shouldAbort: () => !transactionBasedGateways.length,
 				onSubmit: paymentGatewaysInitialize,
 				parse: () => ({
 					checkoutId,
-					paymentGateways: getFilteredPaymentGateways(availablePaymentGateways).map(({ config, id }) => ({
+					paymentGateways: transactionBasedGateways.map(({ config, id }) => ({
 						id,
 						data: config,
 					})),
 				}),
 				onSuccess: ({ data }) => {
 					const parsedConfigs = (data.gatewayConfigs || []) as ParsedPaymentGateways;
-
-					if (!parsedConfigs.length) {
-						throw new Error("No available payment gateways");
-					}
-
-					setGatewayConfigs(parsedConfigs);
+					// Combine transaction-based configs with legacy gateway configs
+					setGatewayConfigs([...parsedConfigs, ...legacyGatewayConfigs]);
 				},
 				onError: ({ errors }) => {
 					console.log({ errors });
+					// Even if transaction-based gateways fail, still show legacy gateways
+					if (legacyGatewayConfigs.length > 0) {
+						setGatewayConfigs(legacyGatewayConfigs);
+					}
 				},
 			}),
-			[availablePaymentGateways, checkoutId, paymentGatewaysInitialize],
+			[transactionBasedGateways, checkoutId, paymentGatewaysInitialize, legacyGatewayConfigs],
 		),
 	);
 
 	useEffect(() => {
+		// If no transaction-based gateways, just set legacy gateways immediately
+		if (!transactionBasedGateways.length && legacyGatewayConfigs.length > 0) {
+			setGatewayConfigs(legacyGatewayConfigs);
+			return;
+		}
 		void onSubmit();
 	}, []);
 
 	useEffect(() => {
 		if (billingCountry !== previousBillingCountry.current) {
 			previousBillingCountry.current = billingCountry;
+			if (!transactionBasedGateways.length && legacyGatewayConfigs.length > 0) {
+				setGatewayConfigs(legacyGatewayConfigs);
+				return;
+			}
 			void onSubmit();
 		}
-	}, [billingCountry, onSubmit]);
+	}, [billingCountry, onSubmit, transactionBasedGateways.length, legacyGatewayConfigs]);
 
 	return {
 		fetching,
