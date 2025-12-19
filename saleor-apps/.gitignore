@@ -1,6 +1,0 @@
-# Ignore everything in saleor-apps monorepo except custom apps tracked as submodules
-/*
-!/.gitignore
-!/apps
-/apps/*
-!/apps/inventory-ops
