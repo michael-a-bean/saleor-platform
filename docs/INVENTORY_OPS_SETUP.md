@@ -153,21 +153,41 @@ The app uses these environment variables (configured in docker-compose.yml):
 - [x] Phase 7: GR Reversal
 - [x] Phase 8: Sales/COGS Tracking (ORDER_FULFILLED webhook)
 - [x] Phase 9: Reports UI (Inventory Value, Cost History, Sales, Profitability)
-- [ ] Phase 10: Unit Tests (optional)
-- [ ] Phase 11: E2E Tests (optional)
+- [x] Phase 10: Stock Control (Stock Adjustments + Discrepancy Detection)
+- [ ] Phase 11: Unit Tests (optional)
+- [ ] Phase 12: E2E Tests (optional)
+
+## Current State (Dec 2025)
+
+**Git Status:**
+- inventory-ops submodule has uncommitted changes that need to be pushed
+- Run: `cd saleor-apps/apps/inventory-ops && git push origin main`
+- Then update parent: `cd ../../../ && git add saleor-apps/apps/inventory-ops && git commit -m "chore: update inventory-ops submodule" && git push origin platform/main`
+
+**Database:**
+- Fresh database with new schema (all data cleared)
+- All Saleor stock reset to 0
+
+**Next Steps (Future Sessions):**
+1. Add sample data (suppliers, create POs, receive goods)
+2. Test the full workflow: PO → GR → Stock posting → WAC calculation
+3. Test stock adjustments workflow
+4. Test discrepancy detection (modify stock in Dashboard, verify webhook creates discrepancy)
+5. Consider adding Physical Inventory Count feature (next phase)
 
 ## Files Reference
 
 ```
 saleor-apps/apps/inventory-ops/
-├── prisma/schema.prisma          # Database schema (12 tables)
+├── prisma/schema.prisma          # Database schema (15 tables)
 ├── src/
 │   ├── app/api/                  # API routes
 │   │   ├── manifest/             # App manifest
 │   │   ├── register/             # App registration
 │   │   ├── trpc/                 # tRPC endpoint
 │   │   └── webhooks/saleor/      # Saleor webhooks
-│   │       └── order-fulfilled/  # COGS tracking webhook
+│   │       ├── order-fulfilled/  # COGS tracking webhook
+│   │       └── stock-updated/    # Discrepancy detection webhook
 │   ├── lib/                      # Utilities
 │   │   ├── prisma.ts             # Database client
 │   │   ├── saleor-client.ts      # GraphQL client for Saleor
@@ -180,11 +200,15 @@ saleor-apps/apps/inventory-ops/
 │   │   ├── landed-costs/         # Cost allocation
 │   │   ├── sales/                # COGS/profitability
 │   │   ├── reporting/            # Reports API
+│   │   ├── stock-adjustments/    # Manual stock corrections
+│   │   ├── stock-discrepancies/  # Unauthorized change tracking
 │   │   └── trpc/                 # Router setup
 │   ├── pages/                    # UI pages
 │   │   ├── purchase-orders/      # PO management
 │   │   ├── suppliers/            # Supplier management
 │   │   ├── goods-receipts/       # GR management
+│   │   ├── stock-adjustments/    # Stock adjustment management
+│   │   ├── stock-discrepancies/  # Discrepancy review
 │   │   └── reports/              # Reports UI
 │   └── ui/components/            # Shared components
 ├── Dockerfile                    # Multi-stage Docker build
@@ -202,6 +226,8 @@ saleor-apps/apps/inventory-ops/
 | **Landed Costs** | Allocate freight/duty/other costs by value or quantity |
 | **GR Reversals** | Reverse posted receipts with automatic cost layer adjustments |
 | **COGS Tracking** | Automatic ORDER_FULFILLED webhook captures sales at WAC |
+| **Stock Adjustments** | Manual stock corrections (damage, shrinkage, count correction, expiry, found stock) with cost layer tracking |
+| **Discrepancy Detection** | PRODUCT_VARIANT_STOCK_UPDATED webhook detects unauthorized stock changes |
 | **Reports** | Inventory valuation, cost history, sales/COGS, profitability |
 
 ## API Endpoints
@@ -212,3 +238,4 @@ saleor-apps/apps/inventory-ops/
 | `/api/register` | POST | App registration callback |
 | `/api/trpc/*` | GET/POST | tRPC API for all operations |
 | `/api/webhooks/saleor/order-fulfilled` | POST | COGS tracking webhook |
+| `/api/webhooks/saleor/stock-updated` | POST | Discrepancy detection webhook |
