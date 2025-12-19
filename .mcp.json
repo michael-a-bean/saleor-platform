@@ -4,8 +4,8 @@
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
-        "--network", "host",
-        "-e", "ENDPOINT_URL=http://localhost:8000/graphql/",
+        "--network", "saleor-platform_saleor-backend-tier",
+        "-e", "ENDPOINT_URL=http://api:8000/graphql/",
         "node:20-alpine",
         "npx", "-y", "mcp-graphql"
       ]

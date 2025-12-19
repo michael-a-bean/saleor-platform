@@ -44,6 +44,7 @@ docker compose exec db psql -U saleor -d saleor
 | GraphQL API | http://localhost:8000/graphql/ |
 | Dashboard | http://localhost:9000 |
 | Inventory Ops | http://localhost:3002 (via Dashboard Apps) |
+| Buylist | http://localhost:3003 (via Dashboard Apps) |
 | Stripe App | http://localhost:3001 (via Dashboard Apps) |
 | Mailpit | http://localhost:8025 |
 | Jaeger | http://localhost:16686 |
@@ -64,6 +65,7 @@ storefront/src/           # Next.js customer-facing app
   graphql/                # GraphQL queries/fragments
 saleor-apps/apps/         # Saleor apps (submodule)
   inventory-ops/          # Inventory management app
+  buylist/                # Customer card buyback app
   stripe/                 # Stripe payment app
 scripts/                  # Custom scripts (MTG import, etc.)
 docs/                     # Reference documentation
@@ -81,6 +83,7 @@ Project-specific skills are available in `.claude/skills/`:
 | `docker-ops` | Container management |
 | `mtg-catalog` | MTG card data queries |
 | `inventory-ops` | Inventory management app (POs, GRs, WAC, COGS) |
+| `buylist` | Customer card buyback app (quotes, pricing, BOH) |
 
 ## References
 
