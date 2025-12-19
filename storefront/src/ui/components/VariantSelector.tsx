@@ -4,6 +4,50 @@ import { LinkWithChannel } from "../atoms/LinkWithChannel";
 import { type ProductListItemFragment, type VariantDetailsFragment } from "@/gql/graphql";
 import { getHrefForVariant } from "@/lib/utils";
 
+// Condition order for MTG cards
+const CONDITION_ORDER = ["Near Mint", "Lightly Played", "Moderately Played", "Heavily Played", "Damaged"];
+
+/**
+ * Extract display name from variant name.
+ * For condition variants like "Card Name - Near Mint", returns just "Near Mint".
+ * For other variants, returns the full name.
+ */
+function getVariantDisplayName(variantName: string): string {
+	const parts = variantName.split(" - ");
+	if (parts.length >= 2) {
+		const lastPart = parts[parts.length - 1];
+		// Check if the last part is a known condition
+		if (CONDITION_ORDER.includes(lastPart)) {
+			return lastPart;
+		}
+	}
+	return variantName;
+}
+
+/**
+ * Sort variants by condition order (NM first, DMG last).
+ * Non-condition variants are sorted alphabetically at the end.
+ */
+function sortVariantsByCondition(variants: readonly VariantDetailsFragment[]): VariantDetailsFragment[] {
+	return [...variants].sort((a, b) => {
+		const aDisplay = getVariantDisplayName(a.name);
+		const bDisplay = getVariantDisplayName(b.name);
+		const aIndex = CONDITION_ORDER.indexOf(aDisplay);
+		const bIndex = CONDITION_ORDER.indexOf(bDisplay);
+
+		// Both are conditions - sort by condition order
+		if (aIndex !== -1 && bIndex !== -1) {
+			return aIndex - bIndex;
+		}
+		// Only a is a condition - a comes first
+		if (aIndex !== -1) return -1;
+		// Only b is a condition - b comes first
+		if (bIndex !== -1) return 1;
+		// Neither is a condition - sort alphabetically
+		return aDisplay.localeCompare(bDisplay);
+	});
+}
+
 export function VariantSelector({
 	variants,
 	product,
@@ -19,14 +63,17 @@ export function VariantSelector({
 		redirect("/" + channel + getHrefForVariant({ productSlug: product.slug, variantId: variants[0].id }));
 	}
 
+	const sortedVariants = sortVariantsByCondition(variants);
+
 	return (
-		variants.length > 1 && (
+		sortedVariants.length > 1 && (
 			<fieldset className="my-4" role="radiogroup" data-testid="VariantSelector">
-				<legend className="sr-only">Variants</legend>
+				<legend className="sr-only">Condition</legend>
 				<div className="flex flex-wrap gap-3">
-					{variants.map((variant) => {
+					{sortedVariants.map((variant) => {
 						const isDisabled = !variant.quantityAvailable;
 						const isCurrentVariant = selectedVariant?.id === variant.id;
+						const displayName = getVariantDisplayName(variant.name);
 						return (
 							<LinkWithChannel
 								key={variant.id}
@@ -47,7 +94,7 @@ export function VariantSelector({
 								aria-checked={isCurrentVariant}
 								aria-disabled={isDisabled}
 							>
-								{variant.name}
+								{displayName}
 							</LinkWithChannel>
 						);
 					})}
