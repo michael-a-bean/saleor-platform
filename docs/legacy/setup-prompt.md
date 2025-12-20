@@ -1,4 +1,7 @@
-# Claude Code Setup Prompt
+# Claude Code Setup Prompt (One-Time)
+
+> **Location**: `docs/legacy/setup-prompt.md`
+> **Purpose**: One-time prompt for initial setup. Rarely needed.
 
 Copy and paste this to Claude Code on your new machine after cloning the repo and copying the backup file.
 

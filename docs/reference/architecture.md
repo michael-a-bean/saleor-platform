@@ -1,6 +1,8 @@
 # Saleor Platform Architecture Reference
 
-> **Purpose**: Technical reference for the Saleor platform architecture. For instructions and rules, see `CLAUDE.md` and `.claude/rules/`.
+> **Location**: `docs/reference/architecture.md`
+> **Purpose**: Deep-dive architecture reference. Only read when needed for understanding system design.
+> **For daily work**: See `CLAUDE.md` for instructions and `.claude/skills/` for procedures.
 
 ---
 

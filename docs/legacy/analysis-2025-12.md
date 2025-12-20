@@ -1,8 +1,9 @@
-# Saleor Platform MTG Marketplace - Project Analysis
+# Project Analysis (December 2025)
 
-> **Analysis Date**: December 19, 2025
-> **Analyst**: Claude Code
-> **Purpose**: Compare documented/planned functionality against actual implementation
+> **Status**: ARCHIVED - This is a point-in-time snapshot
+> **Location**: `docs/legacy/analysis-2025-12.md`
+> **Original Date**: December 19, 2025
+> **Purpose**: Historical record of implementation status at that time
 
 ---
 

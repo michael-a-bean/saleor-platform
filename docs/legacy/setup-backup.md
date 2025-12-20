@@ -1,4 +1,7 @@
-# Saleor Platform Setup from Backup
+# Setup from Backup (One-Time)
+
+> **Location**: `docs/legacy/setup-backup.md`
+> **Purpose**: One-time setup instructions. Only needed when setting up a new machine from backup.
 
 Instructions for setting up the MTG Card Marketplace on a new machine using a database backup.
 

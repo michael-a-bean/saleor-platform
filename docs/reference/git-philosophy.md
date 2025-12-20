@@ -1,9 +1,8 @@
-# Claude Code Agent Guide for Saleor Platform
+# Git Workflow Philosophy
 
-> **Note**: This is supplementary documentation. For quick reference, see:
-> - `CLAUDE.md` - Concise instructions and commands
-> - `.claude/rules/` - Topic-specific rules
-> - `docs/SALEOR_CONTEXT.md` - Architecture reference
+> **Location**: `docs/reference/git-philosophy.md`
+> **Purpose**: Detailed rationale for git workflow. Only read when understanding "why" is needed.
+> **For daily work**: See `.claude/rules/git-workflow.md` for the essential rules.
 
 ## Purpose
 

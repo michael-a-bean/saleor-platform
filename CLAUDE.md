@@ -90,9 +90,11 @@ Project-specific skills are available in `.claude/skills/`:
 
 ## References
 
-- `docs/SALEOR_CONTEXT.md` - Full architecture and troubleshooting reference
-- `docs/INVENTORY_OPS_SETUP.md` - Inventory Ops app setup and architecture
-- `docs/PROJECT_ANALYSIS.md` - Implementation status and gap analysis
-- `CLAUDE_AGENT_GUIDE.md` - Detailed git workflow and customization guide
-- `.claude/rules/` - Topic-specific instructions
-- `.claude/skills/` - Executable skill guides
+| Category | Location | Purpose |
+|----------|----------|---------|
+| **Active** | `docs/INVENTORY_OPS_SETUP.md` | Inventory Ops app setup |
+| **Architecture** | `docs/reference/architecture.md` | Full platform architecture |
+| **Git Philosophy** | `docs/reference/git-philosophy.md` | Detailed git workflow guide |
+| **Legacy** | `docs/legacy/` | One-time setup docs, historical analyses |
+| **Rules** | `.claude/rules/` | Critical gotchas (minimal) |
+| **Skills** | `.claude/skills/` | Detailed procedures (on-demand) |
