@@ -3,92 +3,37 @@ paths:
   - storefront/**
 ---
 
-# Storefront Development Rules
+# Storefront Critical Rules
 
-## Stack
+> **Full procedures**: See skill `storefront-dev` for builds, codegen, and development.
 
-- Next.js 15 with App Router
-- React 19 with Server Components
-- TypeScript (strict mode)
-- TailwindCSS
-- pnpm package manager
+## Build Gotcha (CRITICAL)
 
-## Key Patterns
+API must be running during build (GraphQL introspection):
+```bash
+docker compose up -d api
+docker build --network=host ... ./storefront
+```
 
-### Dynamic Rendering
+## Dynamic Rendering (CRITICAL)
 
 Pages using `notFound()`, `redirect()`, or `useSearchParams()` require:
-
 ```typescript
 export const dynamic = "force-dynamic";
 ```
+Without this: `DYNAMIC_SERVER_USAGE` build errors.
 
-Without this, production builds fail with `DYNAMIC_SERVER_USAGE` errors.
+## Null-Safe Formatting
 
-### Null-Safe Formatting
-
-Always handle null/undefined in formatters:
-
+Always handle null currency:
 ```typescript
-export const formatMoney = (amount: number, currency: string) => {
-    if (!currency) return "";
-    return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency,
-    }).format(amount);
-};
-```
-
-## GraphQL Codegen
-
-After modifying `.graphql` files:
-
-```bash
-docker compose exec storefront pnpm graphql-codegen
-# Then rebuild
-docker compose build storefront
-```
-
-## Building the Image
-
-```bash
-docker compose up -d api  # API must be running
-
-docker build --network=host \
-  --build-arg NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/ \
-  --build-arg NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000 \
-  --build-arg NEXT_PUBLIC_DEFAULT_CHANNEL=webstore \
-  -t saleor-storefront:local ./storefront
-
-docker compose up -d storefront
-```
-
-## Directory Structure
-
-```
-src/
-  app/[channel]/          # Channel-scoped routes
-    (main)/               # Main layout group
-      products/           # Product pages
-      search/             # Search results
-  ui/
-    components/           # Shared components
-    atoms/                # Small reusable elements
-  lib/
-    graphql.ts            # GraphQL client
-    utils.ts              # Formatting utilities
-    checkout.ts           # Checkout helpers
-  graphql/                # .graphql query files
-  gql/                    # Generated types (don't edit)
+if (!currency) return "";
 ```
 
 ## Common Issues
 
-### "Something went wrong" on product pages
-Check API logs for pricing errors. Usually caused by missing `discounted_price_amount` in database.
-
-### Images not loading
-External images need to be added to `next.config.js` remotePatterns.
-
-### CORS errors
-Ensure `extra_hosts: "localhost:host-gateway"` is set in docker-compose.yml.
+| Error | Cause | Fix |
+|-------|-------|-----|
+| "Something went wrong" | Null `discounted_price_amount` | Fix pricing in DB |
+| Images not loading | Missing remotePatterns | Add to `next.config.js` |
+| CORS errors | Docker networking | Set `extra_hosts: "localhost:host-gateway"` |
