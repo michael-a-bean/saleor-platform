@@ -157,23 +157,70 @@ The app uses these environment variables (configured in docker-compose.yml):
 - [ ] Phase 11: Unit Tests (optional)
 - [ ] Phase 12: E2E Tests (optional)
 
+## Cross-App Integration
+
+Inventory Ops integrates with other apps (like Buylist) for cost tracking:
+
+### How It Works
+
+1. **Shared Database**: Both apps store `CostLayerEvent` records in the same PostgreSQL database
+2. **Installation IDs**: Each app has its own `installationId`, but they share the same `saleorApiUrl`
+3. **Cross-App Queries**: Inventory Ops queries cost layer events from ALL installations for the same Saleor API URL
+
+### Cost Layer Event Types by App
+
+| App | Event Types |
+|-----|-------------|
+| Inventory Ops | `GOODS_RECEIPT`, `GOODS_RECEIPT_REVERSAL`, `LANDED_COST_ADJUSTMENT`, `SALE`, `SALE_RETURN`, `STOCK_ADJUSTMENT`, `STOCK_ADJUSTMENT_REVERSAL` |
+| Buylist | `BUYLIST_RECEIPT`, `BUYLIST_RECEIPT_REVERSAL` |
+
+### WAC Calculation
+
+When calculating Weighted Average Cost (WAC), the system aggregates cost layer events from all apps:
+
+```sql
+-- Events from both inventory-ops and buylist are included
+SELECT * FROM "CostLayerEvent"
+WHERE "saleorVariantId" = 'variant-id'
+  AND "saleorWarehouseId" = 'warehouse-id'
+  AND "installationId" IN (
+    SELECT id FROM "AppInstallation"
+    WHERE "saleorApiUrl" = 'http://api:8000/graphql/'
+  )
+ORDER BY "eventTimestamp";
+```
+
+### Key Code Changes for Cross-App Support
+
+1. **`protected-client-procedure.ts`**: Middleware fetches `allInstallationIds` for the saleorApiUrl
+2. **`wac-service.ts`**: WAC functions accept `string | string[]` for installationId
+3. **`order-fulfilled/route.ts`**: Webhook handler passes all installation IDs for WAC calculation
+4. **All routers**: Use `ctx.allInstallationIds` for queries that need cross-app visibility
+
+## Required Permissions
+
+The app requires these Saleor permissions:
+
+| Permission | Purpose |
+|------------|---------|
+| `MANAGE_PRODUCTS` | Read/write product variants, update stock |
+| `MANAGE_ORDERS` | Required for ORDER_FULFILLED webhook |
+
+**Important**: Without `MANAGE_ORDERS`, the ORDER_FULFILLED webhook will silently fail to trigger.
+
 ## Current State (Dec 2025)
 
-**Git Status:**
-- inventory-ops submodule has uncommitted changes that need to be pushed
-- Run: `cd saleor-apps/apps/inventory-ops && git push origin main`
-- Then update parent: `cd ../../../ && git add saleor-apps/apps/inventory-ops && git commit -m "chore: update inventory-ops submodule" && git push origin platform/main`
+**Working Features:**
+- Full PO → GR → Stock posting workflow
+- WAC calculation across inventory-ops and buylist apps
+- ORDER_FULFILLED webhook creating SALE events with COGS
+- Buylist integration for TCG singles receiving
+- All reports showing cross-app cost data
 
 **Database:**
-- Fresh database with new schema (all data cleared)
-- All Saleor stock reset to 0
-
-**Next Steps (Future Sessions):**
-1. Add sample data (suppliers, create POs, receive goods)
-2. Test the full workflow: PO → GR → Stock posting → WAC calculation
-3. Test stock adjustments workflow
-4. Test discrepancy detection (modify stock in Dashboard, verify webhook creates discrepancy)
-5. Consider adding Physical Inventory Count feature (next phase)
+- Shared schema between inventory-ops and buylist
+- Cost layer events track source app via `installationId`
+- WAC queries aggregate across all related app installations
 
 ## Files Reference
 
