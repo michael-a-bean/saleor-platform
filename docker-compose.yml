@@ -205,6 +205,23 @@ services:
       - POSTGRES_PASSWORD=inventory
       - POSTGRES_DB=inventory_ops
 
+  # Saleor MCP Server for AI assistant integration
+  saleor-mcp:
+    build:
+      context: ./saleor-mcp
+    ports:
+      - 6000:8000
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    extra_hosts:
+      - "localhost:host-gateway"
+    depends_on:
+      - api
+    environment:
+      - ALLOWED_DOMAIN_PATTERN=.*
+      - LOGLEVEL=INFO
+
   # Buylist App - shares inventory-ops database
   buylist-app:
     build:
