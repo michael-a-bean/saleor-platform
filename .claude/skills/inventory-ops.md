@@ -65,12 +65,43 @@ The app exposes a tRPC API at `/api/trpc/*`:
 | `sales` | list, getById, getSummary, profitabilityByProduct |
 | `reporting` | inventoryValuation, costHistory, stockMovementSummary, dashboardSummary |
 
-## Webhook
+## Webhooks
 
-The app subscribes to `ORDER_FULFILLED` events:
-- Endpoint: `/api/webhooks/saleor/order-fulfilled`
-- Creates SALE cost layer events with WAC at time of sale
-- Calculates COGS for profitability reporting
+The app subscribes to Saleor webhooks:
+
+| Webhook | Endpoint | Purpose |
+|---------|----------|---------|
+| `ORDER_FULFILLED` | `/api/webhooks/saleor/order-fulfilled` | Creates SALE cost layer events with WAC, calculates COGS |
+| `PRODUCT_VARIANT_STOCK_UPDATED` | `/api/webhooks/saleor/stock-updated` | Detects unauthorized stock changes (discrepancies) |
+
+**Important**: ORDER_FULFILLED requires `MANAGE_ORDERS` permission on the app.
+
+## Cross-App Integration (Buylist)
+
+Inventory Ops integrates with the Buylist app for cost tracking:
+
+- Both apps share the same PostgreSQL database and Prisma schema
+- Each app has its own `installationId` but same `saleorApiUrl`
+- WAC calculations aggregate cost layer events from ALL related apps
+- Event types: `BUYLIST_RECEIPT`, `BUYLIST_RECEIPT_REVERSAL` (from Buylist)
+
+### Key Files for Cross-App Support
+
+| File | Purpose |
+|------|---------|
+| `protected-client-procedure.ts` | Fetches `allInstallationIds` for context |
+| `wac-service.ts` | WAC functions accept array of installation IDs |
+| `order-fulfilled/route.ts` | Passes all installation IDs to use case |
+
+### Query All Cost Events Across Apps
+
+```sql
+-- Get cost events from both inventory-ops and buylist
+SELECT "eventType", "saleorVariantId", "qtyDelta", "unitCost"::text, "installationId"
+FROM "CostLayerEvent"
+WHERE "saleorVariantId" = 'your-variant-id'
+ORDER BY "eventTimestamp";
+```
 
 ## UI Pages
 

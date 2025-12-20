@@ -46,6 +46,7 @@ docker compose exec db psql -U saleor -d saleor
 | Inventory Ops | http://localhost:3002 (via Dashboard Apps) |
 | Buylist | http://localhost:3003 (via Dashboard Apps) |
 | Stripe App | http://localhost:3001 (via Dashboard Apps) |
+| Saleor MCP | http://localhost:6000 (AI assistant integration) |
 | Mailpit | http://localhost:8025 |
 | Jaeger | http://localhost:16686 |
 
@@ -85,10 +86,13 @@ Project-specific skills are available in `.claude/skills/`:
 | `inventory-ops` | Inventory management app (POs, GRs, WAC, COGS) |
 | `buylist` | Customer card buyback app (quotes, pricing, BOH) |
 
+**Note**: Inventory Ops and Buylist share a database for cross-app cost tracking. See `docs/INVENTORY_OPS_SETUP.md` for integration details.
+
 ## References
 
 - `docs/SALEOR_CONTEXT.md` - Full architecture and troubleshooting reference
 - `docs/INVENTORY_OPS_SETUP.md` - Inventory Ops app setup and architecture
+- `docs/PROJECT_ANALYSIS.md` - Implementation status and gap analysis
 - `CLAUDE_AGENT_GUIDE.md` - Detailed git workflow and customization guide
 - `.claude/rules/` - Topic-specific instructions
 - `.claude/skills/` - Executable skill guides
