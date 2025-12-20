@@ -1,6 +1,30 @@
 # Buylist Skill
 
-Manage the Buylist Saleor app - customer card buybacks, pricing, BOH (Buy-On-Hand) tracking, and TCG singles receiving.
+Manage the Buylist Saleor app - customer card buybacks with a simplified 2-step face-to-face workflow.
+
+## Workflow Overview
+
+The buylist app uses a streamlined workflow for in-store transactions:
+
+1. **FOH (Front of House)** - Customer brings cards to counter
+   - Staff adds cards, sets conditions, adjusts prices if needed
+   - Staff selects payout method (Cash, Store Credit, Check, etc.)
+   - Click "Complete & Pay Customer" → Buylist created in `PENDING_VERIFICATION` status
+   - Customer is paid immediately
+
+2. **BOH (Back of House)** - Verification queue
+   - Staff verifies cards are present and condition is accurate
+   - Can update condition (doesn't change price - customer already paid)
+   - Can reduce quantity if cards are missing
+   - Click "Verify & Add to Inventory" → Stock updated, status becomes `COMPLETED`
+
+### Buylist Statuses
+
+| Status | Description |
+|--------|-------------|
+| `PENDING_VERIFICATION` | Customer paid, cards awaiting BOH verification |
+| `COMPLETED` | Cards verified and added to inventory |
+| `CANCELLED` | Transaction cancelled/voided |
 
 ## Quick Commands
 
@@ -15,18 +39,24 @@ docker compose build buylist-app && docker compose up -d buylist-app
 docker compose exec inventory-ops-db psql -U inventory -d inventory_ops
 
 # Run migrations (if schema changes)
-docker compose exec buylist-app pnpm prisma db push
+docker compose exec inventory-ops-app sh -c "cd /app/apps/inventory-ops && npx prisma db push"
 ```
 
 ## Database Queries
 
 ```sql
 -- Check buylists
-SELECT id, "buylistNumber", status, "customerEmail", "createdAt"
+SELECT id, "buylistNumber", status, "customerName", "payoutMethod", "paidAt"
 FROM "Buylist" ORDER BY "createdAt" DESC LIMIT 10;
 
+-- Check pending verification queue
+SELECT id, "buylistNumber", "customerName", "totalQuotedAmount"::text, "paidAt"
+FROM "Buylist"
+WHERE status = 'PENDING_VERIFICATION'
+ORDER BY "paidAt" ASC;
+
 -- Check buylist lines
-SELECT bl.id, b."buylistNumber", bl."saleorVariantSku", bl.quantity, bl."unitCost"::text
+SELECT bl.id, b."buylistNumber", bl."saleorVariantName", bl.qty, bl."finalPrice"::text, bl.condition
 FROM "BuylistLine" bl
 JOIN "Buylist" b ON bl."buylistId" = b.id
 ORDER BY bl."createdAt" DESC LIMIT 20;
@@ -37,19 +67,54 @@ FROM "CostLayerEvent"
 WHERE "eventType" IN ('BUYLIST_RECEIPT', 'BUYLIST_RECEIPT_REVERSAL')
 ORDER BY "eventTimestamp" DESC LIMIT 10;
 
--- BOH pricing data
-SELECT id, "saleorVariantId", "buyPrice"::text, "lastUpdated"
-FROM "BohPricing" ORDER BY "lastUpdated" DESC LIMIT 10;
+-- Today's verified buylists
+SELECT COUNT(*), SUM("totalFinalAmount")::text as total_value
+FROM "Buylist"
+WHERE "verifiedAt" >= CURRENT_DATE AND status = 'COMPLETED';
 ```
 
 ## tRPC API
 
 The app exposes a tRPC API at `/api/trpc/*`:
 
-| Router | Endpoints |
-|--------|-----------|
-| `buylists` | list, getById, create, addLines, updateLines, submit, approve, receive, cancel |
-| `boh` | getPricing, updatePricing, bulkUpdatePricing, getVariantWac |
+| Router | Key Endpoints |
+|--------|---------------|
+| `buylists` | `list`, `getById`, `createAndPay`, `cancel`, `searchCards`, `listWarehouses` |
+| `boh` | `queue`, `verifyAndReceive`, `stats` |
+| `pricing` | `getDefault`, `list`, `create`, `update` |
+
+### Key Mutations
+
+**`buylists.createAndPay`** - Create buylist and pay customer in one step
+```typescript
+{
+  saleorWarehouseId: string,
+  customerName?: string,
+  payoutMethod: "CASH" | "STORE_CREDIT" | "CHECK" | "BANK_TRANSFER" | "PAYPAL" | "OTHER",
+  payoutReference?: string,
+  lines: [{
+    saleorVariantId: string,
+    qty: number,
+    condition: "NM" | "LP" | "MP" | "HP" | "DMG",
+    marketPrice: number,
+    buyPrice: number,
+  }]
+}
+```
+
+**`boh.verifyAndReceive`** - Verify cards and add to inventory
+```typescript
+{
+  buylistId: string,
+  lines?: [{
+    lineId: string,
+    condition?: string,      // Update if different
+    qtyAccepted?: number,    // Reduce if cards missing
+    conditionNote?: string,
+  }],
+  internalNotes?: string,
+}
+```
 
 ## Integration with Inventory Ops
 
@@ -57,74 +122,81 @@ Buylist integrates with Inventory Ops for cost tracking:
 
 ### How It Works
 
-1. Customer submits cards via buylist
-2. Staff approves and receives the buylist
-3. Receiving creates `BUYLIST_RECEIPT` cost layer events
-4. Stock is posted to Saleor warehouse
-5. Inventory Ops sees these events when calculating WAC
+1. Customer cards are added at FOH counter
+2. Staff pays customer (payout recorded)
+3. Cards queue for BOH verification
+4. BOH verifies and triggers `verifyAndReceive`
+5. Creates `BUYLIST_RECEIPT` cost layer events
+6. Stock is posted to Saleor warehouse
+7. Inventory Ops sees these events when calculating WAC
 
 ### Cost Layer Events
 
 | Event Type | Created When |
 |------------|--------------|
-| `BUYLIST_RECEIPT` | Buylist is received, stock added |
+| `BUYLIST_RECEIPT` | Buylist verified, stock added |
 | `BUYLIST_RECEIPT_REVERSAL` | Buylist receipt is reversed |
-
-### WAC Calculation
-
-Both apps share WAC calculation:
-
-```typescript
-// In buylist/src/lib/wac-service.ts
-import { calculateWac } from "@/lib/wac-service";
-
-// Uses same algorithm as inventory-ops
-const wac = await calculateWac({
-  prisma,
-  installationId: allInstallationIds, // Includes inventory-ops events
-  variantId,
-  warehouseId,
-});
-```
 
 ## UI Pages
 
 | Path | Purpose |
 |------|---------|
-| `/boh` | BOH (Buy-On-Hand) management dashboard |
-| `/boh/buylists` | List and manage buylists |
-| `/boh/buylists/new` | Create new buylist |
-| `/boh/buylists/[id]` | View buylist details |
-| `/boh/buylists/[id]/receive` | Receive a buylist |
-| `/boh/pricing` | BOH pricing configuration |
+| `/buylists` | List all buylists |
+| `/buylists/new` | FOH: Create buylist and pay customer |
+| `/buylists/[id]` | View buylist details |
+| `/boh/queue` | BOH: Verification queue |
+| `/boh/buylists/[id]/verify` | BOH: Verify cards and receive |
+| `/pricing` | Pricing policy configuration |
 
 ## Files
 
 ```
 saleor-apps/apps/buylist/
-├── prisma/schema.prisma          # Database schema (shared with inventory-ops)
+├── prisma/                       # Symlink to inventory-ops schema
 ├── src/
-│   ├── app/api/                  # API routes
 │   ├── lib/
 │   │   ├── prisma.ts             # Database client
-│   │   └── wac-service.ts        # WAC calculation (cross-app aware)
+│   │   ├── saleor-client.ts      # Saleor API client
+│   │   └── wac-service.ts        # WAC calculation
 │   ├── modules/
-│   │   ├── boh/                  # BOH business logic
+│   │   ├── boh/
+│   │   │   └── boh-router.ts     # BOH queue & verify endpoints
+│   │   ├── buylists/
+│   │   │   └── buylists-router.ts # Buylist CRUD & createAndPay
+│   │   ├── pricing/
+│   │   │   └── pricing-router.ts # Pricing policies
 │   │   └── trpc/                 # Router setup
-│   ├── pages/                    # UI pages
-│   └── ui/                       # Shared components
+│   └── pages/
+│       ├── buylists/
+│       │   ├── new.tsx           # FOH create & pay page
+│       │   └── [id]/index.tsx    # Buylist detail
+│       └── boh/
+│           ├── queue.tsx         # Verification queue
+│           └── buylists/[id]/
+│               └── verify.tsx    # Card verification page
 └── Dockerfile
 ```
 
-## Required Permissions
+## Pricing Policies
 
-| Permission | Purpose |
-|------------|---------|
-| `MANAGE_PRODUCTS` | Read product variants, update stock |
+Buy prices are calculated based on pricing policies:
+
+| Policy Type | Description |
+|-------------|-------------|
+| `PERCENTAGE` | X% of market price |
+| `FIXED_DISCOUNT` | Market price minus $X |
+| `TIERED` | Different % based on card value ranges |
+
+Condition multipliers adjust the base price:
+- NM: 100%
+- LP: 90%
+- MP: 75%
+- HP: 50%
+- DMG: 25%
 
 ## Service URLs
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| buylist-app | 3003 | Next.js app |
+| buylist-app | 3003 | Next.js app (via Dashboard) |
 | inventory-ops-db | 5433 | Shared PostgreSQL database |
