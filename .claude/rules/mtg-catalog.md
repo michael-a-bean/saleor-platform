@@ -33,9 +33,14 @@ Located in `scripts/mtg_scryfall_import/`:
 - `import_command.py` - Django management command
 - `run_import.sh` - Orchestration script
 
-## Planned Features
+## Implemented Features
 
-Advanced filtering plan exists at `.claude/plans/silly-spinning-hamming.md`:
-- Filter by rarity, colors, mana value, price range
-- Desktop sidebar + mobile modal UI
+Advanced filtering is fully implemented in the storefront:
+
+- Filter by rarity, colors, card type, set, mana value, price range
+- Boolean filters: reserved list, promo, full art
+- Desktop sidebar + mobile modal UI (slide-in drawer)
 - URL-based shareable filters
+- 9 filter types total
+
+See `storefront/src/lib/filters/` for implementation.

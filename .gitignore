@@ -19,3 +19,4 @@ backups/
 # Database backups
 *.sql.gz
 saleor_backup_*.sql.gz
+saleor-mcp/
