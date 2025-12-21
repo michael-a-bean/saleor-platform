@@ -34,6 +34,11 @@ docker compose build storefront && docker compose up -d storefront
 
 # Database access
 docker compose exec db psql -U saleor -d saleor
+
+# Price sync (MTG market prices from Scryfall)
+docker compose --profile tools run --rm price-sync node dist/index.mjs seed   # Bootstrap initial prices
+docker compose --profile tools run --rm price-sync node dist/index.mjs full   # Full sync
+docker compose --profile tools run --rm price-sync node dist/index.mjs delta  # Delta sync
 ```
 
 ## Service URLs
@@ -67,6 +72,7 @@ storefront/src/           # Next.js customer-facing app
 saleor-apps/apps/         # Saleor apps (submodule)
   inventory-ops/          # Inventory management app
   buylist/                # Customer card buyback app
+  price-sync/             # Price sync worker (Scryfall → SellPriceSnapshot)
   stripe/                 # Stripe payment app
 scripts/                  # Custom scripts (MTG import, etc.)
 docs/                     # Reference documentation
@@ -85,8 +91,9 @@ Project-specific skills are available in `.claude/skills/`:
 | `mtg-catalog` | MTG card data queries |
 | `inventory-ops` | Inventory management app (POs, GRs, WAC, COGS) |
 | `buylist` | Customer card buyback app (quotes, pricing, BOH) |
+| `price-sync` | Price sync worker (Scryfall market prices) |
 
-**Note**: Inventory Ops and Buylist share a database for cross-app cost tracking. See `docs/INVENTORY_OPS_SETUP.md` for integration details.
+**Note**: Inventory Ops, Buylist, and Price-Sync share a database for cross-app cost/price tracking. See `docs/INVENTORY_OPS_SETUP.md` for integration details.
 
 ## References
 
