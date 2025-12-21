@@ -1,8 +1,3 @@
----
-paths:
-  - storefront/**
----
-
 # Storefront Critical Rules
 
 > **Full procedures**: See skill `storefront-dev` for builds, codegen, and development.
@@ -23,17 +18,9 @@ export const dynamic = "force-dynamic";
 ```
 Without this: `DYNAMIC_SERVER_USAGE` build errors.
 
-## Null-Safe Formatting
+## Common Crashes
 
-Always handle null currency:
-```typescript
-if (!currency) return "";
-```
-
-## Common Issues
-
-| Error | Cause | Fix |
-|-------|-------|-----|
-| "Something went wrong" | Null `discounted_price_amount` | Fix pricing in DB |
-| Images not loading | Missing remotePatterns | Add to `next.config.js` |
-| CORS errors | Docker networking | Set `extra_hosts: "localhost:host-gateway"` |
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| "Something went wrong" | Null `discounted_price_amount` | See database.md rule |
+| Currency format error | Null currency | Guard: `if (!currency) return "";` |
