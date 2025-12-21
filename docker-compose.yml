@@ -252,6 +252,27 @@ services:
       - SCRYFALL_API_BASE_URL=https://api.scryfall.com
       - SCRYFALL_RATE_LIMIT_MS=100
 
+  # Price Sync Worker - syncs MTG prices from Scryfall
+  price-sync:
+    build:
+      context: ./saleor-apps
+      dockerfile: apps/price-sync/Dockerfile
+    networks:
+      - saleor-backend-tier
+    depends_on:
+      - db
+      - inventory-ops-db
+    environment:
+      - DATABASE_URL=postgresql://inventory:inventory@inventory-ops-db:5432/inventory_ops
+      - SALEOR_DATABASE_URL=postgresql://saleor:saleor@db:5432/saleor
+      - INSTALLATION_ID=d57261e0-cc82-40b2-80ed-4871999c79ef
+      - SALEOR_CHANNEL_ID=webstore
+      - SCRYFALL_RATE_LIMIT_MS=100
+      - BATCH_SIZE=100
+      - LOG_LEVEL=info
+    profiles:
+      - tools
+
 volumes:
   saleor-db:
     driver: local
