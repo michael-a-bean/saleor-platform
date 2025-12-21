@@ -1,107 +1,80 @@
-# Saleor Platform - Claude Code Instructions
+# Saleor Hobby Gaming Platform
 
-## Project Overview
+## Project Purpose (WHY)
 
-Saleor e-commerce platform fork configured as an **MTG card marketplace** with 106k+ products.
+This repository is a Saleor Platform fork used to build a robust commerce stack for the **Hobby Gaming market** (MTG and similar secondary markets).
 
-- **Stack**: Django/GraphQL API + Next.js 15 storefront + React dashboard
-- **Database**: PostgreSQL 15 with Valkey cache
-- **Current state**: Fully functional with MTG card catalog imported
+**Core goals:**
+- E-commerce, POS, and internal ops on a single platform
+- Buylist system with accurate costing (WAC / COGS) for secondary-market inventory
+- Market-driven pricing and inventory workflows beyond standard Saleor use cases
 
-## Critical Rules
+Saleor is treated as a stable foundation, not something to rewrite.
 
-1. **Never commit to `main`** - It mirrors upstream `saleor/saleor-platform`
-2. **Work on `platform/main`** or `feature/*` branches only
-3. **Prefer extensions over modifications** - Use apps, webhooks, env vars
-4. **Always verify branch** before making changes: `git branch --show-current`
+## Project Overview (WHAT)
 
-## Common Commands
+- **Stack**: Django + GraphQL API, Next.js storefront, React dashboard
+- **Database**: PostgreSQL with Valkey cache
+- **Scale**: 100k+ MTG products imported
+- **Architecture**: Extend Saleor via apps, webhooks, workers, and configuration—not core modification
 
-```bash
-# Start all services
-docker compose up -d
+Key extensions live in `saleor-apps/apps/` and integrate tightly with pricing, inventory, and costing data.
 
-# View logs
-docker compose logs -f api
-docker compose logs -f storefront
+## Non-Negotiable Rules (ALWAYS APPLY)
 
-# Django management
-docker compose exec api python manage.py <command>
-docker compose exec api python manage.py update_search_indexes
+| Rule | Details |
+|------|---------|
+| **Never commit to `main`** | `main` mirrors upstream `saleor/saleor-platform` |
+| **Work on `platform/main` or `feature/*`** | These are the only branches for changes |
+| **Prefer extension over modification** | Use Saleor Apps, webhooks, workers, env configuration |
+| **Always verify the active branch** | `git branch --show-current` before any changes |
 
-# Rebuild storefront after code changes
-docker compose build storefront && docker compose up -d storefront
+These rules apply to every task.
 
-# Database access
-docker compose exec db psql -U saleor -d saleor
+## How Claude Should Work (HOW)
 
-# Price sync (MTG market prices from Scryfall)
-docker compose --profile tools run --rm price-sync node dist/index.mjs seed   # Bootstrap initial prices
-docker compose --profile tools run --rm price-sync node dist/index.mjs full   # Full sync
-docker compose --profile tools run --rm price-sync node dist/index.mjs delta  # Delta sync
-```
+You are expected to **do real work**, not just suggest changes.
 
-## Service URLs
+**Default behavior:**
+- Make changes incrementally
+- Ask before running destructive, long-running, or data-mutating operations
 
-| Service | URL |
-|---------|-----|
-| Storefront | http://localhost:3000 |
-| GraphQL API | http://localhost:8000/graphql/ |
-| Dashboard | http://localhost:9000 |
-| Inventory Ops | http://localhost:3002 (via Dashboard Apps) |
-| Buylist | http://localhost:3003 (via Dashboard Apps) |
-| Stripe App | http://localhost:3001 (via Dashboard Apps) |
-| Saleor MCP | http://localhost:6000 (AI assistant integration) |
-| Mailpit | http://localhost:8025 |
-| Jaeger | http://localhost:16686 |
+**Verification expectations** (as appropriate to the task):
+- API changes → GraphQL queries succeed
+- Storefront changes → Next.js builds and pages load
+- Data logic → Inspect via GraphQL or database queries
+- Workers → Logs indicate successful execution
 
-## Code Style
+If unsure, ask before acting rather than skipping verification.
 
-- **Python**: Follow existing Saleor patterns
-- **TypeScript**: Strict mode, use existing component patterns
-- **Commits**: Imperative mood with conventional prefixes (`feat:`, `fix:`, `docs:`, `chore:`)
+## Where to Find Operational Details
 
-## Key Directories
+This file stays intentionally lean. Detailed procedures live elsewhere and should be consulted only when relevant.
 
-```
-storefront/src/           # Next.js customer-facing app
-  app/[channel]/          # Channel-scoped pages
-  ui/components/          # React components
-  lib/                    # Utilities and helpers
-  graphql/                # GraphQL queries/fragments
-saleor-apps/apps/         # Saleor apps (submodule)
-  inventory-ops/          # Inventory management app
-  buylist/                # Customer card buyback app
-  price-sync/             # Price sync worker (Scryfall → SellPriceSnapshot)
-  stripe/                 # Stripe payment app
-scripts/                  # Custom scripts (MTG import, etc.)
-docs/                     # Reference documentation
-```
+### Commands & Operations
+- `.claude/skills/docker-ops` — Container management
+- `.claude/skills/storefront-dev` — Next.js builds and development
+- `.claude/skills/saleor-graphql` — GraphQL queries and API exploration
+- `.claude/skills/saleor-database` — PostgreSQL queries and data inspection
 
-## Skills
+### Domain-Specific Logic
+- `.claude/skills/inventory-ops` — Purchase orders, goods receipts, WAC, COGS
+- `.claude/skills/buylist` — Customer card buybacks, FOH/BOH workflow
+- `.claude/skills/price-sync` — Scryfall market price synchronization
+- `.claude/skills/mtg-catalog` — MTG card data and attributes
 
-Project-specific skills are available in `.claude/skills/`:
+### Architecture & Rules
+- `docs/reference/architecture.md` — Full platform architecture
+- `docs/reference/git-philosophy.md` — Detailed git workflow guide
+- `.claude/rules/` — Critical gotchas (database pricing, storefront builds)
 
-| Skill | Purpose |
-|-------|---------|
-| `saleor-graphql` | Execute GraphQL queries against the API |
-| `saleor-database` | PostgreSQL queries and data inspection |
-| `storefront-dev` | Next.js development and builds |
-| `docker-ops` | Container management |
-| `mtg-catalog` | MTG card data queries |
-| `inventory-ops` | Inventory management app (POs, GRs, WAC, COGS) |
-| `buylist` | Customer card buyback app (quotes, pricing, BOH) |
-| `price-sync` | Price sync worker (Scryfall market prices) |
+### Legacy Material
+- `docs/legacy/` — Historical context only; do not auto-apply
 
-**Note**: Inventory Ops, Buylist, and Price-Sync share a database for cross-app cost/price tracking. See `docs/INVENTORY_OPS_SETUP.md` for integration details.
+**Before starting work, decide which of these are relevant and read only those.**
 
-## References
+## Final Notes
 
-| Category | Location | Purpose |
-|----------|----------|---------|
-| **Active** | `docs/INVENTORY_OPS_SETUP.md` | Inventory Ops app setup |
-| **Architecture** | `docs/reference/architecture.md` | Full platform architecture |
-| **Git Philosophy** | `docs/reference/git-philosophy.md` | Detailed git workflow guide |
-| **Legacy** | `docs/legacy/` | One-time setup docs, historical analyses |
-| **Rules** | `.claude/rules/` | Critical gotchas (minimal) |
-| **Skills** | `.claude/skills/` | Detailed procedures (on-demand) |
+- Follow existing Saleor and project patterns rather than inventing new ones
+- Do not treat this file as a command reference or style guide
+- This file exists to orient you, not constrain you unnecessarily
