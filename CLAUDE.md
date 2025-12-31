@@ -54,6 +54,7 @@ This file stays intentionally lean. Detailed procedures live elsewhere and shoul
 ### Commands & Operations
 - `.claude/skills/docker-ops` — Container management
 - `.claude/skills/storefront-dev` — Next.js builds and development
+- `.claude/skills/storefront-branding` — WotC/MTG graphics and visual identity
 - `.claude/skills/saleor-graphql` — GraphQL queries and API exploration
 - `.claude/skills/saleor-database` — PostgreSQL queries and data inspection
 
