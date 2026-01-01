@@ -8,6 +8,7 @@ import {
 	getActiveFilterCount,
 	type MTGFilterState,
 	DEFAULT_FILTER_STATE,
+	URL_PARAMS,
 } from "@/lib/filters";
 
 export const useFilters = () => {
@@ -49,13 +50,18 @@ export const useFilters = () => {
 	);
 
 	const clearAllFilters = useCallback(() => {
-		const newParams = new URLSearchParams();
-		// Keep sort param if it exists
-		const sort = searchParams.get("sort");
-		if (sort) {
-			newParams.set("sort", sort);
-		}
-		router.push(`${pathname}?${newParams.toString()}`);
+		// Start with existing params and only remove filter-specific ones
+		const newParams = new URLSearchParams(searchParams.toString());
+
+		// Remove all filter params
+		Object.values(URL_PARAMS).forEach((param) => newParams.delete(param));
+
+		// Reset pagination
+		newParams.delete("cursor");
+		newParams.delete("direction");
+
+		const queryString = newParams.toString();
+		router.push(queryString ? `${pathname}?${queryString}` : pathname);
 	}, [pathname, router, searchParams]);
 
 	return {
