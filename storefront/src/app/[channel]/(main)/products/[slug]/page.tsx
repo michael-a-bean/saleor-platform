@@ -1,19 +1,19 @@
-import edjsHTML from "editorjs-html";
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { type ResolvingMetadata, type Metadata } from "next";
-import xss from "xss";
 import { invariant } from "ts-invariant";
 import { type WithContext, type Product } from "schema-dts";
-import { AddButton } from "./AddButton";
+import { AddToCartForm } from "./AddToCartForm";
 import { VariantSelector } from "@/ui/components/VariantSelector";
 import { ProductImageWrapper } from "@/ui/atoms/ProductImageWrapper";
+import { EssentialCardInfo } from "@/ui/components/EssentialCardInfo";
 import { MTGCardAttributes } from "@/ui/components/MTGCardAttributes";
 import { executeGraphQL } from "@/lib/graphql";
 import { formatMoney, formatMoneyRange } from "@/lib/utils";
-import { CheckoutAddLineDocument, ProductDetailsDocument, ProductListDocument } from "@/gql/graphql";
+import { CheckoutAddLineDocument, ProductDetailsDocument, ProductListDocument, OtherPrintingsDocument } from "@/gql/graphql";
 import * as Checkout from "@/lib/checkout";
 import { AvailabilityMessage } from "@/ui/components/AvailabilityMessage";
+import { OtherPrintings } from "@/ui/components/OtherPrintings";
 
 // Force dynamic rendering since this page uses notFound() and server actions
 export const dynamic = "force-dynamic";
@@ -78,8 +78,6 @@ export async function generateStaticParams({ params }: { params: { channel: stri
 	return paths;
 }
 
-const parser = edjsHTML();
-
 export default async function Page(props: {
 	params: Promise<{ slug: string; channel: string }>;
 	searchParams: Promise<{ variant?: string }>;
@@ -97,40 +95,75 @@ export default async function Page(props: {
 		notFound();
 	}
 
+	// Fetch other printings (same card name, different sets)
+	const { products: otherPrintingsResult } = await executeGraphQL(OtherPrintingsDocument, {
+		variables: {
+			search: product.name,
+			channel: params.channel,
+			first: 50, // Reasonable limit for printings
+		},
+		revalidate: 60,
+	});
+
+	// Filter to exact name matches only
+	const otherPrintings = otherPrintingsResult?.edges
+		.map((e) => e.node)
+		.filter((p) => p.name === product.name) ?? [];
+
 	// Prefer media URL (external images) over thumbnail URL (Saleor-generated)
 	const firstImage = product.media?.[0] || product.thumbnail;
-	const description = product?.description ? parser.parse(JSON.parse(product?.description)) : null;
 
 	const variants = product.variants;
 	const selectedVariantID = searchParams.variant;
 	const selectedVariant = variants?.find(({ id }) => id === selectedVariantID);
 
-	async function addItem() {
+	async function addItem(quantity: number): Promise<{ success: boolean; error?: string }> {
 		"use server";
 
 		// Validate stock is available before adding to cart
-		if (!selectedVariantID || !selectedVariant?.quantityAvailable) {
-			return;
+		if (!selectedVariantID) {
+			return { success: false, error: "Please select a variant" };
 		}
 
-		const checkout = await Checkout.findOrCreate({
-			checkoutId: await Checkout.getIdFromCookies(params.channel),
-			channel: params.channel,
-		});
-		invariant(checkout, "This should never happen");
+		if (!selectedVariant?.quantityAvailable) {
+			return { success: false, error: "This item is out of stock" };
+		}
 
-		await Checkout.saveIdToCookie(params.channel, checkout.id);
+		if (quantity > (selectedVariant?.quantityAvailable || 0)) {
+			return { success: false, error: `Only ${selectedVariant?.quantityAvailable} available` };
+		}
 
-		// TODO: error handling
-		await executeGraphQL(CheckoutAddLineDocument, {
-			variables: {
-				id: checkout.id,
-				productVariantId: decodeURIComponent(selectedVariantID),
-			},
-			cache: "no-cache",
-		});
+		try {
+			const checkout = await Checkout.findOrCreate({
+				checkoutId: await Checkout.getIdFromCookies(params.channel),
+				channel: params.channel,
+			});
+			invariant(checkout, "This should never happen");
 
-		revalidatePath("/cart");
+			await Checkout.saveIdToCookie(params.channel, checkout.id);
+
+			const result = await executeGraphQL(CheckoutAddLineDocument, {
+				variables: {
+					id: checkout.id,
+					productVariantId: decodeURIComponent(selectedVariantID),
+					quantity,
+				} as { id: string; productVariantId: string; quantity?: number },
+				cache: "no-cache",
+			});
+
+			// Check for GraphQL errors
+			const errors = result.checkoutLinesAdd?.errors;
+			if (errors && errors.length > 0) {
+				const errorMessage = errors.map((e) => e.message).join(", ");
+				return { success: false, error: errorMessage || "Failed to add item to cart" };
+			}
+
+			revalidatePath("/cart");
+			return { success: true };
+		} catch (error) {
+			console.error("Add to cart error:", error);
+			return { success: false, error: "Failed to add item to cart. Please try again." };
+		}
 	}
 
 	const isAvailable = variants?.some((variant) => variant.quantityAvailable) ?? false;
@@ -181,15 +214,16 @@ export default async function Page(props: {
 	};
 
 	return (
-		<section className="mx-auto grid max-w-7xl p-8">
+		<section className="mx-auto max-w-6xl px-6 py-12 lg:py-16">
 			<script
 				type="application/ld+json"
 				dangerouslySetInnerHTML={{
 					__html: JSON.stringify(productJsonLd),
 				}}
 			/>
-			<form className="grid gap-2 sm:grid-cols-2 lg:grid-cols-8" action={addItem}>
-				<div className="md:col-span-1 lg:col-span-5">
+			<div className="lg:flex lg:gap-12">
+				{/* Product Image */}
+				<div className="lg:w-[45%] lg:flex-shrink-0">
 					{firstImage && (
 						<ProductImageWrapper
 							priority={true}
@@ -200,38 +234,58 @@ export default async function Page(props: {
 						/>
 					)}
 				</div>
-				<div className="flex flex-col pt-6 sm:col-span-1 sm:px-6 sm:pt-0 lg:col-span-3 lg:pt-16">
-					<div>
-						<h1 className="mb-4 flex-auto text-3xl font-medium tracking-tight text-neutral-900">
-							{product?.name}
-						</h1>
-						<p className="mb-8 text-sm " data-testid="ProductElement_Price">
+
+				{/* Product Info */}
+				<div className="mt-8 lg:mt-0 lg:flex-1">
+					<h1 className="text-2xl font-semibold tracking-tight text-neutral-900 lg:text-3xl">
+						{product?.name}
+					</h1>
+
+					{/* Essential card info strip */}
+					{product.attributes && <EssentialCardInfo attributes={product.attributes} />}
+
+					{/* Variants */}
+					{variants && (
+						<VariantSelector
+							selectedVariant={selectedVariant}
+							variants={variants}
+							product={product}
+							channel={params.channel}
+						/>
+					)}
+
+					{/* Stock availability */}
+					<AvailabilityMessage isAvailable={isAvailable} quantity={selectedVariant?.quantityAvailable} />
+
+					{/* Price + Quantity + Add to Cart - inline */}
+					<div className="mt-6 flex flex-wrap items-center gap-4">
+						<p className="text-2xl font-semibold text-neutral-900" data-testid="ProductElement_Price">
 							{price}
 						</p>
-
-						{variants && (
-							<VariantSelector
-								selectedVariant={selectedVariant}
-								variants={variants}
-								product={product}
-								channel={params.channel}
-							/>
-						)}
-						<AvailabilityMessage isAvailable={isAvailable} quantity={selectedVariant?.quantityAvailable} />
-						<div className="mt-8">
-							<AddButton disabled={!selectedVariantID || !selectedVariant?.quantityAvailable} />
-						</div>
-						{description && (
-							<div className="mt-8 space-y-6 text-sm text-neutral-500">
-								{description.map((content) => (
-									<div key={content} dangerouslySetInnerHTML={{ __html: xss(content) }} />
-								))}
-							</div>
-						)}
-						{product.attributes && <MTGCardAttributes attributes={product.attributes} />}
+						<AddToCartForm
+							addItemAction={addItem}
+							disabled={!selectedVariantID || !selectedVariant?.quantityAvailable}
+							maxQuantity={selectedVariant?.quantityAvailable ?? undefined}
+						/>
 					</div>
+
+					{/* Other printings of this card */}
+					{otherPrintings.length > 1 && (
+						<OtherPrintings
+							printings={otherPrintings}
+							currentProductId={product.id}
+							channel={params.channel}
+						/>
+					)}
 				</div>
-			</form>
+			</div>
+
+			{/* More Info section */}
+			{product.attributes && (
+				<div className="mt-12 border-t border-neutral-100 pt-8">
+					<MTGCardAttributes attributes={product.attributes} />
+				</div>
+			)}
 		</section>
 	);
 }

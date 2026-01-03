@@ -1,0 +1,38 @@
+query OtherPrintings($search: String!, $channel: String!, $first: Int!) {
+	products(
+		first: $first
+		channel: $channel
+		filter: { search: $search }
+		sortBy: { field: PRICE, direction: ASC }
+	) {
+		edges {
+			node {
+				id
+				name
+				slug
+				pricing {
+					priceRange {
+						start {
+							gross {
+								amount
+								currency
+							}
+						}
+					}
+				}
+				variants {
+					quantityAvailable
+				}
+				attributes {
+					attribute {
+						slug
+					}
+					values {
+						slug
+						name
+					}
+				}
+			}
+		}
+	}
+}

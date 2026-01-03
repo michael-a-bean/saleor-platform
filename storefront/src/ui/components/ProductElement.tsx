@@ -1,12 +1,13 @@
 import { LinkWithChannel } from "../atoms/LinkWithChannel";
 import { ProductImageWrapper } from "@/ui/atoms/ProductImageWrapper";
+import { SetIcon } from "./SetIcon";
 
 import type { ProductListItemFragment } from "@/gql/graphql";
 import { formatMoneyRange } from "@/lib/utils";
 
-function getSetName(product: ProductListItemFragment): string | null {
-	const setAttr = product.attributes?.find((attr) => attr.attribute.slug === "mtg-set-name");
-	return setAttr?.values[0]?.name || null;
+function getAttributeValue(product: ProductListItemFragment, slug: string): string | null {
+	const attr = product.attributes?.find((a) => a.attribute.slug === slug);
+	return attr?.values[0]?.name || attr?.values[0]?.slug || null;
 }
 
 function getTotalQuantity(product: ProductListItemFragment): number {
@@ -27,7 +28,9 @@ export function ProductElement({
 	const imageUrl = product?.media?.[0]?.url || product?.thumbnail?.url;
 	const imageAlt = product?.media?.[0]?.alt || product?.thumbnail?.alt || "";
 
-	const setName = getSetName(product);
+	const setCode = getAttributeValue(product, "mtg-set-code");
+	const setName = getAttributeValue(product, "mtg-set-name");
+	const rarity = getAttributeValue(product, "mtg-rarity");
 	const quantity = getTotalQuantity(product);
 	const isOutOfStock = quantity === 0;
 
@@ -57,7 +60,8 @@ export function ProductElement({
 							</p>
 						</div>
 						<div className="mt-1 flex items-center justify-between text-xs text-neutral-500">
-							<span className="truncate" title={setName || undefined}>
+							<span className="flex items-center gap-1 truncate" title={setName || undefined}>
+								{setCode && <SetIcon setCode={setCode} rarity={rarity || undefined} size="sm" />}
 								{setName || "Unknown Set"}
 							</span>
 							<span className={isOutOfStock ? "text-red-600" : "text-green-600"}>
