@@ -67,9 +67,9 @@ export function VariantSelector({
 
 	return (
 		sortedVariants.length > 1 && (
-			<fieldset className="my-4" role="radiogroup" data-testid="VariantSelector">
-				<legend className="sr-only">Condition</legend>
-				<div className="flex flex-wrap gap-3">
+			<fieldset className="mt-6" role="radiogroup" data-testid="VariantSelector">
+				<legend className="mb-3 text-sm font-medium text-neutral-700">Condition</legend>
+				<div className="flex flex-wrap gap-2">
 					{sortedVariants.map((variant) => {
 						const isDisabled = !variant.quantityAvailable;
 						const isCurrentVariant = selectedVariant?.id === variant.id;
@@ -83,11 +83,12 @@ export function VariantSelector({
 									isDisabled ? "#" : getHrefForVariant({ productSlug: product.slug, variantId: variant.id })
 								}
 								className={clsx(
+									"relative flex min-w-[5ch] items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap rounded-lg border px-4 py-2.5 text-center text-sm font-medium transition-all duration-150",
 									isCurrentVariant
-										? "border-transparent bg-neutral-900 text-white hover:bg-neutral-800"
-										: "border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-100",
-									"relative flex min-w-[5ch] items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap rounded border p-3 text-center text-sm font-semibold focus-within:outline focus-within:outline-2 aria-disabled:cursor-not-allowed aria-disabled:bg-neutral-100 aria-disabled:text-neutral-800 aria-disabled:opacity-50",
-									isDisabled && "pointer-events-none",
+										? "border-neutral-900 bg-neutral-50 text-neutral-900 ring-2 ring-neutral-900 ring-offset-1"
+										: "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50",
+									"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2",
+									isDisabled && "pointer-events-none cursor-not-allowed border-neutral-100 bg-neutral-50 text-neutral-400 opacity-60",
 								)}
 								role="radio"
 								tabIndex={isDisabled ? -1 : undefined}

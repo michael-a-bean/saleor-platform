@@ -1,0 +1,14 @@
+query RelatedProducts($channel: String!, $categoryId: ID!, $first: Int!) {
+	products(
+		first: $first
+		channel: $channel
+		filter: { categories: [$categoryId] }
+		sortBy: { field: RATING, direction: DESC }
+	) {
+		edges {
+			node {
+				...ProductListItem
+			}
+		}
+	}
+}

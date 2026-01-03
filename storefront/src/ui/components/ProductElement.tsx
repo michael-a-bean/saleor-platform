@@ -59,12 +59,12 @@ export function ProductElement({
 								})}
 							</p>
 						</div>
-						<div className="mt-1 flex items-center justify-between text-xs text-neutral-500">
-							<span className="flex items-center gap-1 truncate" title={setName || undefined}>
+						<div className="mt-1 flex items-center justify-between gap-2 text-xs text-neutral-500">
+							<span className="flex min-w-0 items-center gap-1" title={setName || undefined}>
 								{setCode && <SetIcon setCode={setCode} rarity={rarity || undefined} size="sm" />}
-								{setName || "Unknown Set"}
+								<span className="truncate">{setName || "Unknown Set"}</span>
 							</span>
-							<span className={isOutOfStock ? "text-red-600" : "text-green-600"}>
+							<span className={`flex-shrink-0 ${isOutOfStock ? "text-red-600" : "text-green-600"}`}>
 								{formatQuantity(quantity)}
 							</span>
 						</div>
