@@ -178,8 +178,10 @@ export default async function Page(props: {
 
 			revalidatePath("/cart");
 			return { success: true };
-		} catch {
-			return { success: false, error: "Failed to add item to cart. Please try again." };
+		} catch (e) {
+			console.error("[AddToCart Error]", e);
+			const message = e instanceof Error ? e.message : "Unknown error";
+			return { success: false, error: `Failed to add item to cart: ${message}` };
 		}
 	}
 

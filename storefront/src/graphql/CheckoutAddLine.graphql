@@ -1,4 +1,4 @@
-mutation CheckoutAddLine($id: ID!, $productVariantId: ID!, $quantity: Int! = 1) {
+mutation CheckoutAddLine($id: ID!, $productVariantId: ID!, $quantity: Int = 1) {
 	checkoutLinesAdd(id: $id, lines: [{ quantity: $quantity, variantId: $productVariantId }]) {
 		checkout {
 			id

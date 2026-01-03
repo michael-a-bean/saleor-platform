@@ -20,6 +20,8 @@ export async function executeGraphQL<Result, Variables>(
 	} & (Variables extends Record<string, never> ? { variables?: never } : { variables: Variables }),
 ): Promise<Result> {
 	invariant(process.env.NEXT_PUBLIC_SALEOR_API_URL, "Missing NEXT_PUBLIC_SALEOR_API_URL env variable");
+	// Use server-side URL for server actions (Docker network), fallback to public URL
+	const apiUrl = process.env.SALEOR_API_URL || process.env.NEXT_PUBLIC_SALEOR_API_URL;
 	const { variables, headers, cache, revalidate, withAuth = true } = options;
 
 	const input = {
@@ -37,8 +39,8 @@ export async function executeGraphQL<Result, Variables>(
 	};
 
 	const response = withAuth
-		? await (await getServerAuthClient()).fetchWithAuth(process.env.NEXT_PUBLIC_SALEOR_API_URL, input)
-		: await fetch(process.env.NEXT_PUBLIC_SALEOR_API_URL, input);
+		? await (await getServerAuthClient()).fetchWithAuth(apiUrl, input)
+		: await fetch(apiUrl, input);
 
 	if (!response.ok) {
 		const body = await (async () => {

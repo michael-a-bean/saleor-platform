@@ -118,7 +118,10 @@ services:
     depends_on:
       - api
     environment:
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
       - NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/
+      - SALEOR_API_URL=http://api:8000/graphql/
       - NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
       - NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
 
