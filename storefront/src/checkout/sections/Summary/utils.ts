@@ -10,6 +10,14 @@ export const getThumbnailFromLine = (line: CheckoutLineFragment) =>
 	line.variant.media?.find(({ type }) => type === "IMAGE") ||
 	line.variant.product.media?.find(({ type }) => type === "IMAGE");
 
+export const getThumbnailFromOrderLine = (line: OrderLineFragment) => {
+	// For external images (like Scryfall), the thumbnail endpoint returns 404
+	// so we prefer the media URL directly over the thumbnail URL
+	const variantMedia = line.variant?.media?.find(({ type }) => type === "IMAGE");
+	const productMedia = line.variant?.product?.media?.find(({ type }) => type === "IMAGE");
+	return variantMedia || productMedia || line.thumbnail;
+};
+
 export const getSummaryLineProps = (line: OrderLineFragment | CheckoutLineFragment) =>
 	isCheckoutLine(line)
 		? {
@@ -20,7 +28,7 @@ export const getSummaryLineProps = (line: OrderLineFragment | CheckoutLineFragme
 		: {
 				variantName: line.variantName,
 				productName: line.productName,
-				productImage: line.thumbnail,
+				productImage: getThumbnailFromOrderLine(line),
 		  };
 
 export const useSummaryLineLineAttributesText = (line: CheckoutLineFragment | OrderLineFragment): string => {

@@ -59,16 +59,18 @@ export const OrderListItem = ({ order }: Props) => {
 									}
 
 									const product = item.variant.product;
+									const imageUrl = product.media?.[0]?.url || product.thumbnail?.url;
+									const imageAlt = product.media?.[0]?.alt || product.thumbnail?.alt || "";
 
 									return (
 										<tr key={product.id}>
 											<td className="py-6 pr-6 md:w-[60%] lg:w-[70%]">
 												<div className="flex flex-row items-center">
-													{product.thumbnail && (
+													{imageUrl && (
 														<div className="mr-3 aspect-square h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border bg-neutral-50 md:mr-6 md:h-24 md:w-24">
 															<Image
-																src={product.thumbnail.url}
-																alt={product.thumbnail.alt ?? ""}
+																src={imageUrl}
+																alt={imageAlt}
 																width={200}
 																height={200}
 																className="h-full w-full object-contain object-center"

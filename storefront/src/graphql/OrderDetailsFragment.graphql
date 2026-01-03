@@ -21,6 +21,10 @@ fragment OrderDetails on Order {
 					url
 					alt
 				}
+				media {
+					url
+					alt
+				}
 				category {
 					id
 					name

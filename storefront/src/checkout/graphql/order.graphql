@@ -18,6 +18,18 @@ fragment OrderLineFragment on OrderLine {
 				}
 			}
 		}
+		product {
+			media {
+				url
+				alt
+				type
+			}
+		}
+		media {
+			url
+			alt
+			type
+		}
 	}
 	totalPrice {
 		gross {

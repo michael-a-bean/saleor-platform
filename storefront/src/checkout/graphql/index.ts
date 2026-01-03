@@ -27968,6 +27968,21 @@ export type OrderLineFragment = {
 				translation?: { __typename?: "AttributeValueTranslation"; name: string } | null;
 			}>;
 		}>;
+		product?: {
+			__typename?: "Product";
+			media?: Array<{
+				__typename?: "ProductMedia";
+				url: string;
+				alt: string;
+				type: ProductMediaType;
+			}> | null;
+		} | null;
+		media?: Array<{
+			__typename?: "ProductMedia";
+			url: string;
+			alt: string;
+			type: ProductMediaType;
+		}> | null;
 	} | null;
 	totalPrice: {
 		__typename?: "TaxedMoney";
@@ -28921,6 +28936,18 @@ export const OrderLineFragmentDoc = gql`
 						name
 					}
 				}
+			}
+			product {
+				media {
+					url
+					alt
+					type
+				}
+			}
+			media {
+				url
+				alt
+				type
 			}
 		}
 		totalPrice {
