@@ -68,8 +68,7 @@ export const LegacyDummyComponent = () => {
 					showCustomErrors([{ message: error.message }]);
 				});
 			}
-		} catch (err) {
-			console.error("Payment error:", err);
+		} catch {
 			showCustomErrors([{ message: "An unexpected error occurred" }]);
 		}
 	};

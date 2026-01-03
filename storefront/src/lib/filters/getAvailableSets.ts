@@ -79,7 +79,6 @@ export async function getAvailableSetsForSearch(
 		});
 
 		if (!response.ok) {
-			console.error("Failed to fetch sets:", response.statusText);
 			return [];
 		}
 
@@ -111,8 +110,7 @@ export async function getAvailableSetsForSearch(
 				value: name,
 				label: name,
 			}));
-	} catch (error) {
-		console.error("Error fetching sets:", error);
+	} catch {
 		return [];
 	}
 }

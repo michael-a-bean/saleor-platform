@@ -30,9 +30,9 @@ export const DummyComponent = () => {
 					}
 				},
 			},
-		}).catch((err) => {
-			console.error("There was a problem with Dummy Payment Gateway:", err);
-		}).then((_) => {
+		}).catch(() => {
+			showCustomErrors([{ message: "There was a problem with the payment gateway" }]);
+		}).then(() => {
 			return onCheckoutComplete()
 		}).then((res) => {
 			if(res?.apiErrors){

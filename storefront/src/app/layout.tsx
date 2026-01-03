@@ -9,9 +9,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
 	title: "Saleor Storefront example",
 	description: "Starter pack for building performant e-commerce experiences with Saleor.",
-	metadataBase: process.env.NEXT_PUBLIC_STOREFRONT_URL
-		? new URL(process.env.NEXT_PUBLIC_STOREFRONT_URL)
-		: undefined,
+	// Always provide a metadataBase to avoid warnings about OG/Twitter images
+	// Falls back to localhost for development; should always be set in production via env
+	metadataBase: new URL(process.env.NEXT_PUBLIC_STOREFRONT_URL || "http://localhost:3000"),
 };
 
 export default function RootLayout(props: { children: ReactNode }) {

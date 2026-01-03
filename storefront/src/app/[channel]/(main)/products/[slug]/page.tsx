@@ -178,8 +178,7 @@ export default async function Page(props: {
 
 			revalidatePath("/cart");
 			return { success: true };
-		} catch (error) {
-			console.error("Add to cart error:", error);
+		} catch {
 			return { success: false, error: "Failed to add item to cart. Please try again." };
 		}
 	}

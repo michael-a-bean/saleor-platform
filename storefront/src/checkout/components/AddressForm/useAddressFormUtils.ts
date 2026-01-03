@@ -94,7 +94,7 @@ export const useAddressFormUtils = (countryCode: CountryCode = defaultCountry) =
 				localizedAddressFieldMessages[camelCase(localizedField) as LocalizedAddressFieldLabel];
 			return translatedLabel;
 		} catch (e) {
-			console.warn(`Missing translation: ${localizedField}`);
+			// Missing translation for localized field
 			return addressFieldMessages[camelCase(field) as AddressFieldLabel];
 		}
 	}, []);
