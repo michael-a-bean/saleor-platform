@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
+import { useParams } from "next/navigation";
 import { Dialog, Transition } from "@headlessui/react";
 import { X, SlidersHorizontal } from "lucide-react";
 import { FilterSection } from "./FilterSection";
@@ -13,6 +14,7 @@ import { useMobileFilters } from "./useMobileFilters";
 import { RARITY_OPTIONS, CARD_TYPE_OPTIONS, COLOR_IDENTITY_OPTIONS } from "@/lib/filters";
 
 export const MobileFilterModal = () => {
+	const params = useParams<{ channel: string }>();
 	const { isOpen, openFilters, closeFilters } = useMobileFilters();
 	const { filters, updateFilter, clearAllFilters, activeCount } = useFilters();
 
@@ -97,6 +99,7 @@ export const MobileFilterModal = () => {
 									<SetFilterDropdown
 										value={filters.setName}
 										onChange={(v) => updateFilter("setName", v)}
+										channel={params.channel}
 									/>
 								</FilterSection>
 

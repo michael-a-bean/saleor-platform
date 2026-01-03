@@ -20,6 +20,15 @@ export const SummaryItemMoneyInfo: FC<SummaryItemMoneyInfoProps> = ({
 	const piecePrice = unitPrice.gross;
 	const onSale = undiscountedUnitPrice.amount !== unitPrice.gross.amount;
 
+	// Guard against missing price data
+	if (!piecePrice?.currency) {
+		return (
+			<div className="flex flex-col items-end justify-end">
+				<span className="text-sm text-neutral-500">Price unavailable</span>
+			</div>
+		);
+	}
+
 	return (
 		<div className="flex flex-col items-end justify-end">
 			<div className="flex flex-row flex-wrap justify-end gap-x-2">
@@ -36,8 +45,8 @@ export const SummaryItemMoneyInfo: FC<SummaryItemMoneyInfoProps> = ({
 				<Money
 					ariaLabel="total price"
 					money={{
-						currency: piecePrice?.currency,
-						amount: (piecePrice?.amount || 0) * quantity,
+						currency: piecePrice.currency,
+						amount: piecePrice.amount * quantity,
 					}}
 					className={clsx({
 						"!text-text-error": onSale,

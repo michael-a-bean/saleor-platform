@@ -10,10 +10,11 @@ import { EssentialCardInfo } from "@/ui/components/EssentialCardInfo";
 import { MTGCardAttributes } from "@/ui/components/MTGCardAttributes";
 import { executeGraphQL } from "@/lib/graphql";
 import { formatMoney, formatMoneyRange } from "@/lib/utils";
-import { CheckoutAddLineDocument, ProductDetailsDocument, ProductListDocument, OtherPrintingsDocument } from "@/gql/graphql";
+import { CheckoutAddLineDocument, ProductDetailsDocument, ProductListDocument, OtherPrintingsDocument, RelatedProductsDocument } from "@/gql/graphql";
 import * as Checkout from "@/lib/checkout";
 import { AvailabilityMessage } from "@/ui/components/AvailabilityMessage";
 import { OtherPrintings } from "@/ui/components/OtherPrintings";
+import { RelatedProductsCarousel } from "@/ui/components/RelatedProductsCarousel";
 
 // Force dynamic rendering since this page uses notFound() and server actions
 export const dynamic = "force-dynamic";
@@ -109,6 +110,23 @@ export default async function Page(props: {
 	const otherPrintings = otherPrintingsResult?.edges
 		.map((e) => e.node)
 		.filter((p) => p.name === product.name) ?? [];
+
+	// Fetch related products from the same category
+	const relatedProducts = product.category?.id
+		? await executeGraphQL(RelatedProductsDocument, {
+				variables: {
+					channel: params.channel,
+					categoryId: product.category.id,
+					first: 12,
+				},
+				revalidate: 60,
+			})
+		: null;
+
+	// Filter out the current product from related products
+	const filteredRelatedProducts = relatedProducts?.products?.edges
+		.map((e) => e.node)
+		.filter((p) => p.id !== product.id) ?? [];
 
 	// Prefer media URL (external images) over thumbnail URL (Saleor-generated)
 	const firstImage = product.media?.[0] || product.thumbnail;
@@ -285,6 +303,14 @@ export default async function Page(props: {
 				<div className="mt-12 border-t border-neutral-100 pt-8">
 					<MTGCardAttributes attributes={product.attributes} />
 				</div>
+			)}
+
+			{/* Related Products Carousel */}
+			{filteredRelatedProducts.length > 0 && (
+				<RelatedProductsCarousel
+					products={filteredRelatedProducts}
+					title={product.category?.name ? `More from ${product.category.name}` : "Related Products"}
+				/>
 			)}
 		</section>
 	);

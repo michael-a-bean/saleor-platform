@@ -22,10 +22,13 @@ query ProductDetails($slug: String!, $channel: String!) {
 			attribute {
 				slug
 				name
+				inputType
 			}
 			values {
 				slug
 				name
+				richText
+				plainText
 			}
 		}
 		variants {

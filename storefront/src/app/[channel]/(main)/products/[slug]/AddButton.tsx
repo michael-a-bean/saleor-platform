@@ -12,7 +12,7 @@ export function AddButton({ disabled }: { disabled?: boolean }) {
 			disabled={isButtonDisabled}
 			aria-disabled={isButtonDisabled}
 			aria-busy={pending}
-			className="h-12 items-center rounded-md bg-neutral-900 px-6 py-3 text-base font-medium leading-6 text-white shadow hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70 hover:disabled:bg-neutral-700"
+			className="h-12 items-center rounded-lg bg-neutral-900 px-6 py-3 text-sm font-semibold text-white transition-colors duration-150 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
 		>
 			{pending ? (
 				<div className="inline-flex items-center">

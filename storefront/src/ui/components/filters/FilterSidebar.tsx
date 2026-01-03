@@ -1,5 +1,6 @@
 "use client";
 
+import { useParams } from "next/navigation";
 import { FilterSection } from "./FilterSection";
 import { MultiSelectFilter } from "./MultiSelectFilter";
 import { RangeFilter } from "./RangeFilter";
@@ -9,6 +10,7 @@ import { useFilters } from "./useFilters";
 import { RARITY_OPTIONS, CARD_TYPE_OPTIONS, COLOR_IDENTITY_OPTIONS } from "@/lib/filters";
 
 export const FilterSidebar = () => {
+	const params = useParams<{ channel: string }>();
 	const { filters, updateFilter, clearAllFilters, activeCount } = useFilters();
 
 	return (
@@ -54,6 +56,7 @@ export const FilterSidebar = () => {
 				<SetFilterDropdown
 					value={filters.setName}
 					onChange={(v) => updateFilter("setName", v)}
+					channel={params.channel}
 				/>
 			</FilterSection>
 
