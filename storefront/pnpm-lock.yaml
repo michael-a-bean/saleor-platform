@@ -11,12 +11,6 @@ importers:
 
   .:
     dependencies:
-      '@adyen/adyen-web':
-        specifier: 5.53.3
-        version: 5.53.3
-      '@adyen/api-library':
-        specifier: 15.0.0-beta
-        version: 15.0.0-beta
       '@headlessui/react':
         specifier: 1.7.18
         version: 1.7.18(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
@@ -193,13 +187,6 @@ packages:
     peerDependenciesMeta:
       graphql:
         optional: true
-
-  '@adyen/adyen-web@5.53.3':
-    resolution: {integrity: sha512-53nRJl2qxrpTr4YKa1D84GomXCDN6V7F9UKrlMUqyH7DEOVtBDxb8vJ85l/C76a0UTO3aPYJ+w+BdTHSJbhwGw==}
-
-  '@adyen/api-library@15.0.0-beta':
-    resolution: {integrity: sha512-FVP5n20sFRD6nmpeUtFlP4J9ZiLU+nBGtx4Mk1VMz3ixQh9N+GxWnsg7wBlGSzTvAbQ7sjnHnBtV1fuTQOryqw==}
-    engines: {node: '>=18'}
 
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
@@ -487,10 +474,6 @@ packages:
     engines: {node: '>=6.9.0'}
     peerDependencies:
       '@babel/core': ^7.0.0-0
-
-  '@babel/runtime-corejs3@7.24.8':
-    resolution: {integrity: sha512-DXG/BhegtMHhnN7YPIvxWd303/9aXvYFD1TjNL3CD6tUrhI2LVsg3Lck0aql5TRH29n4sj3emcROypkZVUfSuA==}
-    engines: {node: '>=6.9.0'}
 
   '@babel/runtime@7.24.8':
     resolution: {integrity: sha512-5F7SDGs1T72ZczbRwbGO9lQi0NLjQxzl6i4lJxLxfW9U5UluCSyEJeniWvnhl3/euNiqQVbo8zruhsDfid0esA==}
@@ -1292,14 +1275,8 @@ packages:
   '@tanstack/virtual-core@3.8.3':
     resolution: {integrity: sha512-vd2A2TnM5lbnWZnHi9B+L2gPtkSeOtJOAw358JqokIH1+v2J7vUAzFVPwB/wrye12RFOurffXu33plm4uQ+JBQ==}
 
-  '@types/applepayjs@3.0.4':
-    resolution: {integrity: sha512-RqaVZWy1Kj4e1PoUoOI8uA+4UuuLpicQFxfU9Y/xWJFZFT6mFB4PiiY911iDxFk7pdvaj5HKH7VsWRisRca1Rg==}
-
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
-
-  '@types/googlepay@0.7.6':
-    resolution: {integrity: sha512-5003wG+qvf4Ktf1hC9IJuRakNzQov00+Xf09pAWGJLpdOjUrq0SSLCpXX7pwSeTG9r5hrdzq1iFyZcW7WVyr4g==}
 
   '@types/hoist-non-react-statics@3.3.5':
     resolution: {integrity: sha512-SbcrWzkKBw2cdwRTwQAswfpB9g9LJWfjtUeW/jvNwbhC8cpmmNYVePa+ncbUe0rGTQ7G3Ff6mYUN2VMfLVr+Sg==}
@@ -1318,9 +1295,6 @@ packages:
 
   '@types/lodash@4.17.7':
     resolution: {integrity: sha512-8wTvZawATi/lsmNu10/j2hk1KEP0IvjubqPE3cu1Xz7xfXXt5oCq3SNUz4fMIP4XGF9Ky+Ue2tBA3hcS7LSBlA==}
-
-  '@types/node@14.18.61':
-    resolution: {integrity: sha512-1mFT4DqS4/s9tlZbdkwEB/EnSykA9MDeDLIk3FHApGvIMGY//qgstB2gu9GKGESWyW/qiRUO+jhlLJ9bBJ8j+Q==}
 
   '@types/node@20.10.0':
     resolution: {integrity: sha512-D0WfRmU9TQ8I9PFx9Yc+EBHw+vSpIub4IDvQivcp26PtPrdMGAq5SDcpXEo/epqa/DXotVpekHiLNTg3iaKXBQ==}
@@ -1431,10 +1405,6 @@ packages:
     resolution: {integrity: sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-
-  agent-base@6.0.2:
-    resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
-    engines: {node: '>= 6.0.0'}
 
   agent-base@7.1.1:
     resolution: {integrity: sha512-H0TSyFNDMomMNJQBn8wFV5YC/2eJ+VXECwOadZJT554xP6cODZHPX3H9QMQECxvrgiSOP1pHjy1sMWQVYJOUOA==}
@@ -1669,9 +1639,6 @@ packages:
     resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
     engines: {node: '>= 8.10.0'}
 
-  classnames@2.5.1:
-    resolution: {integrity: sha512-saHYOzhIQs6wy2sVxTM6bUDsQO4F50V9RQ22qBpEdCW+I+/Wmke2HOl6lS6dTpdxVhb88/I6+Hs+438c3lfUow==}
-
   clean-stack@2.2.0:
     resolution: {integrity: sha512-4diC9HaTE+KRAMWhDhrGOECgWZxoevMc5TlkObMqNSsVU62PYzXZ/SMTjzyGAFF1YusgxGcSWTEXBhp0CPwQ1A==}
     engines: {node: '>=6'}
@@ -1772,9 +1739,6 @@ packages:
   cookie@1.0.2:
     resolution: {integrity: sha512-9Kr/j4O16ISv8zBBhJoi4bXOYNTkFLOqSL3UDB0njXxCXNezjeyVrJyGOWtgfs/q2km1gwBcfH8q1yEGoMYunA==}
     engines: {node: '>=18'}
-
-  core-js-pure@3.37.1:
-    resolution: {integrity: sha512-J/r5JTHSmzTxbiYYrzXg9w1VpqrYt+gexenBE9pugeyhwPZTAEJddyiReJWsLO6uNQ8xJZFbod6XC7KKwatCiA==}
 
   cosmiconfig@8.3.6:
     resolution: {integrity: sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA==}
@@ -2388,10 +2352,6 @@ packages:
   http-proxy-agent@7.0.2:
     resolution: {integrity: sha512-T1gkAiYYDWYx3V5Bmyu7HcfcvL7mUrTWiM6yOfa3PIphViJ/gFPbvidQ+veqSOHci/PxBcDabeUNCzpOODJZig==}
     engines: {node: '>= 14'}
-
-  https-proxy-agent@5.0.1:
-    resolution: {integrity: sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA==}
-    engines: {node: '>= 6'}
 
   https-proxy-agent@7.0.5:
     resolution: {integrity: sha512-1e4Wqeblerz+tMKPIq2EMGiiWW1dIjZOksyHWSUm1rmuvw/how9hBHZ38lAGj5ID4Ik6EdkOw7NmWPy6LAwalw==}
@@ -3155,9 +3115,6 @@ packages:
   postcss@8.4.32:
     resolution: {integrity: sha512-D/kj5JNu6oo2EIy+XL/26JEDTlIbB8hw85G8StOE6L74RQAVVP5rej6wxCNqyMbR4RkPfqvezVbPw81Ngd6Kcw==}
     engines: {node: ^10 || ^12 || >=14}
-
-  preact@10.13.2:
-    resolution: {integrity: sha512-q44QFLhOhty2Bd0Y46fnYW0gD/cbVM9dUVtNTDKPcdXSMA7jfY+Jpd6rk3GB0lcQss0z5s/6CmVP0Z/hV+g6pw==}
 
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
@@ -3960,24 +3917,6 @@ snapshots:
     optionalDependencies:
       graphql: 16.8.1
 
-  '@adyen/adyen-web@5.53.3':
-    dependencies:
-      '@babel/runtime': 7.24.8
-      '@babel/runtime-corejs3': 7.24.8
-      '@types/applepayjs': 3.0.4
-      '@types/googlepay': 0.7.6
-      classnames: 2.5.1
-      core-js-pure: 3.37.1
-      preact: 10.13.2
-
-  '@adyen/api-library@15.0.0-beta':
-    dependencies:
-      https-proxy-agent: 5.0.1
-    optionalDependencies:
-      '@types/node': 14.18.61
-    transitivePeerDependencies:
-      - supports-color
-
   '@alloc/quick-lru@5.2.0': {}
 
   '@ampproject/remapping@2.3.0':
@@ -4342,11 +4281,6 @@ snapshots:
     dependencies:
       '@babel/core': 7.24.9
       '@babel/helper-plugin-utils': 7.24.8
-
-  '@babel/runtime-corejs3@7.24.8':
-    dependencies:
-      core-js-pure: 3.37.1
-      regenerator-runtime: 0.14.1
 
   '@babel/runtime@7.24.8':
     dependencies:
@@ -5288,11 +5222,7 @@ snapshots:
 
   '@tanstack/virtual-core@3.8.3': {}
 
-  '@types/applepayjs@3.0.4': {}
-
   '@types/estree@1.0.8': {}
-
-  '@types/googlepay@0.7.6': {}
 
   '@types/hoist-non-react-statics@3.3.5':
     dependencies:
@@ -5310,9 +5240,6 @@ snapshots:
       '@types/lodash': 4.17.7
 
   '@types/lodash@4.17.7': {}
-
-  '@types/node@14.18.61':
-    optional: true
 
   '@types/node@20.10.0':
     dependencies:
@@ -5469,12 +5396,6 @@ snapshots:
       acorn: 8.15.0
 
   acorn@8.15.0: {}
-
-  agent-base@6.0.2:
-    dependencies:
-      debug: 4.3.5
-    transitivePeerDependencies:
-      - supports-color
 
   agent-base@7.1.1:
     dependencies:
@@ -5801,8 +5722,6 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
-  classnames@2.5.1: {}
-
   clean-stack@2.2.0: {}
 
   cli-cursor@3.1.0:
@@ -5890,8 +5809,6 @@ snapshots:
   convert-source-map@2.0.0: {}
 
   cookie@1.0.2: {}
-
-  core-js-pure@3.37.1: {}
 
   cosmiconfig@8.3.6(typescript@5.3.3):
     dependencies:
@@ -6680,13 +6597,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  https-proxy-agent@5.0.1:
-    dependencies:
-      agent-base: 6.0.2
-      debug: 4.3.5
-    transitivePeerDependencies:
-      - supports-color
-
   https-proxy-agent@7.0.5:
     dependencies:
       agent-base: 7.1.1
@@ -7423,8 +7333,6 @@ snapshots:
       nanoid: 3.3.7
       picocolors: 1.0.1
       source-map-js: 1.2.0
-
-  preact@10.13.2: {}
 
   prelude-ls@1.2.1: {}
 

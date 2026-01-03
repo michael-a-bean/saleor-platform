@@ -9,6 +9,7 @@ import { useAlerts } from "@/checkout/hooks/useAlerts";
 import { useEvent } from "@/checkout/hooks/useEvent";
 import { useTransactionInitializeMutation, useTransactionProcessMutation } from "@/checkout/graphql";
 import { useCheckoutComplete } from "@/checkout/hooks/useCheckoutComplete";
+import { useCheckoutUpdateStateActions } from "@/checkout/state/updateStateStore";
 
 // Safe sessionStorage access for environments where it may not be available
 const safeSessionStorage = {
@@ -44,6 +45,7 @@ export function CheckoutForm() {
 	const { onCheckoutComplete } = useCheckoutComplete();
 	const [, transactionInitialize] = useTransactionInitializeMutation();
 	const [, transactionProcess] = useTransactionProcessMutation();
+	const { setShouldRegisterUser } = useCheckoutUpdateStateActions();
 
 	// When page is opened from previously redirected payment, we need to complete the checkout
 	useCheckoutCompleteRedirect();
@@ -56,6 +58,8 @@ export function CheckoutForm() {
 			return;
 		}
 
+		// Trigger user registration if "create account" was checked
+		setShouldRegisterUser(true);
 		setIsLoading(true);
 
 		try {

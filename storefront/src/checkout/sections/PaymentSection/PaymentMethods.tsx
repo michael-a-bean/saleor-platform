@@ -25,13 +25,7 @@ export const PaymentMethods = () => {
 		<div className="gap-y-8">
 			{gatewaysWithDefinedComponent.map((gateway) => {
 				const Component = paymentMethodToComponent[gateway.id];
-				return (
-					<Component
-						key={gateway.id}
-						// @ts-expect-error -- gateway matches the id but TypeScript doesn't know that
-						config={gateway}
-					/>
-				);
+				return <Component key={gateway.id} config={gateway} />;
 			})}
 		</div>
 	);
