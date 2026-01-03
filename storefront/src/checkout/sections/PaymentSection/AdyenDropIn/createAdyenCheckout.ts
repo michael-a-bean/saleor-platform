@@ -1,8 +1,6 @@
-// @ts-nocheck
 import AdyenCheckout from "@adyen/adyen-web";
 import { type CardElementData } from "@adyen/adyen-web/dist/types/components/Card/types";
 import type DropinElement from "@adyen/adyen-web/dist/types/components/Dropin";
-import { PaymentResponse as AdyenApiPaymentResponse } from "@adyen/api-library/lib/src/typings/checkout/paymentResponse";
 import { type CreateCheckoutSessionResponse } from "@adyen/api-library/lib/src/typings/checkout/createCheckoutSessionResponse";
 import { type AdyenPaymentResponse } from "./types";
 import { replaceUrl } from "@/checkout/lib/utils/url";
@@ -22,7 +20,7 @@ export type PostAdyenDropInPaymentsResponse = {
 
 export type AdyenCheckoutInstanceState = {
 	isValid?: boolean;
-	data: CardElementData & Record<string, any>;
+	data: CardElementData & Record<string, unknown>;
 };
 export type AdyenCheckoutInstanceOnSubmit = (
 	state: AdyenCheckoutInstanceState,
@@ -35,6 +33,12 @@ export type AdyenCheckoutInstanceOnAdditionalDetails = (
 ) => Promise<void> | void;
 
 type ApplePayCallback = <T>(value: T) => void;
+
+type ApplePayEvent = {
+	paymentMethod?: unknown;
+	shippingContact?: unknown;
+	shippingMethod?: unknown;
+};
 
 export function createAdyenCheckoutInstance(
 	adyenSessionResponse: AdyenDropInCreateSessionResponse,
@@ -54,11 +58,12 @@ export function createAdyenCheckoutInstance(
 			id: adyenSessionResponse.session.id,
 			sessionData: adyenSessionResponse.session.sessionData,
 		},
-		onPaymentCompleted: (result: any, component: any) => {
-			console.info(result, component);
+		onPaymentCompleted: () => {
+			// Payment completed callback - success is handled by handlePaymentResult
 		},
-		onError: (error: any, component: any) => {
-			console.error(error.name, error.message, error.stack, component);
+		onError: (error: { name?: string; message?: string }) => {
+			// Error is shown to user via component.setStatus in handlePaymentResult
+			void error; // Acknowledge error parameter
 		},
 		onSubmit,
 		onAdditionalDetails,
@@ -73,13 +78,13 @@ export function createAdyenCheckoutInstance(
 			applepay: {
 				buttonType: "plain",
 				buttonColor: "black",
-				onPaymentMethodSelected: (resolve: ApplePayCallback, reject: ApplePayCallback, event) => {
+				onPaymentMethodSelected: (resolve: ApplePayCallback, _reject: ApplePayCallback, event: ApplePayEvent) => {
 					resolve(event.paymentMethod);
 				},
-				onShippingContactSelected: (resolve: ApplePayCallback, reject: ApplePayCallback, event) => {
+				onShippingContactSelected: (resolve: ApplePayCallback, _reject: ApplePayCallback, event: ApplePayEvent) => {
 					resolve(event.shippingContact);
 				},
-				onShippingMethodSelected: (resolve: ApplePayCallback, reject: ApplePayCallback, event) => {
+				onShippingMethodSelected: (resolve: ApplePayCallback, _reject: ApplePayCallback, event: ApplePayEvent) => {
 					resolve(event.shippingMethod);
 				},
 			},
@@ -95,27 +100,29 @@ export function handlePaymentResult(
 	result: PostAdyenDropInPaymentsResponse | PostAdyenDropInPaymentsDetailsResponse,
 	component: DropinElement,
 ) {
-	switch (result.payment.resultCode) {
-		// @todo https://docs.adyen.com/online-payments/payment-result-codes
-		case AdyenApiPaymentResponse.ResultCodeEnum.AuthenticationFinished:
-		case AdyenApiPaymentResponse.ResultCodeEnum.Cancelled:
-		case AdyenApiPaymentResponse.ResultCodeEnum.ChallengeShopper:
-		case AdyenApiPaymentResponse.ResultCodeEnum.Error:
-		case AdyenApiPaymentResponse.ResultCodeEnum.IdentifyShopper:
-		case AdyenApiPaymentResponse.ResultCodeEnum.Pending:
-		case AdyenApiPaymentResponse.ResultCodeEnum.PresentToShopper:
-		case AdyenApiPaymentResponse.ResultCodeEnum.Received:
-		case AdyenApiPaymentResponse.ResultCodeEnum.RedirectShopper:
-		case AdyenApiPaymentResponse.ResultCodeEnum.Refused: {
-			console.error(result);
+	const resultCode = result.payment.resultCode;
+
+	// Handle error/pending states
+	// @see https://docs.adyen.com/online-payments/payment-result-codes
+	switch (resultCode) {
+		case "AuthenticationFinished":
+		case "Cancelled":
+		case "ChallengeShopper":
+		case "Error":
+		case "IdentifyShopper":
+		case "Pending":
+		case "PresentToShopper":
+		case "Received":
+		case "RedirectShopper":
+		case "Refused": {
 			component.setStatus("error", {
-				message: `${result.payment.resultCode}: ${result.payment.refusalReason as string}`,
+				message: `${resultCode}: ${result.payment.refusalReason ?? "Payment could not be processed"}`,
 			});
 			return;
 		}
 
-		case AdyenApiPaymentResponse.ResultCodeEnum.Authorised:
-		case AdyenApiPaymentResponse.ResultCodeEnum.Success: {
+		case "Authorised":
+		case "Success": {
 			component.setStatus("success");
 			const domain = new URL(saleorApiUrl).hostname;
 			const newUrl = replaceUrl({

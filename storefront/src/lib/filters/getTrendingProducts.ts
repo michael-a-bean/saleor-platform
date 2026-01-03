@@ -101,8 +101,7 @@ async function fetchRecentlyModified(
 		});
 
 		return data.products?.edges.map(({ node }) => node) ?? [];
-	} catch (error) {
-		console.error("Error fetching recently modified products:", error);
+	} catch {
 		return [];
 	}
 }

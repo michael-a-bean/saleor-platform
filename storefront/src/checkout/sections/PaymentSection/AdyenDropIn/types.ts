@@ -6,8 +6,23 @@ import { type PaymentResponse } from "@adyen/adyen-web/dist/types/components/typ
 export const adyenGatewayId = "app.saleor.adyen";
 export type AdyenGatewayId = typeof adyenGatewayId;
 
-// because it's defined to these in the docs but it's a string in the response type
-type AdyenResultCode = "Authorised" | "Error" | "Pending" | "PresentToShopper" | "Refused" | "Received";
+// Adyen result codes - expanded to match all API response possibilities
+// https://docs.adyen.com/online-payments/payment-result-codes
+type AdyenResultCode =
+	| "AuthenticationFinished"
+	| "AuthenticationNotRequired"
+	| "Authorised"
+	| "Cancelled"
+	| "ChallengeShopper"
+	| "Error"
+	| "IdentifyShopper"
+	| "PartiallyAuthorised"
+	| "Pending"
+	| "PresentToShopper"
+	| "Received"
+	| "RedirectShopper"
+	| "Refused"
+	| "Success";
 
 export interface AdyenGatewayInitializePayload {
 	paymentMethodsResponse: PaymentMethodsResponse;

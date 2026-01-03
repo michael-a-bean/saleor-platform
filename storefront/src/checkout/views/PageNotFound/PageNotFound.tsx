@@ -3,9 +3,7 @@ import { SaleorLogo } from "@/checkout/assets/images/SaleorLogo";
 import { Button } from "@/checkout/components/Button";
 import { ErrorContentWrapper } from "@/checkout/components/ErrorContentWrapper";
 
-export const PageNotFound = ({ error }: Partial<FallbackProps>) => {
-	console.error(error);
-
+export const PageNotFound = ({ error: _error }: Partial<FallbackProps>) => {
 	const goBack = () => history.back();
 
 	return (

@@ -48,7 +48,6 @@ export async function executeGraphQL<Result, Variables>(
 				return "";
 			}
 		})();
-		console.error(input.body);
 		throw new HTTPError(response, body);
 	}
 

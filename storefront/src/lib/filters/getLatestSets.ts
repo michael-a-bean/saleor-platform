@@ -47,7 +47,6 @@ export async function getLatestSets(
 		});
 
 		if (!response.ok) {
-			console.error("Failed to fetch Scryfall sets");
 			return [];
 		}
 
@@ -122,8 +121,7 @@ export async function getLatestSets(
 		}
 
 		return setsWithProducts;
-	} catch (error) {
-		console.error("Error fetching latest sets:", error);
+	} catch {
 		return [];
 	}
 }

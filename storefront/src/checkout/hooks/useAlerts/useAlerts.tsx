@@ -44,7 +44,7 @@ function useAlerts(globalScope?: any): any {
 
 			return fullMessage;
 		} catch (e) {
-			console.warn(`Missing translation: ${messageKey}`);
+			// Missing translation for message key
 			return apiErrorMessages.somethingWentWrong;
 		}
 	}, []);

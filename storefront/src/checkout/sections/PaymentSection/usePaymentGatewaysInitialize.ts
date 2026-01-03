@@ -64,8 +64,7 @@ export const usePaymentGatewaysInitialize = () => {
 					// Combine transaction-based configs with legacy gateway configs
 					setGatewayConfigs([...parsedConfigs, ...legacyGatewayConfigs]);
 				},
-				onError: ({ errors }) => {
-					console.log({ errors });
+				onError: () => {
 					// Even if transaction-based gateways fail, still show legacy gateways
 					if (legacyGatewayConfigs.length > 0) {
 						setGatewayConfigs(legacyGatewayConfigs);

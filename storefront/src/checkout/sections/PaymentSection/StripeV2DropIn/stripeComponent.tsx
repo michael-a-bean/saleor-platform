@@ -33,11 +33,10 @@ export const StripeComponent = ({ config }: { config: StripeConfig }) => {
 					setLoadingError(null);
 				}
 			})
-			.catch((error) => {
+			.catch(() => {
 				if (!isMounted) {
 					return;
 				}
-				console.error("Error initializing Stripe:", error);
 				setLoadingError("Failed to initialize payment system");
 			});
 
@@ -46,11 +45,6 @@ export const StripeComponent = ({ config }: { config: StripeConfig }) => {
 		};
 	}, [publishableKey]);
 
-	useEffect(() => {
-		if (!publishableKey) {
-			console.error("Missing Stripe publishable key");
-		}
-	}, [publishableKey]);
 
 	if (!publishableKey) {
 		return <div className="text-red-500">Missing payment gateway configuration</div>;

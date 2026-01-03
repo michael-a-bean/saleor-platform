@@ -6,6 +6,24 @@ import { getQueryParams, clearQueryParams } from "@/checkout/lib/utils/url";
 import { usePaymentProcessingScreen } from "@/checkout/sections/PaymentSection/PaymentProcessingScreen";
 import { useAlerts } from "@/checkout/hooks/useAlerts";
 
+// Safe sessionStorage access for environments where it may not be available
+const safeSessionStorage = {
+	getItem: (key: string): string | null => {
+		try {
+			return sessionStorage.getItem(key);
+		} catch {
+			return null;
+		}
+	},
+	removeItem: (key: string): void => {
+		try {
+			sessionStorage.removeItem(key);
+		} catch {
+			// Silently fail in environments without sessionStorage
+		}
+	},
+};
+
 export const useCheckoutCompleteRedirect = () => {
 	const stripe = useStripe();
 	const { completingCheckout, onCheckoutComplete } = useCheckoutComplete();
@@ -36,14 +54,11 @@ export const useCheckoutCompleteRedirect = () => {
 			return;
 		}
 
-		const transactionId = sessionStorage.getItem("transactionId");
+		const transactionId = safeSessionStorage.getItem("transactionId");
 		const transactionIdFromQuery = typeof transaction === "string" ? transaction : undefined;
 		const resolvedTransactionId = transactionId ?? transactionIdFromQuery;
 
 		if (!resolvedTransactionId) {
-			console.error("Missing transactionId in sessionStorage and query params after Stripe redirect", {
-				transaction,
-			});
 			clearPaymentParams();
 			showCustomErrors([{ message: "Payment session expired. Please try again." }]);
 			return;
@@ -57,7 +72,6 @@ export const useCheckoutCompleteRedirect = () => {
 				const processResult = await transactionProcess({ id: resolvedTransactionId });
 
 				if (processResult.error) {
-					console.error("Transaction process failed:", processResult.error);
 					clearPaymentParams();
 					showCustomErrors([{ message: "Failed to process payment. Please try again." }]);
 					isProcessingRef.current = false;
@@ -66,7 +80,6 @@ export const useCheckoutCompleteRedirect = () => {
 
 				const processErrors = processResult.data?.transactionProcess?.errors;
 				if (processErrors?.length) {
-					console.error("Transaction process errors:", processErrors);
 					clearPaymentParams();
 					const errorMessage = processErrors[0]?.message || "Payment processing failed";
 					showCustomErrors([{ message: errorMessage }]);
@@ -87,24 +100,18 @@ export const useCheckoutCompleteRedirect = () => {
 				const serverClientSecret = processData?.paymentIntent?.stripeClientSecret;
 
 				if (serverClientSecret) {
-					const intentResult = await stripe.retrievePaymentIntent(serverClientSecret);
-
-					if (intentResult.error) {
-						console.error("Unable to retrieve PaymentIntent:", intentResult.error);
-					} else {
-						console.info("Retrieved PaymentIntent status:", intentResult.paymentIntent?.status);
-					}
+					// Verify payment intent status with Stripe (result not needed for checkout flow)
+					await stripe.retrievePaymentIntent(serverClientSecret);
 				}
 
 				// Clear transaction identifier once we finalize
-				sessionStorage.removeItem("transactionId");
+				safeSessionStorage.removeItem("transactionId");
 
 				// Now complete the checkout
 				const result = await onCheckoutComplete();
 
 				// If checkout completion failed (no redirect happened), show error
 				if (result?.hasErrors) {
-					console.error("Checkout completion failed:", result.apiErrors);
 					clearPaymentParams();
 					const errorMessage =
 						result.apiErrors?.[0]?.message || "Failed to complete checkout. Please try again.";
@@ -113,8 +120,7 @@ export const useCheckoutCompleteRedirect = () => {
 				}
 				// Note: If successful, onCheckoutComplete triggers a redirect via window.location.href
 				// so we don't need to handle the success case here
-			} catch (error) {
-				console.error("Error during checkout completion:", error);
+			} catch {
 				clearPaymentParams();
 				showCustomErrors([{ message: "An unexpected error occurred. Please try again." }]);
 				isProcessingRef.current = false;

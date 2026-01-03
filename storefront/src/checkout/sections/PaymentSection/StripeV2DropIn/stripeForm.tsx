@@ -10,6 +10,24 @@ import { useEvent } from "@/checkout/hooks/useEvent";
 import { useTransactionInitializeMutation, useTransactionProcessMutation } from "@/checkout/graphql";
 import { useCheckoutComplete } from "@/checkout/hooks/useCheckoutComplete";
 
+// Safe sessionStorage access for environments where it may not be available
+const safeSessionStorage = {
+	setItem: (key: string, value: string): void => {
+		try {
+			sessionStorage.setItem(key, value);
+		} catch {
+			// Silently fail in environments without sessionStorage
+		}
+	},
+	removeItem: (key: string): void => {
+		try {
+			sessionStorage.removeItem(key);
+		} catch {
+			// Silently fail in environments without sessionStorage
+		}
+	},
+};
+
 const paymentElementOptions: StripePaymentElementOptions = {
 	layout: "tabs",
 };
@@ -99,7 +117,7 @@ export function CheckoutForm() {
 			}
 
 			// Store non-sensitive identifier only so that we can resume after redirect
-			sessionStorage.setItem("transactionId", transactionId);
+			safeSessionStorage.setItem("transactionId", transactionId);
 
 			const { newUrl: returnUrl } = getUrlForTransactionInitialize({
 				transaction: transactionId,
@@ -141,10 +159,6 @@ export function CheckoutForm() {
 				const processResult = await transactionProcess({ id: transactionId });
 
 				if (processResult.error || processResult.data?.transactionProcess?.errors?.length) {
-					console.error(
-						"Transaction process failed:",
-						processResult.error || processResult.data?.transactionProcess?.errors,
-					);
 					showCustomErrors([
 						{ message: "Payment was successful but order processing failed. Please contact support." },
 					]);
@@ -153,16 +167,15 @@ export function CheckoutForm() {
 				}
 
 				// Clear session storage since we're not going through redirect
-				sessionStorage.removeItem("transactionId");
-				sessionStorage.removeItem("clientSecret");
+				safeSessionStorage.removeItem("transactionId");
+				safeSessionStorage.removeItem("clientSecret");
 
 				await onCheckoutComplete();
 			}
 
 			// Note: If Stripe requires redirect (3DS, etc.), it will redirect to the return_url
 			// The redirect flow is handled by useCheckoutCompleteRedirect
-		} catch (error) {
-			console.error("Payment processing error:", error);
+		} catch {
 			showCustomErrors([{ message: "An unexpected error occurred during payment" }]);
 			setIsLoading(false);
 		}
