@@ -7,6 +7,7 @@ import { Summary, SummarySkeleton } from "@/checkout/sections/Summary";
 import { CheckoutForm, CheckoutFormSkeleton } from "@/checkout/sections/CheckoutForm";
 import { useCheckout } from "@/checkout/hooks/useCheckout";
 import { CheckoutSkeleton } from "@/checkout/views/Checkout/CheckoutSkeleton";
+import { BackIcon } from "@/checkout/assets/icons";
 
 export const Checkout = () => {
 	const { checkout, fetching: fetchingCheckout } = useCheckout();
@@ -18,6 +19,8 @@ export const Checkout = () => {
 
 	const isEmptyCart = checkout && !checkout.lines.length;
 
+	const cartUrl = checkout?.channel?.slug ? `/${checkout.channel.slug}/cart` : "/";
+
 	return isCheckoutInvalid ? (
 		<PageNotFound />
 	) : isInitiallyAuthenticating ? (
@@ -28,14 +31,23 @@ export const Checkout = () => {
 				{isEmptyCart ? (
 					<EmptyCartPage />
 				) : (
-					<div className="grid min-h-screen grid-cols-1 gap-x-16 lg:grid-cols-2">
-						<Suspense fallback={<CheckoutFormSkeleton />}>
-							<CheckoutForm />
-						</Suspense>
-						<Suspense fallback={<SummarySkeleton />}>
-							<Summary {...checkout} />
-						</Suspense>
-					</div>
+					<>
+						<a
+							href={cartUrl}
+							className="mb-4 inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900"
+						>
+							<BackIcon />
+							<span>Back to cart</span>
+						</a>
+						<div className="grid min-h-screen grid-cols-1 gap-x-16 lg:grid-cols-2">
+							<Suspense fallback={<CheckoutFormSkeleton />}>
+								<CheckoutForm />
+							</Suspense>
+							<Suspense fallback={<SummarySkeleton />}>
+								<Summary {...checkout} />
+							</Suspense>
+						</div>
+					</>
 				)}
 			</div>
 		</ErrorBoundary>
