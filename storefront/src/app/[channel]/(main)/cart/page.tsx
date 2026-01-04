@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { CheckoutLink } from "./CheckoutLink";
 import { DeleteLineButton } from "./DeleteLineButton";
+import { QuantityEditor } from "./QuantityEditor";
 import * as Checkout from "@/lib/checkout";
 import { formatMoney, getHrefForVariant } from "@/lib/utils";
 import { LinkWithChannel } from "@/ui/atoms/LinkWithChannel";
@@ -79,8 +80,13 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 										{formatMoney(item.totalPrice.gross.amount, item.totalPrice.gross.currency)}
 									</p>
 								</div>
-								<div className="flex justify-between">
-									<div className="text-sm font-bold">Qty: {item.quantity}</div>
+								<div className="flex items-center justify-between">
+									<QuantityEditor
+										checkoutId={checkoutId}
+										lineId={item.id}
+										variantId={item.variant.id}
+										quantity={item.quantity}
+									/>
 									<DeleteLineButton checkoutId={checkoutId} lineId={item.id} />
 								</div>
 							</div>
