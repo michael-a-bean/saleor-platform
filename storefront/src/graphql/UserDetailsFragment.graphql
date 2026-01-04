@@ -3,6 +3,7 @@ fragment UserDetails on User {
 	email
 	firstName
 	lastName
+	isStaff
 	avatar {
 		url
 		alt
