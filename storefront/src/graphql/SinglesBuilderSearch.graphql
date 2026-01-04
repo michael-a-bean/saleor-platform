@@ -1,0 +1,79 @@
+fragment SinglesBuilderVariant on ProductVariant {
+	id
+	name
+	sku
+	quantityAvailable
+	pricing {
+		price {
+			gross {
+				currency
+				amount
+			}
+		}
+	}
+	attributes {
+		attribute {
+			slug
+			name
+		}
+		values {
+			slug
+			name
+		}
+	}
+}
+
+fragment SinglesBuilderProduct on Product {
+	id
+	name
+	slug
+	thumbnail(size: 256, format: WEBP) {
+		url
+		alt
+	}
+	category {
+		id
+		name
+		slug
+	}
+	attributes {
+		attribute {
+			slug
+			name
+		}
+		values {
+			slug
+			name
+		}
+	}
+	variants {
+		...SinglesBuilderVariant
+	}
+}
+
+query SinglesBuilderSearch(
+	$search: String!
+	$channel: String!
+	$first: Int = 50
+	$after: String
+) {
+	products(
+		first: $first
+		after: $after
+		channel: $channel
+		filter: { search: $search }
+		sortBy: { field: RANK, direction: DESC }
+	) {
+		totalCount
+		edges {
+			node {
+				...SinglesBuilderProduct
+			}
+			cursor
+		}
+		pageInfo {
+			hasNextPage
+			endCursor
+		}
+	}
+}
