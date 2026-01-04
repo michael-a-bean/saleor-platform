@@ -1,0 +1,151 @@
+# Cart fragment for singles-builder - includes variant attributes needed for display
+fragment SinglesBuilderCartLine on CheckoutLine {
+	id
+	quantity
+	totalPrice {
+		gross {
+			amount
+			currency
+		}
+	}
+	variant {
+		id
+		name
+		sku
+		pricing {
+			price {
+				gross {
+					amount
+					currency
+				}
+			}
+		}
+		attributes {
+			attribute {
+				slug
+				name
+			}
+			values {
+				slug
+				name
+			}
+		}
+		product {
+			id
+			name
+			slug
+			thumbnail(size: 128, format: WEBP) {
+				url
+				alt
+			}
+			attributes {
+				attribute {
+					slug
+					name
+				}
+				values {
+					slug
+					name
+				}
+			}
+		}
+	}
+}
+
+fragment SinglesBuilderCheckout on Checkout {
+	id
+	token
+	email
+	metadata {
+		key
+		value
+	}
+	lines {
+		...SinglesBuilderCartLine
+	}
+	subtotalPrice {
+		gross {
+			amount
+			currency
+		}
+	}
+	totalPrice {
+		gross {
+			amount
+			currency
+		}
+	}
+}
+
+query SinglesBuilderCartFind($id: ID!) {
+	checkout(id: $id) {
+		...SinglesBuilderCheckout
+	}
+}
+
+mutation SinglesBuilderCartCreate($channel: String!, $lines: [CheckoutLineInput!]!) {
+	checkoutCreate(input: { channel: $channel, lines: $lines }) {
+		checkout {
+			...SinglesBuilderCheckout
+		}
+		errors {
+			field
+			message
+			code
+		}
+	}
+}
+
+mutation SinglesBuilderCartAddLines($id: ID!, $lines: [CheckoutLineInput!]!) {
+	checkoutLinesAdd(id: $id, lines: $lines) {
+		checkout {
+			...SinglesBuilderCheckout
+		}
+		errors {
+			field
+			message
+			code
+		}
+	}
+}
+
+mutation SinglesBuilderCartUpdateLines($id: ID!, $lines: [CheckoutLineUpdateInput!]!) {
+	checkoutLinesUpdate(id: $id, lines: $lines) {
+		checkout {
+			...SinglesBuilderCheckout
+		}
+		errors {
+			field
+			message
+			code
+		}
+	}
+}
+
+mutation SinglesBuilderCartDeleteLines($id: ID!, $lineIds: [ID!]!) {
+	checkoutLinesDelete(id: $id, lineIds: $lineIds) {
+		checkout {
+			...SinglesBuilderCheckout
+		}
+		errors {
+			field
+			message
+			code
+		}
+	}
+}
+
+mutation SinglesBuilderCartUpdateMetadata($id: ID!, $input: [MetadataInput!]!) {
+	updateMetadata(id: $id, input: $input) {
+		item {
+			... on Checkout {
+				...SinglesBuilderCheckout
+			}
+		}
+		errors {
+			field
+			message
+			code
+		}
+	}
+}
