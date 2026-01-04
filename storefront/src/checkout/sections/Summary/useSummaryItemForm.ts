@@ -32,8 +32,9 @@ export const useSummaryItemForm = ({ line }: SummaryItemFormProps) => {
 				},
 			],
 		}),
-		onError: ({ formData: { quantity }, formHelpers: { setFieldValue } }) => {
-			return setFieldValue("quantity", quantity);
+		onError: ({ formHelpers: { setFieldValue } }) => {
+			// Revert to the server's known quantity on error
+			return setFieldValue("quantity", line.quantity.toString());
 		},
 	});
 
