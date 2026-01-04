@@ -11,7 +11,7 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm i --frozen-lockfile --prefer-offline
+RUN pnpm i --no-frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -37,7 +37,10 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
-# Skip prebuild (codegen) since types are pre-generated
+# Run codegen to generate GraphQL types (requires API to be running)
+# Build with --network=host to access localhost:8000
+RUN pnpm run generate
+
 RUN pnpm next build
 
 # Production image, copy all the files and run next
