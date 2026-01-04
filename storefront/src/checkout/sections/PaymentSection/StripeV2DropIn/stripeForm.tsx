@@ -33,8 +33,17 @@ const paymentElementOptions: StripePaymentElementOptions = {
 	layout: "tabs",
 };
 
-// const getRedirectUrl = (checkoutId: string, transactionId: string) =>
-// 	`${window.location.origin}/checkout/${checkoutId}/payment/summary?transactionId=${transactionId}`;
+// Stripe minimum amounts by currency (in major units, e.g., dollars)
+const STRIPE_MINIMUM_AMOUNTS: Record<string, number> = {
+	usd: 0.5,
+	eur: 0.5,
+	gbp: 0.3,
+	// Add more currencies as needed, default to 0.5
+};
+
+const getMinimumAmount = (currency: string): number => {
+	return STRIPE_MINIMUM_AMOUNTS[currency.toLowerCase()] ?? 0.5;
+};
 
 export function CheckoutForm() {
 	const [isLoading, setIsLoading] = useState(false);
@@ -47,6 +56,12 @@ export function CheckoutForm() {
 	const [, transactionProcess] = useTransactionProcessMutation();
 	const { setShouldRegisterUser } = useCheckoutUpdateStateActions();
 
+	// Check if checkout amount meets Stripe minimum
+	const checkoutAmount = checkout?.totalPrice?.gross?.amount ?? 0;
+	const currency = checkout?.totalPrice?.gross?.currency ?? "USD";
+	const minimumAmount = getMinimumAmount(currency);
+	const isBelowMinimum = checkoutAmount < minimumAmount;
+
 	// When page is opened from previously redirected payment, we need to complete the checkout
 	useCheckoutCompleteRedirect();
 
@@ -55,6 +70,16 @@ export function CheckoutForm() {
 
 		if (!stripe || !elements) {
 			showCustomErrors([{ message: "Payment system is not available. Please try again later." }]);
+			return;
+		}
+
+		// Check minimum amount before attempting payment
+		if (isBelowMinimum) {
+			showCustomErrors([
+				{
+					message: `Order total must be at least ${minimumAmount.toFixed(2)} ${currency.toUpperCase()} to process payment.`,
+				},
+			]);
 			return;
 		}
 
@@ -115,7 +140,11 @@ export function CheckoutForm() {
 			const transactionId = transactionData.transaction?.id;
 
 			if (!clientSecret || !transactionId) {
-				showCustomErrors([{ message: "Could not retrieve payment details. Please try again." }]);
+				showCustomErrors([
+					{
+						message: `Order total must be at least ${minimumAmount.toFixed(2)} ${currency.toUpperCase()} to process payment. Please add more items to your cart.`,
+					},
+				]);
 				setIsLoading(false);
 				return;
 			}
@@ -187,10 +216,19 @@ export function CheckoutForm() {
 
 	return (
 		<form className="my-8 flex flex-col gap-y-6" onSubmit={handleSubmit}>
+			{isBelowMinimum && (
+				<div className="rounded-md bg-yellow-50 border border-yellow-200 p-4">
+					<p className="text-sm text-yellow-800">
+						Order total must be at least {minimumAmount.toFixed(2)} {currency.toUpperCase()} to process
+						payment. Please add more items to your cart.
+					</p>
+				</div>
+			)}
 			<PaymentElement className="payment-element" options={paymentElementOptions} />
 			<button
 				className="h-12 items-center rounded-md bg-neutral-900 px-6 py-3 text-base font-medium leading-6 text-white shadow hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70 hover:disabled:bg-neutral-700 aria-disabled:cursor-not-allowed aria-disabled:opacity-70 hover:aria-disabled:bg-neutral-700"
-				aria-disabled={isLoading || !stripe || !elements}
+				aria-disabled={isLoading || !stripe || !elements || isBelowMinimum}
+				disabled={isBelowMinimum}
 				id="submit"
 				type="submit"
 			>
