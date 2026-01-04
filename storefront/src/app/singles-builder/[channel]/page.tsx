@@ -1,8 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
-import { SinglesBuilderSearchDocument, type ProductFilterInput } from "@/gql/graphql";
-import { executeGraphQL } from "@/lib/graphql";
+import { type ProductFilterInput } from "@/gql/graphql";
 import {
 	SinglesSearch,
 	SinglesResultsWrapper,
@@ -12,7 +11,12 @@ import {
 	parseFiltersFromURL,
 } from "./components";
 import { buildSinglesFilter } from "./components/buildSinglesFilter";
-import { fetchSinglesBuilderProducts, addToSinglesCart } from "./actions";
+import {
+	fetchSinglesBuilderProducts,
+	addToSinglesCart,
+	searchWithMeilisearch,
+	transformMeilisearchToGraphQL,
+} from "./actions";
 
 interface PageProps {
 	params: Promise<{ channel: string }>;
@@ -57,17 +61,18 @@ async function SearchResults({
 		);
 	}
 
-	const products = await executeGraphQL(SinglesBuilderSearchDocument, {
-		variables: {
-			channel,
-			search: searchQuery,
-			first: 50,
-			filter,
-		},
-		revalidate: 0,
+	// Use Meilisearch for instant search with typo tolerance
+	const meilisearchResult = await searchWithMeilisearch(searchQuery, channel, {
+		limit: 50,
+		conditions: filterState.condition,
+		finishes: filterState.finish,
+		inStockOnly: filterState.inStockOnly,
 	});
 
-	// Bind the channel and filter to the action
+	// Transform to GraphQL-compatible format
+	const products = await transformMeilisearchToGraphQL(meilisearchResult);
+
+	// Bind the channel and filter to the action for "load more" (still uses Saleor)
 	const boundFetchMore = async (
 		channel: string,
 		search: string,
@@ -84,7 +89,7 @@ async function SearchResults({
 
 	return (
 		<SinglesResultsWrapper
-			initialData={products.products}
+			initialData={products}
 			channel={channel}
 			searchQuery={searchQuery}
 			filterState={filterState}

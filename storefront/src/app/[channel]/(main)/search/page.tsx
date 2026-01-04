@@ -8,6 +8,8 @@ import { getPaginatedListVariables } from "@/lib/utils";
 import { SortBy } from "@/ui/components/SortBy";
 import { FilterSidebar, MobileFilterModal, ActiveFilters } from "@/ui/components/filters";
 import { parseFiltersFromURL, buildProductFilter, getActiveFilterCount } from "@/lib/filters";
+import { searchWebstore, checkMeilisearchHealth } from "./actions";
+import { transformMeilisearchResults, createMeilisearchPageInfo } from "./transforms";
 
 // Force dynamic rendering since this page uses notFound() and redirect()
 export const dynamic = "force-dynamic";
@@ -28,6 +30,45 @@ const getSortVariables = (sortParam?: string | string[]) => {
 		default:
 			return { field: ProductOrderField.Name, direction: OrderDirection.Asc };
 	}
+};
+
+// Convert sort param to Meilisearch sort format
+// Returns undefined if sortable attributes aren't configured on the index
+const getMeilisearchSort = (sortParam?: string | string[]): string[] | undefined => {
+	const sortValue = Array.isArray(sortParam) ? sortParam[0] : sortParam;
+
+	switch (sortValue) {
+		case "price-asc":
+			return ["min_price:asc"];
+		case "price-desc":
+			return ["min_price:desc"];
+		default:
+			// Don't sort by default - Meilisearch uses relevance ranking
+			return undefined;
+	}
+};
+
+// Get page offset from cursor and direction (for Meilisearch pagination)
+const getMeilisearchOffset = (
+	cursor: string | undefined,
+	direction: string | undefined,
+	limit: number,
+): number => {
+	if (!cursor) return 0;
+
+	// Cursor format: "offset:N" where N is the offset value
+	const match = cursor.match(/^offset:(\d+)$/);
+	if (!match) return 0;
+
+	const cursorOffset = parseInt(match[1], 10);
+	if (isNaN(cursorOffset)) return 0;
+
+	// For "prev" direction, go back one page from the cursor
+	// For "next" direction, use the cursor offset directly
+	if (direction === "prev") {
+		return Math.max(0, cursorOffset - limit);
+	}
+	return cursorOffset;
 };
 
 export default async function Page(props: {
@@ -63,30 +104,105 @@ export default async function Page(props: {
 	const productFilter = buildProductFilter(filters);
 	const activeFilterCount = getActiveFilterCount(filters);
 
-	// Combine search with filter search terms (type line, set name)
-	const filterSearchTerms = productFilter.search || "";
-	const combinedSearchQuery = [searchValue, filterSearchTerms].filter(Boolean).join(" ");
+	// Check if Meilisearch is available
+	const meilisearchHealthy = await checkMeilisearchHealth();
 
-	const combinedFilter = {
-		...productFilter,
-		search: combinedSearchQuery,
-	};
+	// Variables for rendering
+	let productList: ReturnType<typeof transformMeilisearchResults> = [];
+	let totalCount = 0;
+	let pageInfo: {
+		hasNextPage: boolean;
+		hasPreviousPage: boolean;
+		startCursor: string | null;
+		endCursor: string | null;
+	} = { hasNextPage: false, hasPreviousPage: false, startCursor: null, endCursor: null };
+	let usedMeilisearch = false;
+	let processingTimeMs = 0;
 
-	const paginationVariables = getPaginatedListVariables({ params: searchParams });
-	const sortVariables = getSortVariables(searchParams.sort);
+	if (meilisearchHealthy) {
+		// Use Meilisearch for search
+		usedMeilisearch = true;
 
-	const { products } = await executeGraphQL(ProductListFilteredDocument, {
-		variables: {
-			...paginationVariables,
-			channel: params.channel,
-			sortBy: sortVariables,
-			filter: combinedFilter,
-		},
-		revalidate: 60,
-	});
+		// Get pagination offset from cursor and direction
+		const cursor = Array.isArray(searchParams.cursor) ? searchParams.cursor[0] : searchParams.cursor;
+		const direction = Array.isArray(searchParams.direction) ? searchParams.direction[0] : searchParams.direction;
+		const limit = 24; // Products per page
+		const offset = getMeilisearchOffset(cursor, direction, limit);
 
-	if (!products) {
-		notFound();
+		// Build Meilisearch filters from URL filters
+		const meilisearchFilters: {
+			rarity?: string[];
+			typeLine?: string;
+			priceRange?: { min?: number; max?: number };
+			inStockOnly?: boolean;
+		} = {};
+
+		if (filters.rarity.length > 0) {
+			meilisearchFilters.rarity = filters.rarity;
+		}
+		if (filters.typeLine) {
+			meilisearchFilters.typeLine = filters.typeLine;
+		}
+		if (filters.price.min !== undefined || filters.price.max !== undefined) {
+			meilisearchFilters.priceRange = {
+				min: filters.price.min,
+				max: filters.price.max,
+			};
+		}
+
+		// Combine search query with set name filter (Meilisearch searches text, not filters)
+		const combinedQuery = filters.setName
+			? `${searchValue} ${filters.setName}`
+			: searchValue;
+
+		const meilisearchSort = getMeilisearchSort(searchParams.sort);
+
+		const result = await searchWebstore(combinedQuery, params.channel, {
+			limit,
+			offset,
+			filters: meilisearchFilters,
+			sort: meilisearchSort,
+		});
+
+		productList = transformMeilisearchResults(result.products);
+		totalCount = result.totalCount;
+		processingTimeMs = result.processingTimeMs;
+		pageInfo = createMeilisearchPageInfo(offset, limit, result.totalCount);
+	} else {
+		// Fallback to Saleor GraphQL search
+		const filterSearchTerms = productFilter.search || "";
+		const combinedSearchQuery = [searchValue, filterSearchTerms].filter(Boolean).join(" ");
+
+		const combinedFilter = {
+			...productFilter,
+			search: combinedSearchQuery,
+		};
+
+		const paginationVariables = getPaginatedListVariables({ params: searchParams });
+		const sortVariables = getSortVariables(searchParams.sort);
+
+		const { products } = await executeGraphQL(ProductListFilteredDocument, {
+			variables: {
+				...paginationVariables,
+				channel: params.channel,
+				sortBy: sortVariables,
+				filter: combinedFilter,
+			},
+			revalidate: 60,
+		});
+
+		if (!products) {
+			notFound();
+		}
+
+		productList = products.edges.map((e) => e.node);
+		totalCount = products.totalCount ?? 0;
+		pageInfo = {
+			hasNextPage: products.pageInfo.hasNextPage,
+			hasPreviousPage: products.pageInfo.hasPreviousPage,
+			startCursor: products.pageInfo.startCursor ?? null,
+			endCursor: products.pageInfo.endCursor ?? null,
+		};
 	}
 
 	return (
@@ -106,12 +222,13 @@ export default async function Page(props: {
 						<h1 className="text-xl font-semibold">
 							Search results for &quot;{searchValue}&quot;
 						</h1>
-						{products.totalCount !== undefined && (
-							<p className="mt-1 text-sm text-neutral-500">
-								{products.totalCount} {products.totalCount === 1 ? "result" : "results"}
-								{activeFilterCount > 0 && ` (${activeFilterCount} filter${activeFilterCount === 1 ? "" : "s"} applied)`}
-							</p>
-						)}
+						<p className="mt-1 text-sm text-neutral-500">
+							{totalCount} {totalCount === 1 ? "result" : "results"}
+							{activeFilterCount > 0 && ` (${activeFilterCount} filter${activeFilterCount === 1 ? "" : "s"} applied)`}
+							{usedMeilisearch && processingTimeMs > 0 && (
+								<span className="ml-2 text-neutral-400">({processingTimeMs}ms)</span>
+							)}
+						</p>
 					</div>
 
 					{/* Filter controls row */}
@@ -129,10 +246,10 @@ export default async function Page(props: {
 
 					{/* Product list */}
 					<h2 className="sr-only">Product list</h2>
-					{products.edges.length > 0 ? (
+					{productList.length > 0 ? (
 						<>
-							<ProductList products={products.edges.map((e) => e.node)} />
-							<Pagination pageInfo={products.pageInfo} />
+							<ProductList products={productList} />
+							<Pagination pageInfo={pageInfo} />
 						</>
 					) : (
 						<div className="py-12 text-center">
