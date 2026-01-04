@@ -1,0 +1,102 @@
+query OrderById($id: ID!) {
+	order(id: $id) {
+		id
+		number
+		created
+		status
+		paymentStatus
+		isPaid
+		userEmail
+		shippingAddress {
+			firstName
+			lastName
+			streetAddress1
+			streetAddress2
+			city
+			postalCode
+			country {
+				country
+			}
+			phone
+		}
+		billingAddress {
+			firstName
+			lastName
+			streetAddress1
+			streetAddress2
+			city
+			postalCode
+			country {
+				country
+			}
+		}
+		shippingMethodName
+		shippingPrice {
+			gross {
+				amount
+				currency
+			}
+		}
+		subtotal {
+			gross {
+				amount
+				currency
+			}
+		}
+		total {
+			gross {
+				amount
+				currency
+			}
+			tax {
+				amount
+				currency
+			}
+		}
+		lines {
+			id
+			quantity
+			productName
+			variantName
+			unitPrice {
+				gross {
+					amount
+					currency
+				}
+			}
+			totalPrice {
+				gross {
+					amount
+					currency
+				}
+			}
+			thumbnail {
+				url
+				alt
+			}
+			variant {
+				id
+				product {
+					slug
+					media {
+						url
+						alt
+					}
+				}
+			}
+		}
+		fulfillments {
+			id
+			status
+			created
+			trackingNumber
+			lines {
+				id
+				quantity
+				orderLine {
+					id
+				}
+			}
+		}
+	}
+}

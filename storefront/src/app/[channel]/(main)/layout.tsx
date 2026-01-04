@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { Footer } from "@/ui/components/Footer";
 import { Header } from "@/ui/components/Header";
+import { CookieConsent } from "@/ui/components/CookieConsent";
 
 export const metadata = {
 	title: "Saleor Storefront example",
@@ -20,6 +21,7 @@ export default async function RootLayout(props: {
 				<main className="flex-1">{props.children}</main>
 				<Footer channel={channel} />
 			</div>
+			<CookieConsent channel={channel} />
 		</>
 	);
 }

@@ -1,0 +1,35 @@
+query SitemapData($channel: String!) {
+	categories(first: 100) {
+		edges {
+			node {
+				id
+				slug
+			}
+		}
+	}
+	collections(first: 100, channel: $channel) {
+		edges {
+			node {
+				id
+				slug
+			}
+		}
+	}
+	pages(first: 100) {
+		edges {
+			node {
+				id
+				slug
+			}
+		}
+	}
+	products(first: 1000, channel: $channel, sortBy: { field: LAST_MODIFIED_AT, direction: DESC }) {
+		edges {
+			node {
+				id
+				slug
+				updatedAt
+			}
+		}
+	}
+}
