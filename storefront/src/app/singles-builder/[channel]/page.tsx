@@ -1,54 +1,105 @@
 export const dynamic = "force-dynamic";
 
-/**
- * Singles Builder Main Page
- *
- * This is the main interface for staff to search and build carts
- * of MTG singles for customers.
- *
- * Features (to be implemented):
- * - Fast debounced search
- * - Filter sidebar (set, rarity, foil, condition, price, in-stock)
- * - Virtualized results list
- * - Cart drawer with quantity management
- * - Short code generation for POS handoff
- */
-export default async function SinglesBuilderPage(props: {
+import { Suspense } from "react";
+import { SinglesBuilderSearchDocument } from "@/gql/graphql";
+import { executeGraphQL } from "@/lib/graphql";
+import { SinglesSearch, SinglesResultsWrapper } from "./components";
+import { fetchSinglesBuilderProducts, addToSinglesCart } from "./actions";
+
+interface PageProps {
 	params: Promise<{ channel: string }>;
 	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+async function SearchResults({
+	channel,
+	searchQuery,
+}: {
+	channel: string;
+	searchQuery: string;
 }) {
-	const { channel } = await props.params;
-	const searchParams = await props.searchParams;
-	const searchQuery = typeof searchParams.q === "string" ? searchParams.q : "";
+	if (!searchQuery) {
+		return (
+			<div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
+				<svg
+					className="mx-auto h-12 w-12 text-gray-400"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						strokeWidth={1.5}
+						d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+					/>
+				</svg>
+				<h3 className="mt-4 text-lg font-medium text-gray-900">Search for cards</h3>
+				<p className="mt-2 text-gray-500">
+					Start typing to search for MTG singles across all printings and variants.
+				</p>
+			</div>
+		);
+	}
+
+	const products = await executeGraphQL(SinglesBuilderSearchDocument, {
+		variables: {
+			channel,
+			search: searchQuery,
+			first: 50,
+		},
+		revalidate: 0,
+	});
+
+	// Bind the channel to the action
+	const boundFetchMore = async (
+		channel: string,
+		search: string,
+		after: string | null,
+	) => {
+		"use server";
+		return fetchSinglesBuilderProducts(channel, search, after);
+	};
+
+	const boundAddToCart = async (variantId: string, quantity: number) => {
+		"use server";
+		return addToSinglesCart(variantId, quantity, channel);
+	};
+
+	return (
+		<SinglesResultsWrapper
+			initialData={products.products}
+			channel={channel}
+			searchQuery={searchQuery}
+			fetchMoreAction={boundFetchMore}
+			addToCartAction={boundAddToCart}
+		/>
+	);
+}
+
+function SearchResultsSkeleton() {
+	return (
+		<div className="space-y-2">
+			{[...Array(5)].map((_, i) => (
+				<div
+					key={i}
+					className="h-32 animate-pulse rounded-lg border border-gray-200 bg-gray-100"
+				/>
+			))}
+		</div>
+	);
+}
+
+export default async function SinglesBuilderPage({ params, searchParams }: PageProps) {
+	const { channel } = await params;
+	const resolvedSearchParams = await searchParams;
+	const searchQuery = typeof resolvedSearchParams.q === "string" ? resolvedSearchParams.q : "";
 
 	return (
 		<div className="mx-auto max-w-7xl px-4 py-6">
 			{/* Search Header */}
 			<div className="mb-6">
-				<form method="GET" action={`/singles-builder/${channel}`}>
-					<div className="relative">
-						<input
-							type="text"
-							name="q"
-							defaultValue={searchQuery}
-							placeholder="Search cards by name, set, collector number..."
-							className="w-full rounded-lg border border-gray-300 px-4 py-3 pl-12 text-lg shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-						/>
-						<svg
-							className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-							/>
-						</svg>
-					</div>
-				</form>
+				<SinglesSearch />
 			</div>
 
 			{/* Main Content Area */}
@@ -63,20 +114,20 @@ export default async function SinglesBuilderPage(props: {
 						</div>
 						<div className="space-y-2">
 							<label className="flex items-center gap-2">
-								<input type="checkbox" className="rounded" />
+								<input type="checkbox" className="rounded" disabled />
 								<span>In Stock Only</span>
 							</label>
 						</div>
 					</div>
 				</aside>
 
-				{/* Results Area (Placeholder) */}
+				{/* Results Area */}
 				<section className="lg:col-span-3">
 					<div className="mb-4 flex items-center justify-between">
 						<p className="text-sm text-gray-600">
-							{searchQuery ? `Searching for "${searchQuery}"...` : "Enter a search term to find cards"}
+							{searchQuery ? `Results for "${searchQuery}"` : "Enter a search term to find cards"}
 						</p>
-						<select className="rounded border px-2 py-1 text-sm">
+						<select className="rounded border px-2 py-1 text-sm" disabled>
 							<option>Sort: Relevance</option>
 							<option>Sort: Price (Low)</option>
 							<option>Sort: Price (High)</option>
@@ -84,34 +135,9 @@ export default async function SinglesBuilderPage(props: {
 						</select>
 					</div>
 
-					{searchQuery ? (
-						<div className="rounded-lg border bg-white p-8 text-center shadow-sm">
-							<p className="text-gray-500">Search results will appear here</p>
-							<p className="mt-2 text-sm text-gray-400">
-								Virtualized list implementation coming in PR2
-							</p>
-						</div>
-					) : (
-						<div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
-							<svg
-								className="mx-auto h-12 w-12 text-gray-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={1.5}
-									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-								/>
-							</svg>
-							<h3 className="mt-4 text-lg font-medium text-gray-900">Search for cards</h3>
-							<p className="mt-2 text-gray-500">
-								Start typing to search for MTG singles across all printings and variants.
-							</p>
-						</div>
-					)}
+					<Suspense fallback={<SearchResultsSkeleton />}>
+						<SearchResults channel={channel} searchQuery={searchQuery} />
+					</Suspense>
 				</section>
 			</div>
 

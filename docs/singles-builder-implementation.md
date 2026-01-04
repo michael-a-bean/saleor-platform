@@ -37,26 +37,38 @@ git checkout feature/singles-builder-channel
 2. Non-staff → redirect to `/unauthorized`
 3. Staff → access granted
 
-## Remaining Work
+### PR2: Search UI ✅
 
-### PR2: Search UI (Next)
+**Features:**
+- Debounced search input (300ms) with keyboard shortcuts
+- Virtualized results list using @tanstack/react-virtual
+- Product cards with thumbnail, set info, collector number, rarity
+- Variant rows showing condition, finish, stock, price
+- Quick-add buttons with loading states
+- Infinite scroll with load more
+- Toast notifications for cart actions
 
-**Scope:**
-- Debounced search input (300ms)
-- Virtualized results list (@tanstack/react-virtual)
-- Display all printings/variants with key attributes
-- Quick-add buttons
-
-**Files to Create:**
+**Files Created:**
 ```
 storefront/src/graphql/SinglesBuilderSearch.graphql
 storefront/src/app/singles-builder/[channel]/components/
-  ├── SinglesSearch.tsx
-  ├── SinglesResults.tsx
-  └── SinglesResultItem.tsx
+  ├── index.ts
+  ├── SinglesSearch.tsx          - Debounced search with URL sync
+  ├── SinglesResults.tsx         - Virtualized list container
+  ├── SinglesResultItem.tsx      - Product/variant display
+  └── SinglesResultsWrapper.tsx  - Client wrapper for data fetching
+storefront/src/app/singles-builder/[channel]/actions.ts - Server actions
+storefront/package.json - Added @tanstack/react-virtual
 ```
 
-### PR3: Filtering
+**GraphQL:**
+- `SinglesBuilderSearch` query with product + variant fragments
+- Fetches: name, thumbnail, attributes (set, rarity, collector-number)
+- Variant details: condition, finish, price, stock quantity
+
+## Remaining Work
+
+### PR3: Filtering (Next)
 
 **Scope:**
 - Filter sidebar component
