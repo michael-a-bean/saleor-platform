@@ -1,9 +1,15 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
-import { SinglesBuilderSearchDocument } from "@/gql/graphql";
+import { SinglesBuilderSearchDocument, type ProductFilterInput } from "@/gql/graphql";
 import { executeGraphQL } from "@/lib/graphql";
-import { SinglesSearch, SinglesResultsWrapper } from "./components";
+import {
+	SinglesSearch,
+	SinglesResultsWrapper,
+	SinglesFilters,
+	parseFiltersFromURL,
+} from "./components";
+import { buildSinglesFilter } from "./components/buildSinglesFilter";
 import { fetchSinglesBuilderProducts, addToSinglesCart } from "./actions";
 
 interface PageProps {
@@ -14,11 +20,16 @@ interface PageProps {
 async function SearchResults({
 	channel,
 	searchQuery,
+	filter,
 }: {
 	channel: string;
 	searchQuery: string;
+	filter: ProductFilterInput;
 }) {
-	if (!searchQuery) {
+	const hasSearch = searchQuery.trim().length > 0;
+	const hasFilters = Object.keys(filter).length > 0;
+
+	if (!hasSearch && !hasFilters) {
 		return (
 			<div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
 				<svg
@@ -47,18 +58,19 @@ async function SearchResults({
 			channel,
 			search: searchQuery,
 			first: 50,
+			filter,
 		},
 		revalidate: 0,
 	});
 
-	// Bind the channel to the action
+	// Bind the channel and filter to the action
 	const boundFetchMore = async (
 		channel: string,
 		search: string,
 		after: string | null,
 	) => {
 		"use server";
-		return fetchSinglesBuilderProducts(channel, search, after);
+		return fetchSinglesBuilderProducts(channel, search, after, filter);
 	};
 
 	const boundAddToCart = async (variantId: string, quantity: number) => {
@@ -95,6 +107,18 @@ export default async function SinglesBuilderPage({ params, searchParams }: PageP
 	const resolvedSearchParams = await searchParams;
 	const searchQuery = typeof resolvedSearchParams.q === "string" ? resolvedSearchParams.q : "";
 
+	// Parse filter state from URL
+	const urlSearchParams = new URLSearchParams();
+	for (const [key, value] of Object.entries(resolvedSearchParams)) {
+		if (typeof value === "string") {
+			urlSearchParams.set(key, value);
+		}
+	}
+	const filterState = parseFiltersFromURL(urlSearchParams);
+
+	// Build GraphQL filter
+	const graphqlFilter = buildSinglesFilter(searchQuery, filterState);
+
 	return (
 		<div className="mx-auto max-w-7xl px-4 py-6">
 			{/* Search Header */}
@@ -104,28 +128,16 @@ export default async function SinglesBuilderPage({ params, searchParams }: PageP
 
 			{/* Main Content Area */}
 			<div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-				{/* Filter Sidebar (Placeholder) */}
+				{/* Filter Sidebar */}
 				<aside className="rounded-lg border bg-white p-4 shadow-sm lg:col-span-1">
-					<h2 className="mb-4 font-semibold text-gray-900">Filters</h2>
-					<div className="space-y-4 text-sm text-gray-500">
-						<div className="rounded border border-dashed border-gray-300 p-4 text-center">
-							<p>Filter sidebar</p>
-							<p className="text-xs">(Coming in PR3)</p>
-						</div>
-						<div className="space-y-2">
-							<label className="flex items-center gap-2">
-								<input type="checkbox" className="rounded" disabled />
-								<span>In Stock Only</span>
-							</label>
-						</div>
-					</div>
+					<SinglesFilters />
 				</aside>
 
 				{/* Results Area */}
 				<section className="lg:col-span-3">
 					<div className="mb-4 flex items-center justify-between">
 						<p className="text-sm text-gray-600">
-							{searchQuery ? `Results for "${searchQuery}"` : "Enter a search term to find cards"}
+							{searchQuery ? `Results for "${searchQuery}"` : "Use search or filters to find cards"}
 						</p>
 						<select className="rounded border px-2 py-1 text-sm" disabled>
 							<option>Sort: Relevance</option>
@@ -136,7 +148,7 @@ export default async function SinglesBuilderPage({ params, searchParams }: PageP
 					</div>
 
 					<Suspense fallback={<SearchResultsSkeleton />}>
-						<SearchResults channel={channel} searchQuery={searchQuery} />
+						<SearchResults channel={channel} searchQuery={searchQuery} filter={graphqlFilter} />
 					</Suspense>
 				</section>
 			</div>

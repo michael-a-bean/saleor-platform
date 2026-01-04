@@ -9,6 +9,7 @@ import {
 	CheckoutFindDocument,
 	CheckoutCreateDocument,
 	type SinglesBuilderSearchQuery,
+	type ProductFilterInput,
 } from "@/gql/graphql";
 
 const CHECKOUT_COOKIE_NAME = "checkout-id";
@@ -17,17 +18,30 @@ export async function fetchSinglesBuilderProducts(
 	channel: string,
 	search: string,
 	after: string | null = null,
+	filter?: ProductFilterInput,
 ): Promise<SinglesBuilderSearchQuery["products"]> {
-	if (!search.trim()) {
+	// Allow empty search if filters are applied
+	const hasSearch = search.trim().length > 0;
+	const hasFilters = filter && Object.keys(filter).length > 0;
+
+	if (!hasSearch && !hasFilters) {
 		return null;
 	}
+
+	// Build the filter object
+	const productFilter: ProductFilterInput = {
+		...filter,
+		// If search is provided, add it to the filter
+		...(hasSearch && { search: search.trim() }),
+	};
 
 	const { products } = await executeGraphQL(SinglesBuilderSearchDocument, {
 		variables: {
 			channel,
-			search: search.trim(),
+			search: search.trim() || "", // Required by query but may be empty
 			first: 50,
 			after: after ?? undefined,
+			filter: productFilter,
 		},
 		revalidate: 0, // Don't cache search results
 	});

@@ -56,12 +56,13 @@ query SinglesBuilderSearch(
 	$channel: String!
 	$first: Int = 50
 	$after: String
+	$filter: ProductFilterInput
 ) {
 	products(
 		first: $first
 		after: $after
 		channel: $channel
-		filter: { search: $search }
+		filter: $filter
 		sortBy: { field: RANK, direction: DESC }
 	) {
 		totalCount
