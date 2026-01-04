@@ -66,32 +66,51 @@ storefront/package.json - Added @tanstack/react-virtual
 - Fetches: name, thumbnail, attributes (set, rarity, collector-number)
 - Variant details: condition, finish, price, stock quantity
 
+### PR3: Filtering ✅
+
+**Features:**
+- Filter sidebar component with toggle chips
+- Set name text search (debounced 400ms)
+- Multi-select filters: rarity, condition, finish
+- Price range inputs (min/max)
+- In-stock only toggle
+- URL state synchronization
+- Active filter count badge
+- Clear all button
+
+**Files Created:**
+```
+storefront/src/app/singles-builder/[channel]/components/
+  ├── filterTypes.ts          - Filter state types and URL helpers
+  ├── buildSinglesFilter.ts   - GraphQL filter builder
+  └── SinglesFilters.tsx      - Filter sidebar UI component
+```
+
+**GraphQL Updates:**
+- `SinglesBuilderSearch` query now accepts `ProductFilterInput`
+- Server action updated to pass filters to query
+
+**Filter Implementation:**
+- Product-level: rarity, price range, stock availability, set name (via search)
+- Variant-level: condition, finish (client-side filtering available)
+
 ## Remaining Work
-
-### PR3: Filtering (Next)
-
-**Scope:**
-- Filter sidebar component
-- Set dropdown (async load)
-- Multi-select: rarity, finish, condition
-- Range: price
-- Toggle: in-stock only
-- URL state sync
 
 ### PR4: Cart Persistence
 
 **Scope:**
-- Zustand cart store
-- Cart drawer component
-- Saleor checkout mutations
+- Zustand cart store for local cart state
+- Cart drawer/panel component
+- Saleor checkout mutations integration
 - Customer name + notes (metadata)
-- Short code generation
+- Short code generation for POS handoff
 
 ### PR5: POS Handoff
 
 **Scope:**
-- Cart lookup API endpoint
+- Cart lookup API endpoint (`/api/singles-builder/lookup`)
 - POS app retrieve screen
+- Cart to draft order conversion
 - Documentation
 
 ## Architecture Reference
