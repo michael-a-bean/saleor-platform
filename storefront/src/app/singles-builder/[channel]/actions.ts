@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { executeGraphQL } from "@/lib/graphql";
 import {
+	searchProducts as meilisearchProducts,
+	isMeilisearchHealthy,
+	type MeilisearchProduct,
+	type SearchFilters as MeilisearchFilters,
+} from "@/lib/meilisearch";
+import {
 	SinglesBuilderSearchDocument,
 	SinglesBuilderCartFindDocument,
 	SinglesBuilderCartCreateDocument,
@@ -18,6 +24,141 @@ import {
 
 // Cookie name includes channel for channel-specific carts
 const getCheckoutCookieName = (channel: string) => `singles-cart-${channel}`;
+
+// ----- Meilisearch Types -----
+
+export interface MeilisearchSearchResult {
+	products: MeilisearchProduct[];
+	totalCount: number;
+	hasNextPage: boolean;
+	processingTimeMs: number;
+}
+
+// Transform Meilisearch product to match GraphQL fragment structure
+function transformMeilisearchProduct(product: MeilisearchProduct): NonNullable<SinglesBuilderSearchQuery["products"]>["edges"][0]["node"] {
+	return {
+		// Use original Saleor GraphQL ID for all operations
+		id: product.original_id,
+		name: product.name,
+		slug: product.slug,
+		thumbnail: product.thumbnail ? { url: product.thumbnail, alt: product.name } : null,
+		attributes: [
+			{
+				attribute: { slug: "mtg-set-name" },
+				values: product.set_name ? [{ name: product.set_name, slug: product.set_name.toLowerCase().replace(/\s+/g, "-") }] : [],
+			},
+			{
+				attribute: { slug: "mtg-set-code" },
+				values: product.set_code ? [{ name: product.set_code, slug: product.set_code.toLowerCase() }] : [],
+			},
+			{
+				attribute: { slug: "mtg-collector-number" },
+				values: product.collector_number ? [{ name: product.collector_number, slug: product.collector_number }] : [],
+			},
+			{
+				attribute: { slug: "mtg-rarity" },
+				values: product.rarity ? [{ name: product.rarity, slug: product.rarity.toLowerCase() }] : [],
+			},
+		],
+		variants: product.variants.map((v) => ({
+			// Use original Saleor variant ID for cart operations
+			id: v.original_id,
+			sku: v.sku,
+			name: `${v.condition} - ${v.finish}`,
+			quantityAvailable: v.stock,
+			attributes: [
+				{
+					attribute: { slug: "mtg-condition" },
+					values: [{ name: v.condition, slug: v.condition.toLowerCase().replace(/\s+/g, "-") }],
+				},
+				{
+					attribute: { slug: "mtg-finish" },
+					values: [{ name: v.finish, slug: v.finish.toLowerCase().replace(/\s+/g, "-") }],
+				},
+			],
+			pricing: v.price
+				? {
+						price: {
+							gross: { amount: v.price, currency: "USD" },
+						},
+					}
+				: null,
+		})),
+	};
+}
+
+// ----- Meilisearch Search Action -----
+
+export async function searchWithMeilisearch(
+	query: string,
+	channel: string,
+	options: {
+		limit?: number;
+		offset?: number;
+		conditions?: string[];
+		finishes?: string[];
+		inStockOnly?: boolean;
+	} = {},
+): Promise<MeilisearchSearchResult> {
+	const { limit = 50, offset = 0, conditions, finishes, inStockOnly } = options;
+
+	// Check if Meilisearch is healthy
+	const isHealthy = await isMeilisearchHealthy();
+	if (!isHealthy) {
+		console.warn("Meilisearch is not available, returning empty results");
+		return {
+			products: [],
+			totalCount: 0,
+			hasNextPage: false,
+			processingTimeMs: 0,
+		};
+	}
+
+	const filters: MeilisearchFilters = {};
+	if (conditions && conditions.length > 0) {
+		filters.conditions = conditions;
+	}
+	if (finishes && finishes.length > 0) {
+		filters.finishes = finishes;
+	}
+	if (inStockOnly) {
+		filters.inStockOnly = true;
+	}
+
+	const result = await meilisearchProducts(query, channel, {
+		limit,
+		offset,
+		filters,
+	});
+
+	return {
+		products: result.hits,
+		totalCount: result.estimatedTotalHits,
+		hasNextPage: offset + result.hits.length < result.estimatedTotalHits,
+		processingTimeMs: result.processingTimeMs,
+	};
+}
+
+// Transform Meilisearch results to match SinglesBuilderSearchQuery["products"] structure
+// Note: This is a pure transform function, not a server action
+export async function transformMeilisearchToGraphQL(
+	result: MeilisearchSearchResult,
+): Promise<SinglesBuilderSearchQuery["products"]> {
+	if (result.products.length === 0) {
+		return null;
+	}
+
+	return {
+		edges: result.products.map((product, index) => ({
+			cursor: String(index),
+			node: transformMeilisearchProduct(product),
+		})),
+		pageInfo: {
+			hasNextPage: result.hasNextPage,
+			endCursor: result.hasNextPage ? String(result.products.length) : null,
+		},
+	};
+}
 
 // ----- Search Actions -----
 
@@ -237,7 +378,7 @@ export async function removeCartLine(
 		const { checkoutLinesDelete } = await executeGraphQL(SinglesBuilderCartDeleteLinesDocument, {
 			variables: {
 				id: checkoutId,
-				lineIds: [lineId],
+				linesIds: [lineId],
 			},
 			cache: "no-cache",
 		});
