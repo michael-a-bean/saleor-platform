@@ -24,7 +24,7 @@ export async function Footer({ channel }: { channel: string }) {
 	return (
 		<footer className="border-neutral-300 bg-neutral-50">
 			<div className="mx-auto max-w-7xl px-4 lg:px-8">
-				<div className="grid grid-cols-3 gap-8 py-16">
+				<div className="grid grid-cols-2 gap-8 py-16 sm:grid-cols-4">
 					{footerLinks.menu?.items?.map((item) => {
 						return (
 							<div key={item.id}>
@@ -71,6 +71,28 @@ export async function Footer({ channel }: { channel: string }) {
 							</div>
 						);
 					})}
+
+					{/* Static Help section - always visible */}
+					<div>
+						<h3 className="text-sm font-semibold text-neutral-900">Help & Info</h3>
+						<ul className="mt-4 space-y-4 [&>li]:text-neutral-500">
+							<li className="text-sm">
+								<LinkWithChannel href="/contact">Contact Us</LinkWithChannel>
+							</li>
+							<li className="text-sm">
+								<LinkWithChannel href="/orders">My Orders</LinkWithChannel>
+							</li>
+							<li className="text-sm">
+								<LinkWithChannel href="/pages/privacy-policy">Privacy Policy</LinkWithChannel>
+							</li>
+							<li className="text-sm">
+								<LinkWithChannel href="/pages/terms-of-service">Terms of Service</LinkWithChannel>
+							</li>
+							<li className="text-sm">
+								<LinkWithChannel href="/pages/return-policy">Return Policy</LinkWithChannel>
+							</li>
+						</ul>
+					</div>
 				</div>
 
 				{channels?.channels && (
