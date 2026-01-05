@@ -150,6 +150,12 @@ class Command(BaseCommand):
         english_cards = [c for c in cards if c.get("lang") == "en"]
         self.stdout.write(f"English cards: {len(english_cards):,}")
 
+        # Filter out digital-only cards (Arena rebalanced cards, etc.)
+        paper_cards = [c for c in english_cards if not c.get("digital", False)]
+        digital_count = len(english_cards) - len(paper_cards)
+        self.stdout.write(f"Digital-only excluded: {digital_count:,}")
+        english_cards = paper_cards
+
         # Apply limit
         if limit > 0:
             english_cards = english_cards[:limit]

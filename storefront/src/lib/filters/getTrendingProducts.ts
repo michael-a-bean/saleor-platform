@@ -16,6 +16,11 @@ import type { ProductListItemFragment } from "@/gql/graphql";
  */
 const TRENDING_COLLECTION_SLUGS = ["featured", "trending", "bestsellers", "popular"];
 
+// Simple logging helper for server-side debugging
+function logError(context: string, error: unknown) {
+	console.error(`[getTrendingProducts] ${context}:`, error instanceof Error ? error.message : error);
+}
+
 /**
  * Fetches trending/featured products for the storefront.
  *
@@ -60,17 +65,20 @@ async function fetchFromCollection(
 				variables: {
 					slug,
 					channel,
+					first: limit,
 				},
 				revalidate: 300, // Cache for 5 minutes
 			});
 
 			const products = data.collection?.products?.edges.map(({ node }) => node) ?? [];
 			if (products.length > 0) {
-				// Return up to limit products from this collection
-				return products.slice(0, limit);
+				return products;
 			}
-		} catch {
-			// Collection doesn't exist, try next one
+		} catch (error) {
+			// Only log non-404 errors (collection not found is expected)
+			if (error instanceof Error && !error.message.includes("not found")) {
+				logError(`Failed to fetch collection '${slug}'`, error);
+			}
 			continue;
 		}
 	}
@@ -101,7 +109,8 @@ async function fetchRecentlyModified(
 		});
 
 		return data.products?.edges.map(({ node }) => node) ?? [];
-	} catch {
+	} catch (error) {
+		logError("Failed to fetch recently modified products", error);
 		return [];
 	}
 }
