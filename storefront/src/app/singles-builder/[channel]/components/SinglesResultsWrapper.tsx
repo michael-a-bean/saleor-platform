@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useTransition, useMemo } from "react";
+import { useState, useCallback, useTransition, useMemo, useEffect } from "react";
 import { toast } from "react-toastify";
 import type { SinglesBuilderProductFragment, SinglesBuilderSearchQuery } from "@/gql/graphql";
 import { SinglesResults } from "./SinglesResults";
@@ -8,6 +8,21 @@ import { useSinglesCartStore, type CartLine } from "../store";
 import type { CartActionResult } from "../actions";
 import type { SinglesFilterState } from "./filterTypes";
 import { matchesVariantFilters } from "./buildSinglesFilter";
+
+/**
+ * Check if a product name matches the search query.
+ * For multi-word searches, ALL words must be present in the product name.
+ * This filters out irrelevant results like "Verdant Force" when searching "verdant catacombs".
+ */
+function productNameMatchesSearch(productName: string, searchQuery: string): boolean {
+	if (!searchQuery.trim()) return true;
+
+	const normalizedName = productName.toLowerCase();
+	const searchWords = searchQuery.toLowerCase().trim().split(/\s+/);
+
+	// All search words must be present in the product name
+	return searchWords.every((word) => normalizedName.includes(word));
+}
 
 interface SinglesResultsWrapperProps {
 	initialData: SinglesBuilderSearchQuery["products"];
@@ -34,39 +49,53 @@ export function SinglesResultsWrapper({
 		initialData?.edges.map((e) => e.node) || [],
 	);
 	const [pageInfo, setPageInfo] = useState(initialData?.pageInfo);
-	const [totalCount] = useState(initialData?.totalCount || 0);
 	const [isPending, startTransition] = useTransition();
+
+	// Sync products state when initialData changes (e.g., when filters are applied)
+	useEffect(() => {
+		setProducts(initialData?.edges.map((e) => e.node) || []);
+		setPageInfo(initialData?.pageInfo);
+	}, [initialData]);
 
 	// Check if we have variant-level filters active
 	const hasVariantFilters = filterState && (filterState.condition.length > 0 || filterState.finish.length > 0);
 
-	// Filter products by variant-level attributes (condition, finish)
-	// This is done client-side because Saleor only supports product-level filtering
-	const filteredProducts = useMemo(() => {
-		if (!hasVariantFilters || !filterState) {
-			return products;
-		}
+	// Filter products:
+	// 1. By search query (all words must be in product name) - eliminates irrelevant results
+	// 2. By variant-level attributes (condition, finish) - done client-side since Saleor doesn't support it
+	const filteredProducts = useMemo((): SinglesBuilderProductFragment[] => {
+		const result: SinglesBuilderProductFragment[] = [];
 
-		return products
-			.map((product) => {
-				// Filter variants that match the condition/finish filters
+		for (const product of products) {
+			// Filter by search query - all words must be present in product name
+			if (!productNameMatchesSearch(product.name, searchQuery)) {
+				continue;
+			}
+
+			// If we have variant filters, apply them
+			if (hasVariantFilters && filterState) {
 				const matchingVariants = product.variants?.filter((variant) =>
 					matchesVariantFilters(variant.attributes, filterState),
 				);
 
-				// If no variants match, exclude this product
+				// If no variants match, skip this product
 				if (!matchingVariants || matchingVariants.length === 0) {
-					return null;
+					continue;
 				}
 
-				// Return product with only matching variants
-				return {
+				// Add product with only matching variants
+				result.push({
 					...product,
 					variants: matchingVariants,
-				};
-			})
-			.filter((p): p is SinglesBuilderProductFragment => p !== null);
-	}, [products, filterState, hasVariantFilters]);
+				});
+			} else {
+				// No variant filters, just add the product
+				result.push(product);
+			}
+		}
+
+		return result;
+	}, [products, searchQuery, filterState, hasVariantFilters]);
 
 	const handleLoadMore = useCallback(() => {
 		if (!pageInfo?.hasNextPage || !pageInfo?.endCursor || isPending) return;
@@ -115,8 +144,8 @@ export function SinglesResultsWrapper({
 		[addToCartAction, setCart],
 	);
 
-	// Calculate display count - if variant filtering is active, show filtered count
-	const displayCount = hasVariantFilters ? filteredProducts.length : totalCount;
+	// Always show filtered count since we filter by search query match
+	const displayCount = filteredProducts.length;
 
 	return (
 		<SinglesResults

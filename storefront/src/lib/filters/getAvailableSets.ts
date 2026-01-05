@@ -1,116 +1,82 @@
 "use server";
 
-import { invariant } from "ts-invariant";
+const MEILISEARCH_URL = process.env.MEILISEARCH_URL || "http://localhost:7700";
 
 interface SetOption {
 	value: string;
 	label: string;
 }
 
-interface ProductAttribute {
-	attribute: {
-		slug: string;
+interface MeilisearchFacetResponse {
+	hits: Array<{ set_name?: string }>;
+	facetDistribution?: {
+		set_name?: Record<string, number>;
 	};
-	values: Array<{
-		name: string;
-	}>;
+	estimatedTotalHits: number;
 }
 
-interface ProductNode {
-	attributes: ProductAttribute[];
-}
-
-interface ProductEdge {
-	node: ProductNode;
-}
-
-interface ProductsResponse {
-	data: {
-		products: {
-			edges: ProductEdge[];
-		};
-	};
+/**
+ * Get index name for a channel.
+ */
+function getIndexName(channel: string): string {
+	// Map channel slugs to index names
+	if (channel === "default-channel" || channel === "webstore") {
+		return "webstore-products";
+	}
+	return `${channel}-products`;
 }
 
 /**
  * Fetch available set names for products matching a search query.
- * This is used to populate the set dropdown with only relevant options.
+ * Uses Meilisearch faceting to get sets from actual search results.
  */
 export async function getAvailableSetsForSearch(
 	search: string,
 	channel: string = "webstore",
 ): Promise<SetOption[]> {
-	invariant(process.env.NEXT_PUBLIC_SALEOR_API_URL, "Missing NEXT_PUBLIC_SALEOR_API_URL");
-
 	if (!search || search.length < 2) {
 		return [];
 	}
 
-	const query = `
-		query ProductSetsForSearch($channel: String!, $search: String!) {
-			products(first: 100, channel: $channel, filter: { search: $search }) {
-				edges {
-					node {
-						attributes {
-							attribute {
-								slug
-							}
-							values {
-								name
-							}
-						}
-					}
-				}
-			}
-		}
-	`;
+	const indexName = getIndexName(channel);
 
 	try {
-		const response = await fetch(process.env.NEXT_PUBLIC_SALEOR_API_URL, {
+		const response = await fetch(`${MEILISEARCH_URL}/indexes/${indexName}/search`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({
-				query,
-				variables: { channel, search },
+				q: search,
+				limit: 0, // We only need facets, not hits
+				facets: ["set_name"],
 			}),
-			next: { revalidate: 300 }, // Cache for 5 minutes
+			cache: "no-store",
 		});
 
 		if (!response.ok) {
+			console.error("Meilisearch facet error:", response.status);
 			return [];
 		}
 
-		const data = (await response.json()) as ProductsResponse;
+		const data = (await response.json()) as MeilisearchFacetResponse;
 
-		if (!data.data?.products?.edges) {
+		if (!data.facetDistribution?.set_name) {
 			return [];
 		}
 
-		// Extract unique set names from the response
-		const sets = new Set<string>();
+		// Convert facet distribution to options array, sorted by count (most common first)
+		const setEntries = Object.entries(data.facetDistribution.set_name);
 
-		for (const edge of data.data.products.edges) {
-			for (const attr of edge.node.attributes) {
-				if (attr.attribute.slug === "mtg-set-name") {
-					for (const val of attr.values) {
-						if (val.name) {
-							sets.add(val.name);
-						}
-					}
-				}
-			}
-		}
-
-		// Convert to options array and sort alphabetically
-		return Array.from(sets)
-			.sort((a, b) => a.localeCompare(b))
-			.map((name) => ({
+		return setEntries
+			.sort((a, b) => b[1] - a[1]) // Sort by count descending
+			.slice(0, 50) // Limit to top 50 sets
+			.map(([name]) => ({
 				value: name,
 				label: name,
 			}));
-	} catch {
+	} catch (error) {
+		console.error("Failed to fetch sets from Meilisearch:", error);
 		return [];
 	}
 }
