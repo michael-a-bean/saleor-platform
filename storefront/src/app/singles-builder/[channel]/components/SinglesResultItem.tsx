@@ -1,160 +1,343 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { SinglesBuilderProductFragment, SinglesBuilderVariantFragment } from "@/gql/graphql";
 
-interface VariantRowProps {
-	variant: SinglesBuilderVariantFragment;
-	onQuickAdd: (variantId: string, quantity: number) => void;
+// Convert full condition name to abbreviation
+function abbreviateCondition(condition: string): string {
+	const abbrevMap: Record<string, string> = {
+		"Near Mint": "NM",
+		"Lightly Played": "LP",
+		"Moderately Played": "MP",
+		"Heavily Played": "HP",
+		"Damaged": "DMG",
+	};
+	return abbrevMap[condition] || condition;
 }
 
-function VariantRow({ variant, onQuickAdd }: VariantRowProps) {
-	const [isAdding, setIsAdding] = useState(false);
+// Condition sort order (NM first, DMG last)
+const CONDITION_ORDER: Record<string, number> = {
+	"Near Mint": 0,
+	"Lightly Played": 1,
+	"Moderately Played": 2,
+	"Heavily Played": 3,
+	"Damaged": 4,
+};
 
-	// Extract condition and finish from variant attributes
-	const condition = variant.attributes?.find((a) => a.attribute.slug === "condition")?.values[0]?.name || "NM";
-	const finish = variant.attributes?.find((a) => a.attribute.slug === "finish")?.values[0]?.name;
+function getConditionFromVariant(variant: SinglesBuilderVariantFragment): string {
+	return variant.attributes?.find((a) => a.attribute.slug === "mtg-condition")?.values[0]?.name || "Near Mint";
+}
 
-	const price = variant.pricing?.price?.gross;
-	const inStock = (variant.quantityAvailable ?? 0) > 0;
-	const stockQty = variant.quantityAvailable ?? 0;
-
-	const handleQuickAdd = async () => {
-		if (!inStock || isAdding) return;
-		setIsAdding(true);
-		try {
-			await onQuickAdd(variant.id, 1);
-		} finally {
-			setIsAdding(false);
-		}
-	};
-
-	return (
-		<div
-			className={`flex items-center justify-between gap-2 rounded px-2 py-1.5 text-sm ${
-				inStock ? "hover:bg-gray-50" : "opacity-50"
-			}`}
-		>
-			<div className="flex items-center gap-3 min-w-0">
-				{/* Condition badge */}
-				<span
-					className={`inline-flex w-8 justify-center rounded px-1.5 py-0.5 text-xs font-medium ${
-						condition === "NM"
-							? "bg-green-100 text-green-800"
-							: condition === "LP"
-								? "bg-blue-100 text-blue-800"
-								: condition === "MP"
-									? "bg-yellow-100 text-yellow-800"
-									: "bg-gray-100 text-gray-800"
-					}`}
-				>
-					{condition}
-				</span>
-				{/* Finish indicator */}
-				{finish && finish !== "Non-Foil" && (
-					<span className="inline-flex items-center gap-1 text-xs text-purple-600">
-						<svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-							<path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" />
-						</svg>
-						{finish}
-					</span>
-				)}
-				{/* SKU if useful */}
-				{variant.sku && (
-					<span className="hidden text-xs text-gray-400 lg:inline" title="SKU">
-						{variant.sku}
-					</span>
-				)}
-			</div>
-
-			<div className="flex items-center gap-3">
-				{/* Stock quantity */}
-				<span className={`text-xs ${inStock ? "text-gray-600" : "text-red-500"}`}>
-					{inStock ? `${stockQty} avail` : "Out"}
-				</span>
-				{/* Price */}
-				{price && (
-					<span className="w-16 text-right font-medium">
-						${price.amount.toFixed(2)}
-					</span>
-				)}
-				{/* Quick add button */}
-				<button
-					type="button"
-					onClick={handleQuickAdd}
-					disabled={!inStock || isAdding}
-					className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
-						inStock
-							? "bg-blue-600 text-white hover:bg-blue-700"
-							: "cursor-not-allowed bg-gray-200 text-gray-400"
-					}`}
-					title={inStock ? "Add to cart" : "Out of stock"}
-				>
-					{isAdding ? (
-						<svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
-							<circle
-								className="opacity-25"
-								cx="12"
-								cy="12"
-								r="10"
-								stroke="currentColor"
-								strokeWidth="4"
-							/>
-							<path
-								className="opacity-75"
-								fill="currentColor"
-								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-							/>
-						</svg>
-					) : (
-						<svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-						</svg>
-					)}
-					Add
-				</button>
-			</div>
-		</div>
-	);
+// Cart line info for a variant
+export interface CartLineInfo {
+	lineId: string;
+	quantity: number;
 }
 
 interface SinglesResultItemProps {
 	product: SinglesBuilderProductFragment;
 	onQuickAdd: (variantId: string, quantity: number) => void;
+	onUpdateQuantity: (lineId: string, quantity: number) => void;
+	onRemoveLine: (lineId: string) => void;
+	cartLines?: Map<string, CartLineInfo>; // Map of variantId -> cart line info
 	style?: React.CSSProperties;
 }
 
-export function SinglesResultItem({ product, onQuickAdd, style }: SinglesResultItemProps) {
-	const [isExpanded, setIsExpanded] = useState(true);
+// Inline variant row with condition, qty controls, stock, and price
+interface VariantRowProps {
+	variant: SinglesBuilderVariantFragment;
+	onQuickAdd: (variantId: string, quantity: number) => void;
+	onUpdateQuantity: (lineId: string, quantity: number) => void;
+	onRemoveLine: (lineId: string) => void;
+	cartLine?: CartLineInfo; // Cart line info if this variant is in cart
+}
 
+function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartLine }: VariantRowProps) {
+	const [addQuantity, setAddQuantity] = useState(1);
+	const [isPending, setIsPending] = useState(false);
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	const conditionFull = getConditionFromVariant(variant);
+	const condition = abbreviateCondition(conditionFull);
+	const finish = variant.attributes?.find((a) => a.attribute.slug === "mtg-finish")?.values[0]?.name;
+	const price = variant.pricing?.price?.gross;
+	const stockQty = variant.quantityAvailable ?? 0;
+	const inStock = stockQty > 0;
+	const isFoil = finish && finish !== "Non-Foil";
+
+	const cartQty = cartLine?.quantity ?? 0;
+	const isInCart = cartQty > 0;
+
+	// Calculate max we can add (stock minus what's in cart)
+	const maxAddable = Math.max(0, stockQty - cartQty);
+	const canAdd = maxAddable > 0 && addQuantity > 0 && addQuantity <= maxAddable;
+
+	// --- Handlers for adding new items ---
+	const handleAdd = async () => {
+		if (!canAdd || isPending) return;
+		setIsPending(true);
+		try {
+			await onQuickAdd(variant.id, addQuantity);
+			setAddQuantity(1);
+		} finally {
+			setIsPending(false);
+		}
+	};
+
+	const handleAddDecrement = () => {
+		setAddQuantity((q) => Math.max(1, q - 1));
+	};
+
+	const handleAddIncrement = () => {
+		setAddQuantity((q) => Math.min(maxAddable, q + 1));
+	};
+
+	const handleAddInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const val = parseInt(e.target.value, 10);
+		if (!isNaN(val) && val >= 0) {
+			setAddQuantity(Math.min(maxAddable, Math.max(0, val)));
+		} else if (e.target.value === "") {
+			setAddQuantity(0);
+		}
+	};
+
+	const handleAddInputBlur = () => {
+		if (addQuantity < 1) setAddQuantity(1);
+	};
+
+	const handleAddKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter" && canAdd) {
+			handleAdd();
+		}
+	};
+
+	// --- Handlers for adjusting cart quantity ---
+	const handleCartDecrement = async () => {
+		if (!cartLine || isPending) return;
+		setIsPending(true);
+		try {
+			if (cartLine.quantity <= 1) {
+				await onRemoveLine(cartLine.lineId);
+			} else {
+				await onUpdateQuantity(cartLine.lineId, cartLine.quantity - 1);
+			}
+		} finally {
+			setIsPending(false);
+		}
+	};
+
+	const handleCartIncrement = async () => {
+		if (!cartLine || isPending || cartQty >= stockQty) return;
+		setIsPending(true);
+		try {
+			await onUpdateQuantity(cartLine.lineId, cartLine.quantity + 1);
+		} finally {
+			setIsPending(false);
+		}
+	};
+
+	const handleRemove = async () => {
+		if (!cartLine || isPending) return;
+		setIsPending(true);
+		try {
+			await onRemoveLine(cartLine.lineId);
+		} finally {
+			setIsPending(false);
+		}
+	};
+
+	// Color coding by condition
+	const conditionColor = condition === "NM"
+		? "text-green-700"
+		: condition === "LP"
+			? "text-blue-700"
+			: condition === "MP"
+				? "text-yellow-700"
+				: "text-gray-600";
+
+	const conditionBgColor = condition === "NM"
+		? "bg-green-50"
+		: condition === "LP"
+			? "bg-blue-50"
+			: condition === "MP"
+				? "bg-yellow-50"
+				: "bg-gray-50";
+
+	return (
+		<div
+			className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs ${
+				isInCart
+					? "border-blue-300 bg-blue-50"
+					: inStock
+						? "border-gray-200 bg-white"
+						: "border-gray-100 bg-gray-50 opacity-60"
+			}`}
+		>
+			{/* Condition badge */}
+			<span className={`rounded px-1 py-0.5 font-medium ${conditionColor} ${conditionBgColor}`}>
+				{isFoil && <span className="text-purple-600 mr-0.5">✦</span>}
+				{condition}
+			</span>
+
+			{/* Stock info */}
+			<span className="text-gray-400 text-[10px]">{stockQty}</span>
+
+			{/* Price */}
+			{price && <span className="font-medium text-gray-700">${price.amount.toFixed(2)}</span>}
+
+			{/* Show cart quantity controls if in cart */}
+			{isInCart ? (
+				<div className="flex items-center gap-0.5 ml-1">
+					{/* Cart quantity adjustment */}
+					<button
+						type="button"
+						onClick={handleCartDecrement}
+						disabled={isPending}
+						className="flex h-6 w-6 items-center justify-center rounded border border-blue-300 bg-blue-100 text-sm text-blue-700 hover:bg-blue-200 disabled:opacity-40 disabled:cursor-not-allowed"
+						aria-label="Decrease cart quantity"
+					>
+						-
+					</button>
+					<span className="min-w-[40px] h-6 flex items-center justify-center rounded border border-blue-300 bg-blue-50 px-1 text-sm font-bold text-blue-700">{cartQty}</span>
+					<button
+						type="button"
+						onClick={handleCartIncrement}
+						disabled={isPending || cartQty >= stockQty}
+						className="flex h-6 w-6 items-center justify-center rounded border border-blue-300 bg-blue-100 text-sm text-blue-700 hover:bg-blue-200 disabled:opacity-40 disabled:cursor-not-allowed"
+						aria-label="Increase cart quantity"
+					>
+						+
+					</button>
+					{/* Remove button */}
+					<button
+						type="button"
+						onClick={handleRemove}
+						disabled={isPending}
+						className="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-40"
+						aria-label="Remove from cart"
+						title="Remove"
+					>
+						{isPending ? (
+							<svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+								<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+								<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+							</svg>
+						) : (
+							<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						)}
+					</button>
+				</div>
+			) : inStock ? (
+				/* Add controls for items not in cart */
+				<div className="flex items-center gap-0.5 ml-1">
+					<button
+						type="button"
+						onClick={handleAddDecrement}
+						disabled={addQuantity <= 1 || isPending}
+						className="flex h-6 w-6 items-center justify-center rounded border border-gray-300 bg-gray-50 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+						aria-label="Decrease quantity"
+					>
+						-
+					</button>
+					<input
+						ref={inputRef}
+						type="text"
+						inputMode="numeric"
+						value={addQuantity}
+						onChange={handleAddInputChange}
+						onBlur={handleAddInputBlur}
+						onKeyDown={handleAddKeyDown}
+						disabled={isPending}
+						className="h-6 w-10 rounded border border-gray-300 bg-white text-center text-sm font-medium focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+						aria-label="Quantity to add"
+					/>
+					<button
+						type="button"
+						onClick={handleAddIncrement}
+						disabled={addQuantity >= maxAddable || isPending}
+						className="flex h-6 w-6 items-center justify-center rounded border border-gray-300 bg-gray-50 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+						aria-label="Increase quantity"
+					>
+						+
+					</button>
+					<button
+						type="button"
+						onClick={handleAdd}
+						disabled={!canAdd || isPending}
+						className={`flex h-6 items-center justify-center rounded px-2 text-sm font-medium transition-colors ${
+							canAdd && !isPending
+								? "bg-blue-600 text-white hover:bg-blue-700"
+								: "bg-gray-200 text-gray-400 cursor-not-allowed"
+						}`}
+						aria-label="Add to cart"
+					>
+						{isPending ? (
+							<svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+								<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+								<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+							</svg>
+						) : (
+							"Add"
+						)}
+					</button>
+				</div>
+			) : (
+				<span className="ml-1 text-[10px] text-gray-400 italic">Out</span>
+			)}
+		</div>
+	);
+}
+
+export function SinglesResultItem({ product, onQuickAdd, onUpdateQuantity, onRemoveLine, cartLines, style }: SinglesResultItemProps) {
 	// Extract key MTG attributes from product
-	const setName = product.attributes?.find((a) => a.attribute.slug === "set")?.values[0]?.name;
-	const setCode = product.attributes?.find((a) => a.attribute.slug === "set-code")?.values[0]?.name;
-	const collectorNumber = product.attributes?.find((a) => a.attribute.slug === "collector-number")?.values[0]?.name;
-	const rarity = product.attributes?.find((a) => a.attribute.slug === "rarity")?.values[0]?.name;
+	const setCode = product.attributes?.find((a) => a.attribute.slug === "mtg-set-code")?.values[0]?.name;
+	const collectorNumber = product.attributes?.find((a) => a.attribute.slug === "mtg-collector-number")?.values[0]?.name;
+	const rarity = product.attributes?.find((a) => a.attribute.slug === "mtg-rarity")?.values[0]?.name;
 
-	// Count in-stock variants
+	// Process variants: sort by condition, filter to show NM always + in-stock others + in-cart items
 	const variants = product.variants || [];
-	const inStockCount = variants.filter((v) => (v.quantityAvailable ?? 0) > 0).length;
+	const sortedAndFilteredVariants = [...variants]
+		.sort((a, b) => {
+			const condA = getConditionFromVariant(a);
+			const condB = getConditionFromVariant(b);
+			return (CONDITION_ORDER[condA] ?? 99) - (CONDITION_ORDER[condB] ?? 99);
+		})
+		.filter((variant) => {
+			const condition = getConditionFromVariant(variant);
+			const inStock = (variant.quantityAvailable ?? 0) > 0;
+			const isInCart = cartLines?.has(variant.id) ?? false;
+			// Show if: NM condition, in stock, or already in cart
+			return condition === "Near Mint" || inStock || isInCart;
+		});
+
+	// Rarity color
+	const rarityColor = rarity === "mythic"
+		? "text-orange-600"
+		: rarity === "rare"
+			? "text-yellow-600"
+			: rarity === "uncommon"
+				? "text-gray-500"
+				: "text-gray-400";
 
 	return (
 		<div style={style} className="border-b border-gray-100 bg-white">
-			{/* Card header with image and info */}
-			<div className="flex gap-3 p-3">
+			<div className="flex items-center gap-3 px-3 py-2">
 				{/* Thumbnail */}
-				<div className="relative h-20 w-14 flex-shrink-0 overflow-hidden rounded bg-gray-100">
+				<div className="relative h-14 w-10 flex-shrink-0 overflow-hidden rounded bg-gray-100">
 					{product.thumbnail?.url ? (
 						<Image
 							src={product.thumbnail.url}
 							alt={product.thumbnail.alt || product.name}
 							fill
 							className="object-contain"
-							sizes="56px"
+							sizes="40px"
 						/>
 					) : (
 						<div className="flex h-full w-full items-center justify-center text-gray-400">
-							<svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
 									strokeLinecap="round"
 									strokeLinejoin="round"
@@ -166,71 +349,36 @@ export function SinglesResultItem({ product, onQuickAdd, style }: SinglesResultI
 					)}
 				</div>
 
-				{/* Card info */}
-				<div className="min-w-0 flex-1">
-					<div className="flex items-start justify-between gap-2">
-						<div className="min-w-0">
-							<h3 className="truncate font-medium text-gray-900">{product.name}</h3>
-							<div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-gray-500">
-								{setName && (
-									<span className="truncate">
-										{setCode && <span className="uppercase">[{setCode}]</span>} {setName}
-									</span>
-								)}
-								{collectorNumber && <span>#{collectorNumber}</span>}
-								{rarity && (
-									<span
-										className={`capitalize ${
-											rarity === "mythic"
-												? "text-orange-600"
-												: rarity === "rare"
-													? "text-yellow-600"
-													: rarity === "uncommon"
-														? "text-gray-600"
-														: "text-gray-400"
-										}`}
-									>
-										{rarity}
-									</span>
-								)}
-							</div>
-						</div>
-						{/* Expand/collapse toggle */}
-						{variants.length > 1 && (
-							<button
-								type="button"
-								onClick={() => setIsExpanded(!isExpanded)}
-								className="flex-shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-								aria-label={isExpanded ? "Collapse variants" : "Expand variants"}
-							>
-								<svg
-									className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-								</svg>
-							</button>
-						)}
+				{/* Card info section */}
+				<div className="flex min-w-0 flex-1 items-center gap-2">
+					{/* Name and set info */}
+					<div className="min-w-0 flex-shrink-0">
+						<span className="font-medium text-gray-900">{product.name}</span>
+						<span className="ml-2 text-sm text-gray-500">
+							{setCode && <span className="uppercase">[{setCode}]</span>}
+							{collectorNumber && <span className="ml-1">#{collectorNumber}</span>}
+							{rarity && <span className={`ml-1 capitalize ${rarityColor}`}>{rarity}</span>}
+						</span>
 					</div>
-					{/* Stock summary */}
-					<div className="mt-1 text-xs text-gray-400">
-						{inStockCount} of {variants.length} variant{variants.length !== 1 ? "s" : ""} in stock
+
+					{/* Variants - right justified */}
+					<div className="flex flex-wrap items-center gap-1 ml-auto">
+						{sortedAndFilteredVariants.map((variant) => (
+							<VariantRow
+								key={variant.id}
+								variant={variant}
+								onQuickAdd={onQuickAdd}
+								onUpdateQuantity={onUpdateQuantity}
+								onRemoveLine={onRemoveLine}
+								cartLine={cartLines?.get(variant.id)}
+							/>
+						))}
+						{sortedAndFilteredVariants.length === 0 && (
+							<span className="text-xs text-gray-400">No variants</span>
+						)}
 					</div>
 				</div>
 			</div>
-
-			{/* Variants list */}
-			{isExpanded && variants.length > 0 && (
-				<div className="border-t border-gray-50 bg-gray-50/50 px-3 py-2">
-					<div className="space-y-1">
-						{variants.map((variant) => (
-							<VariantRow key={variant.id} variant={variant} onQuickAdd={onQuickAdd} />
-						))}
-					</div>
-				</div>
-			)}
 		</div>
 	);
 }

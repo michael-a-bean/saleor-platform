@@ -3,7 +3,7 @@
 import { useRef, useCallback, useEffect, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { SinglesBuilderProductFragment } from "@/gql/graphql";
-import { SinglesResultItem } from "./SinglesResultItem";
+import { SinglesResultItem, type CartLineInfo } from "./SinglesResultItem";
 
 // Estimate row height: header (~92px) + variants (~40px each, assume avg 2 variants)
 const ESTIMATED_ROW_HEIGHT = 172;
@@ -15,6 +15,9 @@ interface SinglesResultsProps {
 	onLoadMore: () => void;
 	isLoadingMore: boolean;
 	onQuickAdd: (variantId: string, quantity: number) => void;
+	onUpdateQuantity: (lineId: string, quantity: number) => void;
+	onRemoveLine: (lineId: string) => void;
+	cartLines?: Map<string, CartLineInfo>; // Map of variantId -> cart line info
 }
 
 export function SinglesResults({
@@ -24,6 +27,9 @@ export function SinglesResults({
 	onLoadMore,
 	isLoadingMore,
 	onQuickAdd,
+	onUpdateQuantity,
+	onRemoveLine,
+	cartLines,
 }: SinglesResultsProps) {
 	const parentRef = useRef<HTMLDivElement>(null);
 	const [parentHeight, setParentHeight] = useState(600);
@@ -145,7 +151,13 @@ export function SinglesResults({
 									transform: `translateY(${virtualRow.start}px)`,
 								}}
 							>
-								<SinglesResultItem product={product} onQuickAdd={onQuickAdd} />
+								<SinglesResultItem
+									product={product}
+									onQuickAdd={onQuickAdd}
+									onUpdateQuantity={onUpdateQuantity}
+									onRemoveLine={onRemoveLine}
+									cartLines={cartLines}
+								/>
 							</div>
 						);
 					})}
