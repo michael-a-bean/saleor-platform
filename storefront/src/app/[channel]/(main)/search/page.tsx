@@ -133,15 +133,24 @@ export default async function Page(props: {
 		const meilisearchFilters: {
 			rarity?: string[];
 			typeLine?: string;
+			setName?: string;
 			priceRange?: { min?: number; max?: number };
 			inStockOnly?: boolean;
 		} = {};
 
 		if (filters.rarity.length > 0) {
-			meilisearchFilters.rarity = filters.rarity;
+			// Transform Saleor attribute slugs (mtg-rarity-common) to Meilisearch values (common)
+			meilisearchFilters.rarity = filters.rarity.map((r) =>
+				r.replace(/^mtg-rarity-/, ""),
+			);
 		}
+		// typeLine is post-filtered in actions.ts (Meilisearch doesn't support partial string matching)
 		if (filters.typeLine) {
 			meilisearchFilters.typeLine = filters.typeLine;
+		}
+		// setName uses exact matching filter
+		if (filters.setName) {
+			meilisearchFilters.setName = filters.setName;
 		}
 		if (filters.price.min !== undefined || filters.price.max !== undefined) {
 			meilisearchFilters.priceRange = {
@@ -150,10 +159,8 @@ export default async function Page(props: {
 			};
 		}
 
-		// Combine search query with set name filter (Meilisearch searches text, not filters)
-		const combinedQuery = filters.setName
-			? `${searchValue} ${filters.setName}`
-			: searchValue;
+		// Use the search query directly - setName and typeLine are filtered separately
+		const combinedQuery = searchValue;
 
 		const meilisearchSort = getMeilisearchSort(searchParams.sort);
 

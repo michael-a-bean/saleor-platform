@@ -15,6 +15,16 @@ export interface WebstoreSearchResult {
 }
 
 /**
+ * Check if a product's type line matches the filter.
+ * Type line filter uses case-insensitive partial matching.
+ * e.g., "Creature" matches "Legendary Creature — Dragon"
+ */
+function matchesTypeLine(productTypeLine: string | undefined, filterTypeLine: string): boolean {
+	if (!productTypeLine) return false;
+	return productTypeLine.toLowerCase().includes(filterTypeLine.toLowerCase());
+}
+
+/**
  * Search products using Meilisearch for the webstore.
  * Returns empty results if Meilisearch is unavailable.
  */
@@ -29,6 +39,7 @@ export async function searchWebstore(
 			finishes?: string[];
 			inStockOnly?: boolean;
 			setCode?: string;
+			setName?: string;
 			rarity?: string[];
 			typeLine?: string;
 			priceRange?: { min?: number; max?: number };
@@ -65,28 +76,46 @@ export async function searchWebstore(
 	if (filters.setCode) {
 		meilisearchFilters.setCode = filters.setCode;
 	}
-	// Handle rarity array - use first value for now (Meilisearch filter)
+	if (filters.setName) {
+		meilisearchFilters.setName = filters.setName;
+	}
+	// Handle rarity array - pass all values for OR matching
 	if (filters.rarity && filters.rarity.length > 0) {
-		meilisearchFilters.rarity = filters.rarity[0];
+		meilisearchFilters.rarity = filters.rarity;
 	}
-	if (filters.typeLine) {
-		meilisearchFilters.typeLine = filters.typeLine;
-	}
+	// Note: typeLine is filtered post-query since Meilisearch doesn't support partial string matching
 	if (filters.priceRange) {
 		meilisearchFilters.priceRange = filters.priceRange;
 	}
 
+	// If typeLine filter is active, fetch more results to account for post-filtering
+	const fetchLimit = filters.typeLine ? limit * 4 : limit;
+
 	const result = await searchProducts(query, channel, {
-		limit,
+		limit: fetchLimit,
 		offset,
 		filters: meilisearchFilters,
 		sort,
 	});
 
+	// Post-filter by typeLine (Meilisearch doesn't support partial string matching)
+	let filteredProducts = result.hits;
+	if (filters.typeLine) {
+		filteredProducts = result.hits.filter((p) => matchesTypeLine(p.type_line, filters.typeLine!));
+	}
+
+	// Apply pagination to filtered results
+	const paginatedProducts = filteredProducts.slice(0, limit);
+	const estimatedTotal = filters.typeLine
+		? filteredProducts.length // Use actual filtered count when post-filtering
+		: result.estimatedTotalHits;
+
 	return {
-		products: result.hits,
-		totalCount: result.estimatedTotalHits,
-		hasNextPage: offset + result.hits.length < result.estimatedTotalHits,
+		products: paginatedProducts,
+		totalCount: estimatedTotal,
+		hasNextPage: filters.typeLine
+			? filteredProducts.length > limit
+			: offset + result.hits.length < result.estimatedTotalHits,
 		processingTimeMs: result.processingTimeMs,
 	};
 }

@@ -59,7 +59,8 @@ export interface SearchFilters {
 	finishes?: string[];
 	inStockOnly?: boolean;
 	setCode?: string;
-	rarity?: string;
+	setName?: string;
+	rarity?: string | string[];
 	typeLine?: string;
 	priceRange?: { min?: number; max?: number };
 }
@@ -89,8 +90,17 @@ function buildFilterString(filters: SearchFilters): string | undefined {
 		parts.push(`set_code = "${filters.setCode.toUpperCase()}"`);
 	}
 
+	if (filters.setName) {
+		parts.push(`set_name = "${filters.setName}"`);
+	}
+
 	if (filters.rarity) {
-		parts.push(`rarity = "${filters.rarity.toLowerCase()}"`);
+		// Handle single string or array of rarities
+		const rarities = Array.isArray(filters.rarity) ? filters.rarity : [filters.rarity];
+		if (rarities.length > 0) {
+			const rarityFilters = rarities.map((r) => `rarity = "${r.toLowerCase()}"`);
+			parts.push(`(${rarityFilters.join(" OR ")})`);
+		}
 	}
 
 	if (filters.typeLine) {
