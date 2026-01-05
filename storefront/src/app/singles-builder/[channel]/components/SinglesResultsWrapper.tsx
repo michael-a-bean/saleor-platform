@@ -4,8 +4,10 @@ import { useState, useCallback, useTransition, useMemo, useEffect } from "react"
 import { toast } from "react-toastify";
 import type { SinglesBuilderProductFragment, SinglesBuilderSearchQuery } from "@/gql/graphql";
 import { SinglesResults } from "./SinglesResults";
+import type { CartLineInfo } from "./SinglesResultItem";
 import { useSinglesCartStore, type CartLine } from "../store";
 import type { CartActionResult } from "../actions";
+import { updateCartLineQuantity, removeCartLine } from "../actions";
 import type { SinglesFilterState } from "./filterTypes";
 import { matchesVariantFilters } from "./buildSinglesFilter";
 
@@ -114,34 +116,78 @@ export function SinglesResultsWrapper({
 		});
 	}, [channel, searchQuery, pageInfo, isPending, fetchMoreAction]);
 
-	const { setCart } = useSinglesCartStore();
+	const { cart, setCart } = useSinglesCartStore();
+
+	// Build a map of variantId -> cart line info for quick lookup
+	const cartLines = useMemo(() => {
+		const map = new Map<string, CartLineInfo>();
+		if (cart?.lines) {
+			for (const line of cart.lines) {
+				map.set(line.variant.id, {
+					lineId: line.id,
+					quantity: line.quantity,
+				});
+			}
+		}
+		return map;
+	}, [cart?.lines]);
+
+	// Helper to update cart state from action result
+	const handleCartResult = useCallback((result: CartActionResult, successMessage?: string) => {
+		if (result.success && result.checkout) {
+			setCart({
+				id: result.checkout.id,
+				token: result.checkout.token,
+				lines: result.checkout.lines as CartLine[],
+				subtotalPrice: result.checkout.subtotalPrice,
+				totalPrice: result.checkout.totalPrice,
+				metadata: result.checkout.metadata,
+			});
+			if (successMessage) {
+				toast.success(successMessage, { autoClose: 1500 });
+			}
+		} else if (result.error) {
+			toast.error(result.error);
+		}
+	}, [setCart]);
 
 	const handleQuickAdd = useCallback(
 		async (variantId: string, quantity: number) => {
 			try {
 				const result = await addToCartAction(variantId, quantity);
-				if (result.success) {
-					// Update the cart store with the new checkout data
-					if (result.checkout) {
-						setCart({
-							id: result.checkout.id,
-							token: result.checkout.token,
-							lines: result.checkout.lines as CartLine[],
-							subtotalPrice: result.checkout.subtotalPrice,
-							totalPrice: result.checkout.totalPrice,
-							metadata: result.checkout.metadata,
-						});
-					}
-					toast.success("Added to cart!", { autoClose: 1500 });
-				} else {
-					toast.error(result.error || "Failed to add to cart");
-				}
+				handleCartResult(result, "Added to cart!");
 			} catch (error) {
 				console.error("Failed to add to cart:", error);
 				toast.error("Failed to add to cart");
 			}
 		},
-		[addToCartAction, setCart],
+		[addToCartAction, handleCartResult],
+	);
+
+	const handleUpdateQuantity = useCallback(
+		async (lineId: string, quantity: number) => {
+			try {
+				const result = await updateCartLineQuantity(lineId, quantity, channel);
+				handleCartResult(result);
+			} catch (error) {
+				console.error("Failed to update quantity:", error);
+				toast.error("Failed to update quantity");
+			}
+		},
+		[channel, handleCartResult],
+	);
+
+	const handleRemoveLine = useCallback(
+		async (lineId: string) => {
+			try {
+				const result = await removeCartLine(lineId, channel);
+				handleCartResult(result, "Removed from cart");
+			} catch (error) {
+				console.error("Failed to remove item:", error);
+				toast.error("Failed to remove item");
+			}
+		},
+		[channel, handleCartResult],
 	);
 
 	// Always show filtered count since we filter by search query match
@@ -155,6 +201,9 @@ export function SinglesResultsWrapper({
 			onLoadMore={handleLoadMore}
 			isLoadingMore={isPending}
 			onQuickAdd={handleQuickAdd}
+			onUpdateQuantity={handleUpdateQuantity}
+			onRemoveLine={handleRemoveLine}
+			cartLines={cartLines}
 		/>
 	);
 }
