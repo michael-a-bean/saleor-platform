@@ -12,6 +12,18 @@ import {
 	type CartActionResult,
 } from "../actions";
 
+// Convert full condition name to abbreviation
+function abbreviateCondition(condition: string): string {
+	const abbrevMap: Record<string, string> = {
+		"Near Mint": "NM",
+		"Lightly Played": "LP",
+		"Moderately Played": "MP",
+		"Heavily Played": "HP",
+		"Damaged": "DMG",
+	};
+	return abbrevMap[condition] || condition;
+}
+
 interface CartLineItemProps {
 	line: CartLine;
 	channel: string;
@@ -23,11 +35,12 @@ function CartLineItem({ line, channel, onUpdate }: CartLineItemProps) {
 	const { variant } = line;
 
 	// Extract condition and finish from variant
-	const condition = variant.attributes.find((a) => a.attribute.slug === "condition")?.values[0]?.name || "NM";
-	const finish = variant.attributes.find((a) => a.attribute.slug === "finish")?.values[0]?.name;
+	const conditionFull = variant.attributes.find((a) => a.attribute.slug === "mtg-condition")?.values[0]?.name || "Near Mint";
+	const condition = abbreviateCondition(conditionFull);
+	const finish = variant.attributes.find((a) => a.attribute.slug === "mtg-finish")?.values[0]?.name;
 
 	// Extract set info from product
-	const setCode = variant.product.attributes.find((a) => a.attribute.slug === "set-code")?.values[0]?.name;
+	const setCode = variant.product.attributes.find((a) => a.attribute.slug === "mtg-set-code")?.values[0]?.name;
 
 	const handleQuantityChange = (newQuantity: number) => {
 		if (newQuantity < 1) return;
