@@ -66,8 +66,8 @@ export function buildSinglesFilter(
  */
 export function matchesVariantFilters(
 	variantAttributes: Array<{
-		attribute: { slug: string };
-		values: Array<{ name: string | null; slug: string }>;
+		attribute: { slug?: string | null };
+		values: Array<{ name?: string | null; slug?: string | null }>;
 	}> | null | undefined,
 	filters: SinglesFilterState,
 ): boolean {
