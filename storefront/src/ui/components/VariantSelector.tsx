@@ -48,6 +48,15 @@ function sortVariantsByCondition(variants: readonly VariantDetailsFragment[]): V
 	});
 }
 
+/**
+ * Find the best available variant by condition order.
+ * Returns the first in-stock variant, prioritizing Near Mint > LP > MP > HP > DMG.
+ */
+function findBestAvailableVariant(variants: readonly VariantDetailsFragment[]): VariantDetailsFragment | undefined {
+	const sorted = sortVariantsByCondition(variants);
+	return sorted.find((v) => v.quantityAvailable && v.quantityAvailable > 0);
+}
+
 export function VariantSelector({
 	variants,
 	product,
@@ -59,8 +68,12 @@ export function VariantSelector({
 	selectedVariant?: VariantDetailsFragment;
 	channel: string;
 }) {
-	if (!selectedVariant && variants.length === 1 && variants[0]?.quantityAvailable) {
-		redirect("/" + channel + getHrefForVariant({ productSlug: product.slug, variantId: variants[0].id }));
+	// Auto-select best available condition if none selected
+	if (!selectedVariant && variants.length >= 1) {
+		const bestVariant = findBestAvailableVariant(variants);
+		if (bestVariant) {
+			redirect("/" + channel + getHrefForVariant({ productSlug: product.slug, variantId: bestVariant.id }));
+		}
 	}
 
 	const sortedVariants = sortVariantsByCondition(variants);

@@ -24,12 +24,13 @@ export const DEFAULT_SINGLES_FILTER: SinglesFilterState = {
 };
 
 // Condition options (variant-level attribute)
+// Values must match Saleor attribute values exactly
 export const CONDITION_OPTIONS = [
-	{ value: "NM", label: "Near Mint", shortLabel: "NM" },
-	{ value: "LP", label: "Lightly Played", shortLabel: "LP" },
-	{ value: "MP", label: "Moderately Played", shortLabel: "MP" },
-	{ value: "HP", label: "Heavily Played", shortLabel: "HP" },
-	{ value: "DMG", label: "Damaged", shortLabel: "DMG" },
+	{ value: "Near Mint", label: "Near Mint", shortLabel: "NM" },
+	{ value: "Lightly Played", label: "Lightly Played", shortLabel: "LP" },
+	{ value: "Moderately Played", label: "Moderately Played", shortLabel: "MP" },
+	{ value: "Heavily Played", label: "Heavily Played", shortLabel: "HP" },
+	{ value: "Damaged", label: "Damaged", shortLabel: "DMG" },
 ];
 
 // Finish options (variant-level attribute)
