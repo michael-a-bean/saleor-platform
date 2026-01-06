@@ -122,8 +122,8 @@ mutation SinglesBuilderCartUpdateLines($id: ID!, $lines: [CheckoutLineUpdateInpu
 	}
 }
 
-mutation SinglesBuilderCartDeleteLines($id: ID!, $lineIds: [ID!]!) {
-	checkoutLinesDelete(id: $id, lineIds: $lineIds) {
+mutation SinglesBuilderCartDeleteLines($id: ID!, $linesIds: [ID!]!) {
+	checkoutLinesDelete(id: $id, linesIds: $linesIds) {
 		checkout {
 			...SinglesBuilderCheckout
 		}
