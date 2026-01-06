@@ -1,6 +1,7 @@
+import { redirect } from "next/navigation";
 import { getServerAuthClient } from "@/app/config";
 
-export async function LoginForm() {
+export async function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
 	return (
 		<div className="mx-auto mt-16 w-full max-w-lg">
 			<form
@@ -20,9 +21,10 @@ export async function LoginForm() {
 					).signIn({ email, password }, { cache: "no-store" });
 
 					if (data.tokenCreate.errors.length > 0) {
-						// setErrors(data.tokenCreate.errors.map((error) => error.message));
-						// setFormValues(DefaultValues);
+						throw new Error(data.tokenCreate.errors.map((e) => e.message).join(", "));
 					}
+
+					redirect(redirectTo);
 				}}
 			>
 				<div className="mb-2">

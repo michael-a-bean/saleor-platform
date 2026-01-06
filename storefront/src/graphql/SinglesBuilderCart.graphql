@@ -122,8 +122,8 @@ mutation SinglesBuilderCartUpdateLines($id: ID!, $lines: [CheckoutLineUpdateInpu
 	}
 }
 
-mutation SinglesBuilderCartDeleteLines($id: ID!, $lineIds: [ID!]!) {
-	checkoutLinesDelete(id: $id, lineIds: $lineIds) {
+mutation SinglesBuilderCartDeleteLines($id: ID!, $linesIds: [ID!]!) {
+	checkoutLinesDelete(id: $id, linesIds: $linesIds) {
 		checkout {
 			...SinglesBuilderCheckout
 		}
@@ -146,6 +146,21 @@ mutation SinglesBuilderCartUpdateMetadata($id: ID!, $input: [MetadataInput!]!) {
 			field
 			message
 			code
+		}
+	}
+}
+
+# POS Lookup - search checkouts by short code
+# Note: short codes are unique across all channels, so we don't filter by channel
+query SinglesBuilderPOSLookup($shortCode: String!) {
+	checkouts(
+		first: 1
+		filter: { metadata: [{ key: "singles_builder_code", value: $shortCode }] }
+	) {
+		edges {
+			node {
+				...SinglesBuilderCheckout
+			}
 		}
 	}
 }

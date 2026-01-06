@@ -32,7 +32,7 @@ export function buildSinglesFilter(
 	// Rarity filter (product-level)
 	if (filters.rarity.length > 0) {
 		attributeFilters.push({
-			slug: "rarity",
+			slug: "mtg-rarity",
 			values: filters.rarity,
 		});
 	}
@@ -66,8 +66,8 @@ export function buildSinglesFilter(
  */
 export function matchesVariantFilters(
 	variantAttributes: Array<{
-		attribute: { slug: string };
-		values: Array<{ name: string | null; slug: string }>;
+		attribute: { slug?: string | null };
+		values: Array<{ name?: string | null; slug?: string | null }>;
 	}> | null | undefined,
 	filters: SinglesFilterState,
 ): boolean {
@@ -82,7 +82,7 @@ export function matchesVariantFilters(
 
 	// Check condition filter
 	if (filters.condition.length > 0) {
-		const conditionAttr = variantAttributes.find((a) => a.attribute.slug === "condition");
+		const conditionAttr = variantAttributes.find((a) => a.attribute.slug === "mtg-condition");
 		const conditionValue = conditionAttr?.values[0]?.name;
 		if (!conditionValue || !filters.condition.includes(conditionValue)) {
 			return false;
@@ -91,7 +91,7 @@ export function matchesVariantFilters(
 
 	// Check finish filter
 	if (filters.finish.length > 0) {
-		const finishAttr = variantAttributes.find((a) => a.attribute.slug === "finish");
+		const finishAttr = variantAttributes.find((a) => a.attribute.slug === "mtg-finish");
 		const finishValue = finishAttr?.values[0]?.name;
 		if (!finishValue || !filters.finish.includes(finishValue)) {
 			return false;
@@ -108,8 +108,8 @@ export function productHasMatchingVariants(
 	variants: Array<{
 		quantityAvailable?: number | null;
 		attributes?: Array<{
-			attribute: { slug: string };
-			values: Array<{ name: string | null; slug: string }>;
+			attribute: { slug?: string | null };
+			values: Array<{ name?: string | null; slug?: string | null }>;
 		}> | null;
 	}> | null | undefined,
 	filters: SinglesFilterState,
