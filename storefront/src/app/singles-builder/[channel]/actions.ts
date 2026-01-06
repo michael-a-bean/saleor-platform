@@ -499,11 +499,12 @@ export async function updateCartMetadata(
 	}
 }
 
-// POS handoff: Set customer name, notes, and short code
+// POS handoff: Set customer name, notes, short code, and staff email for auto-import
 export async function saveCartForPOS(
 	customerName: string,
 	notes: string,
 	shortCode: string,
+	staffEmail: string,
 	channel: string = "singles-builder",
 ): Promise<CartActionResult> {
 	return updateCartMetadata(
@@ -511,6 +512,7 @@ export async function saveCartForPOS(
 			{ key: "singles_builder_customer", value: customerName },
 			{ key: "singles_builder_notes", value: notes },
 			{ key: "singles_builder_code", value: shortCode },
+			{ key: "singles_builder_staff_email", value: staffEmail },
 			{ key: "singles_builder_created", value: new Date().toISOString() },
 		],
 		channel,

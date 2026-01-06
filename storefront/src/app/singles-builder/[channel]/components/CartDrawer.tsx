@@ -11,6 +11,7 @@ import {
 	clearSinglesCart,
 	type CartActionResult,
 } from "../actions";
+import { useStaff } from "../../StaffContext";
 
 // Convert full condition name to abbreviation
 function abbreviateCondition(condition: string): string {
@@ -154,6 +155,7 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ channel }: CartDrawerProps) {
+	const staff = useStaff();
 	const {
 		cart,
 		setCart,
@@ -216,7 +218,7 @@ export function CartDrawer({ channel }: CartDrawerProps) {
 	const handleGenerateCode = () => {
 		startTransition(async () => {
 			const code = generateShortCode();
-			const result = await saveCartForPOS(customerInfo.name, customerInfo.notes, code, channel);
+			const result = await saveCartForPOS(customerInfo.name, customerInfo.notes, code, staff.email, channel);
 			if (result.success) {
 				setShortCode(code);
 				handleCartUpdate(result);
@@ -270,12 +272,17 @@ export function CartDrawer({ channel }: CartDrawerProps) {
 					</div>
 				)}
 
-				{/* Success banner */}
+				{/* Large code display after generation */}
 				{showSuccess && shortCode && (
-					<div className="mx-4 mt-2 rounded bg-green-50 px-3 py-2 text-sm text-green-700">
-						<div className="font-medium">Cart saved for POS!</div>
-						<div className="mt-1">
-							Code: <span className="font-mono text-lg font-bold">{shortCode}</span>
+					<div className="mx-4 mt-4 rounded-lg border-2 border-green-500 bg-green-50 p-6 text-center">
+						<div className="text-sm font-medium uppercase tracking-wider text-green-600">
+							Ready for POS
+						</div>
+						<div className="mt-3 font-mono text-4xl font-bold tracking-[0.3em] text-green-800">
+							{shortCode}
+						</div>
+						<div className="mt-3 text-xs text-green-600">
+							Enter this code at the register
 						</div>
 					</div>
 				)}
@@ -348,11 +355,15 @@ export function CartDrawer({ channel }: CartDrawerProps) {
 							</span>
 						</div>
 
-						{/* Current code display */}
-						{shortCode && (
-							<div className="mb-4 rounded-lg bg-blue-50 p-3 text-center">
-								<div className="text-xs font-medium uppercase text-blue-600">POS Lookup Code</div>
-								<div className="mt-1 font-mono text-2xl font-bold text-blue-900">{shortCode}</div>
+						{/* Current code display (persistent, when not in success flash) */}
+						{shortCode && !showSuccess && (
+							<div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
+								<div className="text-xs font-medium uppercase tracking-wider text-blue-600">
+									POS Code
+								</div>
+								<div className="mt-2 font-mono text-3xl font-bold tracking-[0.25em] text-blue-900">
+									{shortCode}
+								</div>
 							</div>
 						)}
 
@@ -370,7 +381,7 @@ export function CartDrawer({ channel }: CartDrawerProps) {
 								type="button"
 								onClick={handleGenerateCode}
 								disabled={isPending}
-								className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+								className="flex-1 rounded-md bg-green-600 px-4 py-3 text-base font-semibold text-white hover:bg-green-700 disabled:opacity-50"
 							>
 								{isPending ? (
 									<span className="flex items-center justify-center gap-2">
@@ -385,9 +396,9 @@ export function CartDrawer({ channel }: CartDrawerProps) {
 										Saving...
 									</span>
 								) : shortCode ? (
-									"Update POS Code"
+									"Refresh POS Code"
 								) : (
-									"Generate POS Code"
+									"Send to Register"
 								)}
 							</button>
 						</div>
