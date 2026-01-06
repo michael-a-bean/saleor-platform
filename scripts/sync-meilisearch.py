@@ -126,6 +126,7 @@ def fetch_products(token: str, channel: str, after: str = None) -> dict:
                     name
                     slug
                     thumbnail { url }
+                    media { url alt }
                     attributes {
                         attribute { slug }
                         values { name slug }
@@ -182,12 +183,17 @@ def transform_product(product: dict) -> dict:
         price_data = variant.get("pricing", {}).get("price", {}).get("gross", {})
         price = price_data.get("amount")
 
+        # Always track available conditions/finishes for filtering
+        # (even if stock is 0, users may want to filter by condition)
+        conditions_available.add(condition)
+        finishes_available.add(finish)
+
+        # Track min price from any variant with a price
+        if price and (min_price is None or price < min_price):
+            min_price = price
+
         if stock > 0:
-            conditions_available.add(condition)
-            finishes_available.add(finish)
             total_stock += stock
-            if price and (min_price is None or price < min_price):
-                min_price = price
 
         variants.append({
             "id": decode_saleor_id(variant["id"]),
@@ -203,14 +209,23 @@ def transform_product(product: dict) -> dict:
     name = product["name"]
     name_parts = name.lower().split()
 
+    # Generate prefix tokens for abbreviation search (e.g., "verd" → "verdant")
+    # Include all prefixes of 3+ characters for each word
+    name_prefixes = []
+    for word in name_parts:
+        for i in range(3, len(word) + 1):
+            name_prefixes.append(word[:i])
+
     return {
         "id": decode_saleor_id(product["id"]),
         "original_id": product["id"],  # Keep original for lookups
         "name": name,
         "name_lower": name.lower(),
         "name_parts": name_parts,
+        "name_prefixes": name_prefixes,  # For abbreviation matching
         "slug": product["slug"],
-        "thumbnail": (product.get("thumbnail") or {}).get("url"),
+        # Prefer external media URLs (e.g., Scryfall) over Saleor thumbnails
+        "thumbnail": (product.get("media") or [{}])[0].get("url") or (product.get("thumbnail") or {}).get("url"),
         "set_name": set_name,
         "set_code": set_code.upper() if set_code else "",
         "collector_number": collector_number,
@@ -251,11 +266,12 @@ def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
 
     # Configure searchable attributes (order matters for ranking)
     print("Configuring searchable attributes...")
-    requests.patch(
+    requests.put(
         f"{MEILISEARCH_URL}/indexes/{index_name}/settings/searchable-attributes",
         json=[
             "name",
             "name_parts",
+            "name_prefixes",  # For abbreviation matching (verd → verdant)
             "searchable",
             "set_name",
             "set_code",
@@ -266,7 +282,7 @@ def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
 
     # Configure filterable attributes
     print("Configuring filterable attributes...")
-    requests.patch(
+    requests.put(
         f"{MEILISEARCH_URL}/indexes/{index_name}/settings/filterable-attributes",
         json=[
             "set_code",
@@ -282,14 +298,14 @@ def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
 
     # Configure sortable attributes
     print("Configuring sortable attributes...")
-    requests.patch(
+    requests.put(
         f"{MEILISEARCH_URL}/indexes/{index_name}/settings/sortable-attributes",
         json=["name", "min_price", "set_name", "collector_number"]
     )
 
     # Configure typo tolerance
     print("Configuring typo tolerance...")
-    requests.patch(
+    requests.put(
         f"{MEILISEARCH_URL}/indexes/{index_name}/settings/typo-tolerance",
         json={
             "enabled": True,
@@ -302,7 +318,7 @@ def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
 
     # Configure ranking rules
     print("Configuring ranking rules...")
-    requests.patch(
+    requests.put(
         f"{MEILISEARCH_URL}/indexes/{index_name}/settings/ranking-rules",
         json=[
             "words",

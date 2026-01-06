@@ -12,10 +12,10 @@ import {
 } from "./components";
 import { buildSinglesFilter } from "./components/buildSinglesFilter";
 import {
-	fetchSinglesBuilderProducts,
 	addToSinglesCart,
 	searchWithMeilisearch,
 	transformMeilisearchToGraphQL,
+	fetchMoreWithMeilisearch,
 } from "./actions";
 
 interface PageProps {
@@ -66,20 +66,30 @@ async function SearchResults({
 		limit: 50,
 		conditions: filterState.condition,
 		finishes: filterState.finish,
+		rarity: filterState.rarity,
 		inStockOnly: filterState.inStockOnly,
+		priceMin: filterState.priceMin,
+		priceMax: filterState.priceMax,
 	});
 
 	// Transform to GraphQL-compatible format
 	const products = await transformMeilisearchToGraphQL(meilisearchResult);
 
-	// Bind the channel and filter to the action for "load more" (still uses Saleor)
+	// Bind the channel and filters to the action for "load more" using Meilisearch
 	const boundFetchMore = async (
 		channel: string,
 		search: string,
 		after: string | null,
 	) => {
 		"use server";
-		return fetchSinglesBuilderProducts(channel, search, after, filter);
+		return fetchMoreWithMeilisearch(search, channel, after, {
+			conditions: filterState.condition,
+			finishes: filterState.finish,
+			rarity: filterState.rarity,
+			inStockOnly: filterState.inStockOnly,
+			priceMin: filterState.priceMin,
+			priceMax: filterState.priceMax,
+		});
 	};
 
 	const boundAddToCart = async (variantId: string, quantity: number) => {

@@ -20,6 +20,9 @@ from pathlib import Path
 SALEOR_API = "http://localhost:8000/graphql/"
 SCRYFALL_BULK_API = "https://api.scryfall.com/bulk-data"
 CACHE_DIR = Path("/tmp/scryfall-cache")
+# Local JSON file path - relative to project root
+PROJECT_ROOT = Path(__file__).parent.parent
+LOCAL_JSON_FILE = PROJECT_ROOT / "docs" / "all-cards-20251214224928.json"
 
 # Attributes to sync from Scryfall
 SCRYFALL_ATTRIBUTES = {
@@ -83,6 +86,16 @@ def graphql_request(query: str, variables: dict = None, token: str = None) -> di
 
 def download_bulk_data() -> dict:
     """Download Scryfall bulk data and return as dict keyed by scryfall_id."""
+    # Prefer local JSON file if it exists (much faster than downloading)
+    if LOCAL_JSON_FILE.exists():
+        print(f"  Using local JSON file: {LOCAL_JSON_FILE}")
+        print(f"  File size: {LOCAL_JSON_FILE.stat().st_size / (1024*1024*1024):.2f} GB")
+        print("  Loading JSON (this may take a moment)...")
+        with open(LOCAL_JSON_FILE) as f:
+            cards = json.load(f)
+        print(f"  Loaded {len(cards)} cards from local file")
+        return {card["id"]: card for card in cards}
+
     CACHE_DIR.mkdir(exist_ok=True)
     cache_file = CACHE_DIR / "default_cards.json"
 
@@ -171,18 +184,33 @@ def get_all_products_with_scryfall_id(token: str) -> list:
     all_products = []
     cursor = None
     page = 0
+    current_token = token
+    token_time = time.time()
 
     while True:
         page += 1
+
+        # Refresh token every 3 minutes to avoid expiry during long fetches
+        if time.time() - token_time > 180:
+            current_token = get_auth_token()
+            token_time = time.time()
+
         variables = {"first": 100}
         if cursor:
             variables["after"] = cursor
 
-        result = graphql_request(query, variables, token)
+        result = graphql_request(query, variables, current_token)
 
         if "errors" in result:
-            print(f"  Error fetching products: {result['errors']}")
-            break
+            # Try refreshing token on error
+            if "expired" in str(result.get("errors", [])).lower():
+                current_token = get_auth_token()
+                token_time = time.time()
+                result = graphql_request(query, variables, current_token)
+
+            if "errors" in result:
+                print(f"  Error fetching products: {result['errors']}")
+                break
 
         products_data = result.get("data", {}).get("products", {})
 
@@ -231,6 +259,103 @@ def get_attribute_ids(token: str) -> dict:
         edge["node"]["slug"]: edge["node"]["id"]
         for edge in result.get("data", {}).get("attributes", {}).get("edges", [])
     }
+
+
+def get_mtg_product_type_id(token: str) -> Optional[str]:
+    """Get the MTG Card product type ID."""
+    query = """
+    query {
+        productTypes(first: 10, filter: {search: "MTG"}) {
+            edges {
+                node { id name }
+            }
+        }
+    }
+    """
+    result = graphql_request(query, token=token)
+    for edge in result.get("data", {}).get("productTypes", {}).get("edges", []):
+        if "MTG" in edge["node"]["name"].upper():
+            return edge["node"]["id"]
+    return None
+
+
+def create_missing_attributes(token: str, existing_attrs: dict) -> dict:
+    """Create any missing attributes and return updated attr_id_map."""
+    # Get product type ID for assigning attributes
+    product_type_id = get_mtg_product_type_id(token)
+    if not product_type_id:
+        print("  Warning: Could not find MTG Card product type")
+        return existing_attrs
+
+    # Map input types to Saleor enum values
+    input_type_map = {
+        "RICH_TEXT": "RICH_TEXT",
+        "PLAIN_TEXT": "PLAIN_TEXT",
+        "BOOLEAN": "BOOLEAN",
+        "NUMERIC": "NUMERIC",
+        "DATE": "DATE",
+        "DROPDOWN": "DROPDOWN",
+    }
+
+    attr_id_map = existing_attrs.copy()
+    created_count = 0
+
+    for slug, config in SCRYFALL_ATTRIBUTES.items():
+        if slug in attr_id_map:
+            continue
+
+        # Create the attribute
+        input_type = input_type_map.get(config["input_type"], "PLAIN_TEXT")
+        name = slug.replace("mtg-", "MTG ").replace("-", " ").title()
+
+        mutation = """
+        mutation CreateAttr($input: AttributeCreateInput!) {
+            attributeCreate(input: $input) {
+                attribute { id slug }
+                errors { field message }
+            }
+        }
+        """
+
+        variables = {
+            "input": {
+                "name": name,
+                "slug": slug,
+                "type": "PRODUCT_TYPE",
+                "inputType": input_type,
+            }
+        }
+
+        result = graphql_request(mutation, variables, token)
+        attr_data = result.get("data", {}).get("attributeCreate", {})
+
+        if attr_data.get("errors"):
+            print(f"\n  Error creating {slug}: {attr_data['errors']}")
+            continue
+
+        attr = attr_data.get("attribute")
+        if attr:
+            attr_id_map[slug] = attr["id"]
+            created_count += 1
+
+            # Assign to product type
+            assign_mutation = """
+            mutation AssignAttr($productTypeId: ID!, $operations: [ProductAttributeAssignInput!]!) {
+                productAttributeAssign(productTypeId: $productTypeId, operations: $operations) {
+                    errors { field message }
+                }
+            }
+            """
+            assign_vars = {
+                "productTypeId": product_type_id,
+                "operations": [{"id": attr["id"], "type": "PRODUCT"}]
+            }
+            graphql_request(assign_mutation, assign_vars, token)
+
+    if created_count:
+        print(f"  Created {created_count} new attributes")
+
+    return attr_id_map
 
 
 def get_nested_value(obj: dict, path: str):
@@ -370,8 +495,22 @@ def main():
     # Step 3: Get attribute IDs
     print("Step 3: Get attribute IDs")
     attr_id_map = get_attribute_ids(token)
-    print(f"  Found {len(attr_id_map)} MTG attributes")
+    print(f"  Found {len(attr_id_map)} existing MTG attributes")
+
+    # Step 3b: Create missing attributes
+    print("  Checking for missing attributes...")
+    missing = [slug for slug in SCRYFALL_ATTRIBUTES if slug not in attr_id_map]
+    if missing:
+        print(f"  Need to create: {', '.join(missing[:5])}{'...' if len(missing) > 5 else ''}")
+        if not args.dry_run:
+            attr_id_map = create_missing_attributes(token, attr_id_map)
+        else:
+            print(f"  (Dry run - would create {len(missing)} attributes)")
     print()
+
+    # Refresh token before long-running product fetch
+    token = get_auth_token()
+    token_time = time.time()
 
     # Step 4: Get all products with scryfall IDs
     print("Step 4: Fetch products with Scryfall IDs")

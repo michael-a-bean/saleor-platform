@@ -166,7 +166,7 @@ function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartL
 
 	return (
 		<div
-			className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs ${
+			className={`grid grid-cols-[3rem_2rem_5rem_1fr] items-center gap-1 rounded border px-2 py-1 text-xs ${
 				isInCart
 					? "border-blue-300 bg-blue-50"
 					: inStock
@@ -174,22 +174,23 @@ function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartL
 						: "border-gray-100 bg-gray-50 opacity-60"
 			}`}
 		>
-			{/* Condition badge */}
-			<span className={`rounded px-1 py-0.5 font-medium ${conditionColor} ${conditionBgColor}`}>
+			{/* Condition badge - fixed width */}
+			<span className={`rounded px-1 py-0.5 font-medium text-center ${conditionColor} ${conditionBgColor}`}>
 				{isFoil && <span className="text-purple-600 mr-0.5">✦</span>}
 				{condition}
 			</span>
 
-			{/* Stock info */}
-			<span className="text-gray-400 text-[10px]">{stockQty}</span>
+			{/* Stock info - fixed width, right aligned */}
+			<span className="text-gray-400 text-[10px] text-right">{stockQty}</span>
 
-			{/* Price */}
-			{price && <span className="font-medium text-gray-700">${price.amount.toFixed(2)}</span>}
+			{/* Price - fixed width, right aligned */}
+			<span className="font-medium text-gray-700 text-right">
+				{price ? `$${price.amount.toFixed(2)}` : "—"}
+			</span>
 
-			{/* Show cart quantity controls if in cart */}
+			{/* Controls - flex to fill remaining space */}
 			{isInCart ? (
-				<div className="flex items-center gap-0.5 ml-1">
-					{/* Cart quantity adjustment */}
+				<div className="flex items-center gap-0.5 justify-end">
 					<button
 						type="button"
 						onClick={handleCartDecrement}
@@ -199,7 +200,7 @@ function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartL
 					>
 						-
 					</button>
-					<span className="min-w-[40px] h-6 flex items-center justify-center rounded border border-blue-300 bg-blue-50 px-1 text-sm font-bold text-blue-700">{cartQty}</span>
+					<span className="w-10 h-6 flex items-center justify-center rounded border border-blue-300 bg-blue-50 text-sm font-bold text-blue-700">{cartQty}</span>
 					<button
 						type="button"
 						onClick={handleCartIncrement}
@@ -209,7 +210,6 @@ function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartL
 					>
 						+
 					</button>
-					{/* Remove button */}
 					<button
 						type="button"
 						onClick={handleRemove}
@@ -231,8 +231,7 @@ function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartL
 					</button>
 				</div>
 			) : inStock ? (
-				/* Add controls for items not in cart */
-				<div className="flex items-center gap-0.5 ml-1">
+				<div className="flex items-center gap-0.5 justify-end">
 					<button
 						type="button"
 						onClick={handleAddDecrement}
@@ -267,7 +266,7 @@ function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartL
 						type="button"
 						onClick={handleAdd}
 						disabled={!canAdd || isPending}
-						className={`flex h-6 items-center justify-center rounded px-2 text-sm font-medium transition-colors ${
+						className={`flex h-6 w-10 items-center justify-center rounded text-sm font-medium transition-colors ${
 							canAdd && !isPending
 								? "bg-blue-600 text-white hover:bg-blue-700"
 								: "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -285,7 +284,7 @@ function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartL
 					</button>
 				</div>
 			) : (
-				<span className="ml-1 text-[10px] text-gray-400 italic">Out</span>
+				<span className="text-[10px] text-gray-400 italic text-right">Out of stock</span>
 			)}
 		</div>
 	);
@@ -324,7 +323,7 @@ export function SinglesResultItem({ product, onQuickAdd, onUpdateQuantity, onRem
 
 	return (
 		<div style={style} className="border-b border-gray-100 bg-white">
-			<div className="flex items-center gap-3 px-3 py-2">
+			<div className="flex gap-3 px-3 py-2">
 				{/* Thumbnail */}
 				<div className="relative h-14 w-10 flex-shrink-0 overflow-hidden rounded bg-gray-100">
 					{product.thumbnail?.url ? (
@@ -349,10 +348,10 @@ export function SinglesResultItem({ product, onQuickAdd, onUpdateQuantity, onRem
 					)}
 				</div>
 
-				{/* Card info section */}
-				<div className="flex min-w-0 flex-1 items-center gap-2">
+				{/* Card info and variants - all inline with thumbnail */}
+				<div className="flex min-w-0 flex-1 items-start gap-4">
 					{/* Name and set info */}
-					<div className="min-w-0 flex-shrink-0">
+					<div className="min-w-0 flex-shrink-0 pt-0.5">
 						<span className="font-medium text-gray-900">{product.name}</span>
 						<span className="ml-2 text-sm text-gray-500">
 							{setCode && <span className="uppercase">[{setCode}]</span>}
@@ -361,8 +360,8 @@ export function SinglesResultItem({ product, onQuickAdd, onUpdateQuantity, onRem
 						</span>
 					</div>
 
-					{/* Variants - right justified */}
-					<div className="flex flex-wrap items-center gap-1 ml-auto">
+					{/* Variants - stacked vertically, to the right */}
+					<div className="flex flex-col gap-1 ml-auto">
 						{sortedAndFilteredVariants.map((variant) => (
 							<VariantRow
 								key={variant.id}

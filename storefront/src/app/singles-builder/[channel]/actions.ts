@@ -97,10 +97,13 @@ export async function searchWithMeilisearch(
 		offset?: number;
 		conditions?: string[];
 		finishes?: string[];
+		rarity?: string[];
 		inStockOnly?: boolean;
+		priceMin?: number | null;
+		priceMax?: number | null;
 	} = {},
 ): Promise<MeilisearchSearchResult> {
-	const { limit = 50, offset = 0, conditions, finishes, inStockOnly } = options;
+	const { limit = 50, offset = 0, conditions, finishes, rarity, inStockOnly, priceMin, priceMax } = options;
 
 	// Check if Meilisearch is healthy
 	const isHealthy = await isMeilisearchHealthy();
@@ -124,6 +127,20 @@ export async function searchWithMeilisearch(
 	if (inStockOnly) {
 		filters.inStockOnly = true;
 	}
+	// Rarity filter - supports multiple values
+	if (rarity && rarity.length > 0) {
+		filters.rarity = rarity;
+	}
+	// Price range filter
+	if (priceMin !== undefined && priceMin !== null || priceMax !== undefined && priceMax !== null) {
+		filters.priceRange = {};
+		if (priceMin !== undefined && priceMin !== null) {
+			filters.priceRange.min = priceMin;
+		}
+		if (priceMax !== undefined && priceMax !== null) {
+			filters.priceRange.max = priceMax;
+		}
+	}
 
 	const result = await meilisearchProducts(query, channel, {
 		limit,
@@ -143,21 +160,57 @@ export async function searchWithMeilisearch(
 // Note: This is a pure transform function, not a server action
 export async function transformMeilisearchToGraphQL(
 	result: MeilisearchSearchResult,
+	currentOffset: number = 0,
 ): Promise<SinglesBuilderSearchQuery["products"]> {
 	if (result.products.length === 0) {
 		return null;
 	}
 
+	// Use the actual offset for cursor so load-more knows where to continue from
+	const nextOffset = currentOffset + result.products.length;
+
 	return {
 		edges: result.products.map((product, index) => ({
-			cursor: String(index),
+			cursor: String(currentOffset + index),
 			node: transformMeilisearchProduct(product),
 		})),
 		pageInfo: {
 			hasNextPage: result.hasNextPage,
-			endCursor: result.hasNextPage ? String(result.products.length) : null,
+			// endCursor stores the next offset to fetch from
+			endCursor: result.hasNextPage ? String(nextOffset) : null,
 		},
 	};
+}
+
+// Fetch more results from Meilisearch using offset pagination
+export async function fetchMoreWithMeilisearch(
+	query: string,
+	channel: string,
+	afterCursor: string | null,
+	options: {
+		conditions?: string[];
+		finishes?: string[];
+		rarity?: string[];
+		inStockOnly?: boolean;
+		priceMin?: number | null;
+		priceMax?: number | null;
+	} = {},
+): Promise<SinglesBuilderSearchQuery["products"]> {
+	// afterCursor contains the offset to continue from
+	const offset = afterCursor ? parseInt(afterCursor, 10) : 0;
+
+	if (isNaN(offset)) {
+		console.error("Invalid cursor for Meilisearch pagination:", afterCursor);
+		return null;
+	}
+
+	const result = await searchWithMeilisearch(query, channel, {
+		limit: 50,
+		offset,
+		...options,
+	});
+
+	return transformMeilisearchToGraphQL(result, offset);
 }
 
 // ----- Search Actions -----

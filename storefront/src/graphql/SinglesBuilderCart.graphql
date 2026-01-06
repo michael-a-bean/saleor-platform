@@ -149,3 +149,18 @@ mutation SinglesBuilderCartUpdateMetadata($id: ID!, $input: [MetadataInput!]!) {
 		}
 	}
 }
+
+# POS Lookup - search checkouts by short code
+# Note: short codes are unique across all channels, so we don't filter by channel
+query SinglesBuilderPOSLookup($shortCode: String!) {
+	checkouts(
+		first: 1
+		filter: { metadata: [{ key: "singles_builder_code", value: $shortCode }] }
+	) {
+		edges {
+			node {
+				...SinglesBuilderCheckout
+			}
+		}
+	}
+}

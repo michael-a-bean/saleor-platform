@@ -117,13 +117,17 @@ services:
       - "localhost:host-gateway"
     depends_on:
       - api
+      - meilisearch
     environment:
       - HOSTNAME=0.0.0.0
       - PORT=3000
       - NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/
-      - SALEOR_API_URL=http://api:8000/graphql/
+      # Note: SALEOR_API_URL intentionally not set - falls back to NEXT_PUBLIC_SALEOR_API_URL
+      # This is required for JWT issuer validation (token iss must match request URL)
+      # The extra_hosts config allows localhost to reach the host machine
       - NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
       - NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
+      - MEILISEARCH_URL=http://meilisearch:7700
 
   # Stripe Payment App
   stripe-app:
@@ -142,7 +146,6 @@ services:
       - api
       - dynamodb-local
     volumes:
-      - stripe-app-data:/app/apps/stripe
       - ./scripts:/scripts:ro
     environment:
       - SECRET_KEY=677a28c7a3f6f9b615a3dbe4657d0cf816080e482a432892f0b4c5f07dce0b54
@@ -286,6 +289,22 @@ services:
       # - STRIPE_SECRET_KEY=sk_test_...
       # - STRIPE_TERMINAL_LOCATION_ID=tml_...
 
+  # Meilisearch - fast search engine for singles-builder
+  meilisearch:
+    image: getmeili/meilisearch:v1.6
+    ports:
+      - 7700:7700
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    volumes:
+      - meilisearch-data:/meili_data
+    environment:
+      - MEILI_ENV=development
+      - MEILI_NO_ANALYTICS=true
+      # In production, set a master key:
+      # - MEILI_MASTER_KEY=your-secure-key-here
+
   # Price Sync CLI - for manual sync commands
   price-sync:
     build:
@@ -345,6 +364,8 @@ volumes:
   buylist-apl:
     driver: local
   pos-apl:
+    driver: local
+  meilisearch-data:
     driver: local
 
 networks:

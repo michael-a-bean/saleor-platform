@@ -94,24 +94,107 @@ storefront/src/app/singles-builder/[channel]/components/
 - Product-level: rarity, price range, stock availability, set name (via search)
 - Variant-level: condition, finish (client-side filtering available)
 
+### PR4: Cart Persistence ✅
+
+**Features:**
+- Zustand cart store with localStorage persistence
+- Floating cart button with item count + total
+- Slide-out cart drawer with full cart management
+- Quantity +/- controls on cart lines
+- Remove item functionality
+- Customer name and notes input fields
+- 6-character alphanumeric POS short code generation
+- Checkout metadata storage for POS handoff
+
+**Files Created:**
+```
+storefront/src/graphql/SinglesBuilderCart.graphql
+  - SinglesBuilderCartLine fragment
+  - SinglesBuilderCheckout fragment (includes metadata)
+  - SinglesBuilderCartFind query
+  - SinglesBuilderCartCreate mutation
+  - SinglesBuilderCartAddLines mutation
+  - SinglesBuilderCartUpdateLines mutation
+  - SinglesBuilderCartDeleteLines mutation
+  - SinglesBuilderCartUpdateMetadata mutation
+
+storefront/src/app/singles-builder/[channel]/store/
+  ├── index.ts
+  └── singlesCartStore.ts     - Zustand store with persist middleware
+
+storefront/src/app/singles-builder/[channel]/components/
+  ├── CartButton.tsx          - Floating cart button
+  └── CartDrawer.tsx          - Slide-out cart panel
+```
+
+**Files Modified:**
+- `actions.ts` - Complete rewrite with full checkout CRUD + metadata
+- `SinglesResultsWrapper.tsx` - Updates cart store on add-to-cart
+- `index.ts` - Export new cart components
+- `page.tsx` - Use real CartButton and CartDrawer
+
+**Metadata Keys:**
+- `singles_builder_customer` - Customer name
+- `singles_builder_notes` - Notes for POS
+- `singles_builder_code` - 6-char alphanumeric lookup code
+- `singles_builder_created` - ISO timestamp
+
+### PR5: POS Lookup API ✅
+
+**Features:**
+- Cart lookup API endpoint (`/api/singles-builder/lookup`)
+- 6-character alphanumeric code lookup via checkout metadata
+- Full cart details returned for POS display
+- GET and POST support
+
+**Files Created:**
+```
+storefront/src/app/api/singles-builder/lookup/route.ts
+```
+
+**GraphQL Updates:**
+- `SinglesBuilderPOSLookup` query - searches checkouts by metadata
+
+**API Usage:**
+```bash
+# POST request
+curl -X POST http://localhost:3000/api/singles-builder/lookup \
+  -H "Content-Type: application/json" \
+  -d '{"code": "ABC123"}'
+
+# GET request
+curl "http://localhost:3000/api/singles-builder/lookup?code=ABC123"
+```
+
+**Response Format:**
+```json
+{
+  "success": true,
+  "checkout": {
+    "id": "Q2hlY2tvdXQ6...",
+    "token": "...",
+    "customerName": "John Doe",
+    "notes": "Hold for pickup",
+    "shortCode": "ABC123",
+    "createdAt": "2026-01-04T...",
+    "lines": [...],
+    "subtotal": { "amount": 25.00, "currency": "USD" },
+    "total": { "amount": 25.00, "currency": "USD" }
+  }
+}
+```
+
+**Note:** This endpoint requires staff authentication (MANAGE_CHECKOUTS or HANDLE_PAYMENTS permission).
+
 ## Remaining Work
 
-### PR4: Cart Persistence
+### Phase 2: POS Integration
 
 **Scope:**
-- Zustand cart store for local cart state
-- Cart drawer/panel component
-- Saleor checkout mutations integration
-- Customer name + notes (metadata)
-- Short code generation for POS handoff
-
-### PR5: POS Handoff
-
-**Scope:**
-- Cart lookup API endpoint (`/api/singles-builder/lookup`)
-- POS app retrieve screen
+- POS app retrieve screen implementation
 - Cart to draft order conversion
-- Documentation
+- Customer account assignment
+- Receipt printing integration
 
 ## Architecture Reference
 
@@ -153,3 +236,49 @@ http://localhost:3000/webstore/login
 
 4. **Auth:** `isStaff` boolean check
    - Phase 2: Consider dedicated permission group
+
+## Production Deployment
+
+### Prerequisites
+
+1. **Channel exists:** `singles-builder` channel must be created and products synced
+2. **Staff accounts:** At least one staff user with active account
+3. **API running:** Saleor API must be accessible during build (GraphQL introspection)
+
+### Build Commands
+
+```bash
+# Ensure API is running
+docker compose up -d api
+
+# Build storefront with network access for codegen
+docker build --network=host \
+  --build-arg NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/ \
+  --build-arg NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000 \
+  --build-arg NEXT_PUBLIC_DEFAULT_CHANNEL=webstore \
+  -t saleor-storefront:local ./storefront
+
+# Deploy
+docker compose up -d --force-recreate storefront
+```
+
+### Verification Checklist
+
+- [ ] Staff user can access `/singles-builder/singles-builder`
+- [ ] Non-staff user is redirected to `/unauthorized`
+- [ ] Search returns products with thumbnails
+- [ ] Filters work (rarity, condition, finish, price range)
+- [ ] Add to cart works with toast notification
+- [ ] Cart shows correct item count and total
+- [ ] POS code generation saves to metadata
+- [ ] Cart drawer opens and shows all items
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `DYNAMIC_SERVER_USAGE` error | Add `export const dynamic = "force-dynamic"` to page |
+| Null currency crash | Check `discounted_price_amount` is set (see database.md) |
+| Build fails at codegen | Ensure API is running and accessible |
+| Auth redirect loop | Check cookies, clear site data |
+| POS lookup 403 | Endpoint requires staff auth (MANAGE_CHECKOUTS permission) |
