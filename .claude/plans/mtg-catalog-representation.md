@@ -45,6 +45,8 @@ cd /home/michael/saleor-platform
 | `scripts/mtg_finish_variants/create_finish_variants.py` | Creates Foil/Etched variants |
 | `scripts/mtg_finish_variants/sync_tcgplayer_skus.py` | Syncs TCGPlayer SKU mappings |
 | `scripts/mtg_finish_variants/run_migration.sh` | Orchestration script |
+| `scripts/mtg_price_sync/bulk_price_sync.py` | Bulk price sync from Scryfall |
+| `scripts/mtg_price_sync/run_bulk_sync.sh` | Price sync runner script |
 | `docs/data/TcgplayerSkus.json` | MTGJSON SKU data (584MB) |
 | `storefront/src/lib/filters/mtgConstants.ts` | Updated with finish/condition filters |
 
@@ -515,8 +517,64 @@ Run `sync_mtgjson_skus.py` to:
 - Match each SKU to Saleor variant by condition+finish
 - Store `mtg-tcgplayer-sku` attribute on variants
 
-### Step 6: Price Sync Run
-- Download fresh Scryfall bulk data
-- Match variants by Scryfall ID + finish
-- Apply `usd`, `usd_foil`, `usd_etched` prices with condition multipliers
-- Create PendingPriceUpdate records for review
+### Step 6: Price Sync Run - COMPLETED
+
+**Status:** Executed 2026-01-07. 674,445 prices created at 7,025 variants/sec.
+
+#### Implementation Summary
+
+The price sync module supports finish-aware pricing:
+
+| Component | Changes |
+|-----------|---------|
+| Schema (`SellPriceSnapshot`) | Added `variantSku`, `finish`, `condition`, `basePrice` fields |
+| Cron job (`price-sync/route.ts`) | SKU parser, finish-aware price selection, condition multipliers |
+
+**Price Selection by Finish:**
+- Non-Foil (NF) → `prices.usd`
+- Foil (F) → `prices.usd_foil`
+- Etched (E) → `prices.usd_etched`
+
+**Condition Multipliers:** NM=1.0, LP=0.9, MP=0.75, HP=0.5, DMG=0.25
+
+#### Running on a New Machine
+
+**Prerequisites:**
+- Python 3 with `psycopg2-binary` and `requests` packages
+- Docker containers running (api, inventory-ops-db)
+- Network access to Scryfall API
+
+**Setup:**
+
+```bash
+# Install Python dependencies
+pip3 install psycopg2-binary requests
+
+# The script auto-downloads Scryfall data to docs/data/
+# (~500MB, refreshed if older than 24 hours)
+```
+
+**Execution:**
+
+```bash
+# 1. Get installation ID from inventory-ops database
+docker compose exec inventory-ops-db psql -U inventory inventory_ops \
+  -c 'SELECT id FROM "AppInstallation" LIMIT 1;'
+
+# 2. Dry run (verify setup)
+INSTALLATION_ID=<id> ./scripts/mtg_price_sync/run_bulk_sync.sh --dry-run --limit 1000
+
+# 3. Full sync (~2 min for 736k variants)
+INSTALLATION_ID=<id> ./scripts/mtg_price_sync/run_bulk_sync.sh
+
+# 4. Resume if interrupted
+INSTALLATION_ID=<id> ./scripts/mtg_price_sync/run_bulk_sync.sh --resume
+```
+
+**What the sync does:**
+1. Downloads Scryfall bulk data (cached in `docs/data/`)
+2. Queries Saleor GraphQL for all MTG variants
+3. Parses SKU to extract Scryfall ID, condition, finish
+4. Matches variants to Scryfall cards by UUID
+5. Applies finish-specific prices with condition multipliers
+6. Creates `SellPriceSnapshot` records in inventory-ops database
