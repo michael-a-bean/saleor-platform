@@ -33,9 +33,9 @@ function formatQuantity(qty: number): string {
 
 export function ProductElement({
 	product,
-	loading,
+	loading = "lazy",
 	priority,
-}: { product: ProductListItemFragment } & { loading: "eager" | "lazy"; priority?: boolean }) {
+}: { product: ProductListItemFragment } & { loading?: "eager" | "lazy"; priority?: boolean }) {
 	// Prefer media URL (external images) over thumbnail URL (Saleor-generated)
 	const imageUrl = product?.media?.[0]?.url || product?.thumbnail?.url;
 	const imageAlt = product?.media?.[0]?.alt || product?.thumbnail?.alt || "";
