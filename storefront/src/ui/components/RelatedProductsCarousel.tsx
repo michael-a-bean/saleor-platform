@@ -107,7 +107,10 @@ export function RelatedProductsCarousel({
 						style={{ scrollSnapAlign: "start" }}
 					>
 						<ul className="list-none">
-							<ProductElement product={product} loading="lazy" priority={index < 4} />
+							<ProductElement
+								product={product}
+								{...(index < 4 ? { priority: true } : { loading: "lazy" as const })}
+							/>
 						</ul>
 					</div>
 				))}
