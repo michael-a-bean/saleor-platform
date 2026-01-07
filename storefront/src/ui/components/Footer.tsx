@@ -26,11 +26,21 @@ export async function Footer({ channel }: { channel: string }) {
 	return (
 		<footer className="border-t border-neutral-200 bg-neutral-50">
 			<div className="mx-auto max-w-7xl px-4 lg:px-8">
-				<div className="grid grid-cols-2 gap-8 py-16 sm:grid-cols-4">
+				<div className="grid grid-cols-2 gap-8 py-16 sm:grid-cols-4 lg:grid-cols-5">
+					{/* Brand logo column */}
+					<div className="col-span-2 sm:col-span-1">
+						<Image
+							src="/brand/logo-stacked-purple.png"
+							alt="Shuffle and Cut Games"
+							width={120}
+							height={120}
+							className="opacity-80"
+						/>
+					</div>
 					{footerLinks.menu?.items?.map((item) => {
 						return (
 							<div key={item.id}>
-								<h3 className="text-sm font-semibold text-neutral-900">{item.name}</h3>
+								<h3 className="text-sm font-semibold text-brand-deep-purple">{item.name}</h3>
 								<ul className="mt-4 space-y-4">
 									{item.children?.map((child) => {
 										if (child.category) {
@@ -90,7 +100,7 @@ export async function Footer({ channel }: { channel: string }) {
 
 					{/* Static Help section - always visible */}
 					<div>
-						<h3 className="text-sm font-semibold text-neutral-900">Help & Info</h3>
+						<h3 className="text-sm font-semibold text-brand-deep-purple">Help & Info</h3>
 						<ul className="mt-4 space-y-4">
 							<li className="text-sm">
 								<LinkWithChannel
