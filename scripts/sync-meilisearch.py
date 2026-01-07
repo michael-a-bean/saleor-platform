@@ -1,13 +1,27 @@
 #!/usr/bin/env python3
 """
-Sync MTG products from Saleor to Meilisearch for singles-builder search.
+Sync MTG products from Saleor to Meilisearch for search functionality.
 
 Usage:
     python scripts/sync-meilisearch.py [--full] [--channel CHANNEL]
 
+Examples:
+    # Sync webstore channel (main storefront)
+    python scripts/sync-meilisearch.py --channel webstore
+
+    # Full reindex of webstore (delete and recreate index)
+    python scripts/sync-meilisearch.py --full --channel webstore
+
+    # Sync singles-builder channel (default)
+    python scripts/sync-meilisearch.py
+
 Options:
     --full      Full reindex (deletes and recreates index)
     --channel   Channel slug to sync (default: singles-builder)
+
+Note: The script configures filterable attributes for storefront filters:
+      set_code, set_name, rarity, in_stock, conditions_available,
+      finishes_available, colors, type_line, min_price
 """
 
 import requests
@@ -245,30 +259,49 @@ def transform_product(product: dict) -> dict:
     }
 
 
+def wait_for_task(task_uid: int, timeout: int = 60) -> bool:
+    """Wait for a Meilisearch task to complete."""
+    start = time.time()
+    while time.time() - start < timeout:
+        response = requests.get(f"{MEILISEARCH_URL}/tasks/{task_uid}")
+        if response.status_code == 200:
+            status = response.json().get("status")
+            if status == "succeeded":
+                return True
+            elif status == "failed":
+                print(f"  Task {task_uid} failed: {response.json().get('error')}")
+                return False
+        time.sleep(0.5)
+    print(f"  Task {task_uid} timed out")
+    return False
+
+
 def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
     """Create or update Meilisearch index with proper settings."""
 
     if full_reindex:
         # Delete existing index
         print(f"Deleting existing index '{index_name}'...")
-        requests.delete(f"{MEILISEARCH_URL}/indexes/{index_name}")
-        time.sleep(1)
+        response = requests.delete(f"{MEILISEARCH_URL}/indexes/{index_name}")
+        if response.status_code == 202:
+            task_uid = response.json().get("taskUid")
+            wait_for_task(task_uid)
 
-    # Create index
-    print(f"Creating index '{index_name}'...")
+    # Create index (will be ignored if already exists)
+    print(f"Creating/updating index '{index_name}'...")
     response = requests.post(
         f"{MEILISEARCH_URL}/indexes",
         json={"uid": index_name, "primaryKey": "id"}
     )
+    if response.status_code == 202:
+        task_uid = response.json().get("taskUid")
+        wait_for_task(task_uid)
 
-    # Wait for index creation
-    time.sleep(1)
-
-    # Configure searchable attributes (order matters for ranking)
-    print("Configuring searchable attributes...")
-    requests.put(
-        f"{MEILISEARCH_URL}/indexes/{index_name}/settings/searchable-attributes",
-        json=[
+    # Configure all settings in a single PATCH request (more efficient)
+    # This applies all settings atomically and returns a single task to wait on
+    print("Configuring index settings...")
+    settings = {
+        "searchableAttributes": [
             "name",
             "name_parts",
             "name_prefixes",  # For abbreviation matching (verd → verdant)
@@ -277,15 +310,11 @@ def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
             "set_code",
             "type_line",
             "oracle_text",
-        ]
-    )
-
-    # Configure filterable attributes
-    print("Configuring filterable attributes...")
-    requests.put(
-        f"{MEILISEARCH_URL}/indexes/{index_name}/settings/filterable-attributes",
-        json=[
+        ],
+        "filterableAttributes": [
+            # These must match what the storefront filter components use
             "set_code",
+            "set_name",       # For set dropdown filter (required for faceting)
             "rarity",
             "in_stock",
             "conditions_available",
@@ -293,42 +322,45 @@ def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
             "colors",
             "type_line",      # For creature/instant/sorcery filtering
             "min_price",      # For price range filtering
-        ]
-    )
-
-    # Configure sortable attributes
-    print("Configuring sortable attributes...")
-    requests.put(
-        f"{MEILISEARCH_URL}/indexes/{index_name}/settings/sortable-attributes",
-        json=["name", "min_price", "set_name", "collector_number"]
-    )
-
-    # Configure typo tolerance
-    print("Configuring typo tolerance...")
-    requests.put(
-        f"{MEILISEARCH_URL}/indexes/{index_name}/settings/typo-tolerance",
-        json={
+        ],
+        "sortableAttributes": [
+            "name",
+            "min_price",
+            "set_name",
+            "collector_number",
+        ],
+        "typoTolerance": {
             "enabled": True,
             "minWordSizeForTypos": {
                 "oneTypo": 4,
                 "twoTypos": 8
             }
-        }
-    )
-
-    # Configure ranking rules
-    print("Configuring ranking rules...")
-    requests.put(
-        f"{MEILISEARCH_URL}/indexes/{index_name}/settings/ranking-rules",
-        json=[
+        },
+        "rankingRules": [
             "words",
             "typo",
             "proximity",
             "attribute",
             "sort",
             "exactness"
-        ]
+        ],
+    }
+
+    response = requests.patch(
+        f"{MEILISEARCH_URL}/indexes/{index_name}/settings",
+        json=settings
     )
+
+    if response.status_code == 202:
+        task_uid = response.json().get("taskUid")
+        print(f"  Settings task queued: {task_uid}")
+        print("  Waiting for settings to apply (this may take a while for large indexes)...")
+        if wait_for_task(task_uid, timeout=300):  # 5 min timeout for large indexes
+            print("  Settings applied successfully!")
+        else:
+            print("  Warning: Settings task did not complete in time")
+    else:
+        print(f"  Error configuring settings: {response.text}")
 
     print("Index configured!")
 
