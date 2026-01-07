@@ -36,6 +36,23 @@ export const BOOLEAN_FILTER_OPTIONS = [
 	{ value: "false", label: "No" },
 ];
 
+// Finish options (variant-level attribute for foil/non-foil)
+export const FINISH_OPTIONS: FilterOption[] = [
+	{ value: "mtg-finish-nf", label: "Non-Foil" },
+	{ value: "mtg-finish-f", label: "Foil", color: "#FFD700" },
+	{ value: "mtg-finish-e", label: "Etched", color: "#C0C0C0" },
+	{ value: "mtg-finish-g", label: "Glossy", color: "#E8E8E8" },
+];
+
+// Condition options (variant-level attribute)
+export const CONDITION_OPTIONS: FilterOption[] = [
+	{ value: "mtg-condition-nm", label: "Near Mint" },
+	{ value: "mtg-condition-lp", label: "Lightly Played" },
+	{ value: "mtg-condition-mp", label: "Moderately Played" },
+	{ value: "mtg-condition-hp", label: "Heavily Played" },
+	{ value: "mtg-condition-dmg", label: "Damaged" },
+];
+
 // Attribute slugs as defined in Saleor (with mtg- prefix)
 export const ATTRIBUTE_SLUGS = {
 	rarity: "mtg-rarity",
@@ -43,6 +60,8 @@ export const ATTRIBUTE_SLUGS = {
 	reservedList: "mtg-reserved",
 	isPromo: "mtg-is-promo",
 	isFullArt: "mtg-is-full-art",
+	finish: "mtg-finish",
+	condition: "mtg-condition",
 } as const;
 
 // URL parameter names
@@ -58,4 +77,6 @@ export const URL_PARAMS = {
 	reservedList: "reserved",
 	isPromo: "promo",
 	isFullArt: "fullart",
+	finish: "finish",
+	condition: "condition",
 } as const;
