@@ -118,13 +118,23 @@ The following hex values should ONLY appear in `brand.ts` and `globals.css`:
 <p className="font-text">Body text with text font</p>
 ```
 
-### Font Installation (TODO)
+### Font Installation (COMPLETE)
 
-Polymath fonts require licensing. Once font files are obtained:
+Polymath fonts installed from licensed files:
 
-1. Place WOFF2 files in `storefront/public/fonts/`
-2. Uncomment `@font-face` declarations in `globals.css`
-3. Font names will automatically apply via CSS variables
+| File | Family | Weight | Style |
+|------|--------|--------|-------|
+| `PolymathDispDemo-Regular.woff2` | Display | 400 | normal |
+| `PolymathDispDemo-Medium.woff2` | Display | 500 | normal |
+| `PolymathDispDemo-Bold.woff2` | Display | 700 | normal |
+| `PolymathDispDemo-Super.woff2` | Display | 800 | normal |
+| `PolymathTextDemo-Regular.woff2` | Text | 400 | normal |
+| `PolymathTextDemo-Italic.woff2` | Text | 400 | italic |
+| `PolymathTextDemo-Semibold.woff2` | Text | 600 | normal |
+| `PolymathTextDemo-SemiboldIt.woff2` | Text | 600 | italic |
+
+Location: `storefront/public/fonts/`
+Total payload: ~49KB
 
 ---
 
@@ -260,20 +270,10 @@ Bright Blue is used for links despite lower contrast ratio because:
 
 ### Pending Items
 
-- [ ] **Font licensing**: Obtain Polymath Display/Text web font licenses
+- [x] **Font licensing**: ~~Obtain Polymath Display/Text web font licenses~~ (DONE)
 - [ ] **Vector logos**: Request EPS/AI files from designer for proper SVG conversion
 - [ ] **OG images**: Create Open Graph image template with brand assets
 - [ ] **Email templates**: Apply brand styling to transactional emails
-
-### Font Integration Steps
-
-Once licensed fonts are available:
-
-1. Obtain WOFF2 files (Regular, Medium, Bold for Display; Regular, SemiBold for Text)
-2. Place in `storefront/public/fonts/`
-3. Uncomment `@font-face` declarations in `globals.css`
-4. Remove Google Fonts imports from `layout.tsx` (Montserrat, Open Sans)
-5. Test all pages for proper rendering
 
 ---
 
