@@ -2,9 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   SHUFFLE AND CUT GAMES - BRAND CSS VARIABLES
+
+   Source of truth: src/lib/brand.ts
+   These CSS variables mirror the TypeScript tokens for runtime use.
+   ============================================================================ */
+
+@layer base {
+	:root {
+		/* Brand Colors */
+		--brand-deep-purple: #07074E;
+		--brand-bright-blue: #00B3C5;
+		--brand-sunny-yellow: #FFCF01;
+		--brand-fresh-green: #005B23;
+		--brand-bleached-bone: #E3D2B2;
+
+		/* Semantic Color Aliases */
+		--brand-primary: var(--brand-deep-purple);
+		--brand-secondary: var(--brand-bright-blue);
+		--brand-highlight: var(--brand-sunny-yellow);
+		--brand-success: var(--brand-fresh-green);
+		--brand-surface: var(--brand-bleached-bone);
+
+		/* Typography */
+		--font-display: 'Polymath Display', 'Montserrat', 'Helvetica Neue', sans-serif;
+		--font-text: 'Polymath Text', 'Open Sans', 'Helvetica Neue', sans-serif;
+
+		/* Focus Ring */
+		--brand-focus-ring: 0 0 0 2px var(--brand-bright-blue);
+	}
+}
+
+/* ============================================================================
+   BASE STYLES
+   ============================================================================ */
+
 body {
 	overflow-x: hidden;
 }
+
+/* ============================================================================
+   ACCESSIBILITY - Focus States
+   Uses brand secondary color (Bright Blue) for visibility
+   ============================================================================ */
+
+@layer base {
+	/* Enhanced focus-visible states for keyboard navigation */
+	*:focus-visible {
+		outline: 2px solid var(--brand-secondary);
+		outline-offset: 2px;
+	}
+
+	/* Remove default outline since we're using focus-visible */
+	*:focus:not(:focus-visible) {
+		outline: none;
+	}
+}
+
+/* ============================================================================
+   COMPONENT UTILITIES
+   ============================================================================ */
 
 /* Hide scrollbar but keep scroll functionality */
 .scrollbar-hide {
@@ -14,4 +72,128 @@ body {
 
 .scrollbar-hide::-webkit-scrollbar {
 	display: none; /* Chrome, Safari, Opera */
+}
+
+/* ============================================================================
+   BRAND LINK STYLES
+   Applied to generic links - does NOT affect MTG-specific UI
+   ============================================================================ */
+
+@layer components {
+	.brand-link {
+		color: var(--brand-secondary);
+		text-decoration: none;
+		transition: color 0.15s ease;
+	}
+
+	.brand-link:hover {
+		color: var(--brand-primary);
+		text-decoration: underline;
+	}
+
+	/* Primary button style */
+	.brand-btn-primary {
+		background-color: var(--brand-primary);
+		color: white;
+		transition: background-color 0.15s ease;
+	}
+
+	.brand-btn-primary:hover {
+		background-color: color-mix(in srgb, var(--brand-primary) 85%, black);
+	}
+
+	.brand-btn-primary:focus-visible {
+		outline: 2px solid var(--brand-secondary);
+		outline-offset: 2px;
+	}
+
+	/* Secondary button style */
+	.brand-btn-secondary {
+		background-color: var(--brand-secondary);
+		color: white;
+		transition: background-color 0.15s ease;
+	}
+
+	.brand-btn-secondary:hover {
+		background-color: color-mix(in srgb, var(--brand-secondary) 85%, black);
+	}
+}
+
+/* ============================================================================
+   @font-face DECLARATIONS - Polymath Font Family
+
+   Polymath Display: Headings, logos, display text
+   Polymath Text: Body copy, UI text
+   ============================================================================ */
+
+/* Polymath Display - Regular (400) */
+@font-face {
+	font-family: 'Polymath Display';
+	src: url('/fonts/PolymathDispDemo-Regular.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Polymath Display - Medium (500) */
+@font-face {
+	font-family: 'Polymath Display';
+	src: url('/fonts/PolymathDispDemo-Medium.woff2') format('woff2');
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Polymath Display - Bold (700) */
+@font-face {
+	font-family: 'Polymath Display';
+	src: url('/fonts/PolymathDispDemo-Bold.woff2') format('woff2');
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Polymath Display - Super (800) */
+@font-face {
+	font-family: 'Polymath Display';
+	src: url('/fonts/PolymathDispDemo-Super.woff2') format('woff2');
+	font-weight: 800;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Polymath Text - Regular (400) */
+@font-face {
+	font-family: 'Polymath Text';
+	src: url('/fonts/PolymathTextDemo-Regular.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Polymath Text - Regular Italic (400) */
+@font-face {
+	font-family: 'Polymath Text';
+	src: url('/fonts/PolymathTextDemo-Italic.woff2') format('woff2');
+	font-weight: 400;
+	font-style: italic;
+	font-display: swap;
+}
+
+/* Polymath Text - SemiBold (600) */
+@font-face {
+	font-family: 'Polymath Text';
+	src: url('/fonts/PolymathTextDemo-Semibold.woff2') format('woff2');
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Polymath Text - SemiBold Italic (600) */
+@font-face {
+	font-family: 'Polymath Text';
+	src: url('/fonts/PolymathTextDemo-SemiboldIt.woff2') format('woff2');
+	font-weight: 600;
+	font-style: italic;
+	font-display: swap;
 }
