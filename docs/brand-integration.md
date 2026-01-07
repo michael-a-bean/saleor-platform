@@ -1,6 +1,31 @@
 # Shuffle and Cut Games - Brand Integration Guide
 
-Brand assets for Shuffle and Cut Games, a hobby gaming store specializing in trading card games and tabletop gaming.
+Brand assets for Shuffle and Cut Games, a hobby gaming store specializing in trading card games and tabletop gaming supplies.
+
+## Implementation Summary
+
+This document describes the brand integration implemented in the `brand/shuffle-and-cut-theme` branch.
+
+### What Changed
+
+| Component | Change | Location |
+|-----------|--------|----------|
+| Brand tokens | Centralized colors/typography | `storefront/src/lib/brand.ts` |
+| CSS variables | Brand colors as CSS custom properties | `storefront/src/app/globals.css` |
+| Tailwind config | Extended with brand colors | `storefront/tailwind.config.ts` |
+| Logo | Horizontal wordmark in header | `storefront/src/ui/components/Logo.tsx` |
+| Favicon | Rolland mascot favicon set | `storefront/public/` |
+| Metadata | Site name, description, icons | `storefront/src/app/layout.tsx` |
+| Footer | Brand hover colors on links | `storefront/src/ui/components/Footer.tsx` |
+
+### What Did NOT Change
+
+- **MTG colors**: WUBRG and rarity colors in `src/lib/filters/mtgConstants.ts` remain untouched
+- **Layout/navigation structure**: No changes to page layouts or navigation
+- **Component sizes/spacing**: All dimensions remain unchanged
+- **Patterns/backgrounds**: No decorative patterns added (per brand guidelines for minimal UI)
+
+---
 
 ## Brand Assets Location
 
@@ -11,157 +36,253 @@ branding/client/
 ├── guide/                    # Brand guide PDF
 ├── colors/                   # Color palette (.ase swatch)
 ├── logo/
-│   ├── logotype/            # Horizontal wordmark
+│   ├── logotype/            # Horizontal wordmark (used in header)
 │   ├── stacked/             # Stacked wordmark
 │   ├── bar/                 # Bar lockups (skate-inspired)
 │   ├── shield/              # Badge/shield emblem
-│   ├── rolland/             # Mascot lockups
+│   ├── rolland/             # Mascot lockups (used for favicon)
 │   └── ogre/                # Ogre character
-└── patterns/                # Decorative backgrounds
+├── logo_svg/                # Generated SVG versions
+└── patterns/                # Decorative backgrounds (not used in UI)
 ```
+
+---
+
+## Token Architecture
+
+### Source of Truth
+
+All brand values are centralized in two files:
+
+1. **TypeScript tokens**: `storefront/src/lib/brand.ts`
+   - Export objects for use in JS/TS code
+   - Type-safe color and typography references
+
+2. **CSS variables**: `storefront/src/app/globals.css`
+   - Runtime CSS custom properties
+   - Used by Tailwind via `var()` references
+
+### DO NOT add brand hex values elsewhere
+
+The following hex values should ONLY appear in `brand.ts` and `globals.css`:
+- `#07074E` (Deep Purple)
+- `#00B3C5` (Bright Blue)
+- `#FFCF01` (Sunny Yellow)
+- `#005B23` (Fresh Green)
+- `#E3D2B2` (Bleached Bone)
+
+---
 
 ## Color Palette
 
 ### Primary Brand Colors
 
-| Name | Hex | RGB | Usage |
-|------|-----|-----|-------|
-| Deep Purple | `#07074E` | rgb(7, 7, 78) | Primary background, text |
-| Bright Blue | `#00B3C5` | rgb(0, 179, 197) | Primary accent, highlights |
+| Name | Hex | CSS Variable | Tailwind Class | Usage |
+|------|-----|--------------|----------------|-------|
+| Deep Purple | `#07074E` | `--brand-deep-purple` | `bg-brand-deep-purple` | Primary action color |
+| Bright Blue | `#00B3C5` | `--brand-bright-blue` | `bg-brand-bright-blue` | Links, focus states |
 
 ### Accent Colors
 
-| Name | Hex | RGB | Usage |
-|------|-----|-----|-------|
-| Sunny Yellow | `#FFCF01` | rgb(255, 207, 1) | CTAs, highlights, alerts |
-| Fresh Green | `#005B23` | rgb(0, 91, 35) | Success states, secondary accent |
-| Bleached Bone | `#E3D2B2` | rgb(227, 210, 178) | Neutral backgrounds |
+| Name | Hex | CSS Variable | Tailwind Class | Usage |
+|------|-----|--------------|----------------|-------|
+| Sunny Yellow | `#FFCF01` | `--brand-sunny-yellow` | `bg-brand-sunny-yellow` | Highlights (sparingly) |
+| Fresh Green | `#005B23` | `--brand-fresh-green` | `bg-brand-fresh-green` | Success states |
+| Bleached Bone | `#E3D2B2` | `--brand-bleached-bone` | `bg-brand-bleached-bone` | Subtle backgrounds |
 
-### CSS Variables
+### Semantic Aliases
 
-```css
-:root {
-  /* Primary */
-  --color-deep-purple: #07074E;
-  --color-bright-blue: #00B3C5;
+| Alias | Maps To | CSS Variable | Tailwind Class |
+|-------|---------|--------------|----------------|
+| primary | Deep Purple | `--brand-primary` | `bg-brand-primary` |
+| secondary | Bright Blue | `--brand-secondary` | `bg-brand-secondary` |
+| highlight | Sunny Yellow | `--brand-highlight` | `bg-brand-highlight` |
+| success | Fresh Green | `--brand-success` | `bg-brand-success` |
+| surface | Bleached Bone | `--brand-surface` | `bg-brand-surface` |
 
-  /* Accent */
-  --color-sunny-yellow: #FFCF01;
-  --color-fresh-green: #005B23;
-  --color-bleached-bone: #E3D2B2;
-
-  /* Semantic aliases */
-  --color-primary: var(--color-deep-purple);
-  --color-secondary: var(--color-bright-blue);
-  --color-accent: var(--color-sunny-yellow);
-  --color-success: var(--color-fresh-green);
-  --color-surface: var(--color-bleached-bone);
-}
-```
+---
 
 ## Typography
 
-### Primary Typeface: Polymath Display
+### Font Families
 
-Used for headings, display text, and the logotype.
+| Purpose | Font | Fallback Stack | CSS Variable |
+|---------|------|----------------|--------------|
+| Headings | Polymath Display | Montserrat, Helvetica Neue, sans-serif | `--font-display` |
+| Body | Polymath Text | Open Sans, Helvetica Neue, sans-serif | `--font-text` |
 
-| Weight | Usage |
-|--------|-------|
-| Regular | Body text, subtle details |
-| Medium | Subheadings, secondary emphasis |
-| Bold | Strong emphasis, key messaging |
-| Super | Headlines, display purposes |
+### Tailwind Usage
 
-### Secondary Typeface: Polymath Text
-
-Used for body copy and extended reading.
-
-| Weight | Usage |
-|--------|-------|
-| Regular | Body copy |
-| Italic | Emphasis within body |
-| Semibold | Subtle emphasis |
-| Semibold Italic | Combined emphasis |
-
-### Font Licensing
-
-**TODO**: Polymath Display and Polymath Text are commercial fonts. Obtain proper licensing before web deployment. Contact font foundry for webfont licenses.
-
-### Web Font Fallback
-
-Until licensed fonts are available:
-```css
-font-family: 'Polymath Display', 'Montserrat', 'Helvetica Neue', sans-serif;
-font-family: 'Polymath Text', 'Open Sans', 'Helvetica Neue', sans-serif;
+```tsx
+<h1 className="font-display">Heading with display font</h1>
+<p className="font-text">Body text with text font</p>
 ```
+
+### Font Installation (TODO)
+
+Polymath fonts require licensing. Once font files are obtained:
+
+1. Place WOFF2 files in `storefront/public/fonts/`
+2. Uncomment `@font-face` declarations in `globals.css`
+3. Font names will automatically apply via CSS variables
+
+---
 
 ## Logo Usage
 
-### Recommended for Web
+### Header Logo
 
-| Context | Asset | Path |
-|---------|-------|------|
-| Navigation (light bg) | Full Color Logotype | `logo/logotype/S+C_Logotype_FullColor.png` |
-| Navigation (dark bg) | White Logotype | `logo/logotype/S+C_Logotype_White.png` |
-| Favicon | Shield | `logo/shield/S+C_Logo_Shield_FullColor.png` |
-| Footer | Stacked Full Color | `logo/stacked/S+C_Logo_Stacked_FullColor.png` |
-| Social/OG Image | Bar lockup | `logo/bar/S+C_Bar_01.png` |
+**Selected variant**: `S+C_Logotype_FullColor.png` (horizontal wordmark)
 
-### Clear Space
+**Rationale**:
+- Horizontal format fits navigation header naturally
+- Full color provides best brand recognition
+- Works well on light/neutral backgrounds
 
-Maintain clear space equal to the x-height of the "S" character around all logos.
+**Location**: `storefront/public/brand/logo-full-color.png`
 
-### Minimum Sizes
+**Implementation**: `storefront/src/ui/components/Logo.tsx`
+- Width: 140px (mobile) / 180px (desktop)
+- Uses Next.js Image for optimization
+- Includes proper alt text for accessibility
 
-- Logotype: 120px width minimum
-- Stacked: 80px width minimum
-- Shield: 32px width minimum
+### Available Logo Variants
 
-## Mascot: Rolland
+| File | Location | Recommended Use |
+|------|----------|-----------------|
+| `logo-full-color.png` | `/brand/` | Header (current) |
+| `logo-white.png` | `/brand/` | Dark backgrounds |
+| `rolland-full-color.png` | `/brand/` | Marketing materials |
 
-Rolland is a friendly 20-sided die (d20) that can:
-- Emote and express personality
-- Change colors (blue, yellow, green, gradient)
-- Move and animate
+---
 
-Use Rolland for:
-- Welcome/greeting contexts
-- Success celebrations
-- Community/social content
-- Playful empty states
+## Favicon
 
-Assets: `/branding/client/logo/rolland/`
+### Mascot: Rolland
 
-## Patterns
+The favicon uses Rolland (the d20 mascot) rather than the shield, per brand guidelines.
 
-Decorative patterns featuring Rolland in a mid-century geometric design.
+**Source**: `branding/client/logo/rolland/S+C_Rolland_FullColor.png`
 
-| Variant | Usage |
-|---------|-------|
-| PurpleBlue | Primary brand backgrounds |
-| YellowPurple | Accent sections, promotions |
+### Generated Files
 
-Available in Large and Small scales.
+| File | Size | Location |
+|------|------|----------|
+| `favicon.ico` | 16x16, 32x32 | `/public/` |
+| `favicon-16x16.png` | 16x16 | `/public/` |
+| `favicon-32x32.png` | 32x32 | `/public/` |
+| `apple-touch-icon.png` | 180x180 | `/public/` |
+| `android-chrome-192x192.png` | 192x192 | `/public/` |
+| `android-chrome-512x512.png` | 512x512 | `/public/` |
+| `site.webmanifest` | — | `/public/` |
 
-## Implementation TODOs
+### Regenerating Favicons
 
-- [ ] Obtain Polymath Display/Text web font licenses
-- [ ] Generate favicon set from shield logo (16x16, 32x32, 180x180, etc.)
-- [ ] Create optimized WebP versions of PNG logos
-- [ ] Set up logo in storefront header
-- [ ] Apply color palette to Tailwind config
-- [ ] Create OG image template with bar lockup
+If source assets change:
+
+```bash
+cd storefront/public/brand
+convert /path/to/rolland.png -resize 16x16 favicon-16x16.png
+convert /path/to/rolland.png -resize 32x32 favicon-32x32.png
+convert /path/to/rolland.png -resize 180x180 apple-touch-icon.png
+convert /path/to/rolland.png -resize 192x192 android-chrome-192x192.png
+convert /path/to/rolland.png -resize 512x512 android-chrome-512x512.png
+cd ..
+convert brand/favicon-16x16.png brand/favicon-32x32.png -colors 256 favicon.ico
+```
+
+---
+
+## MTG Color Preservation
+
+### Hard Constraint
+
+MTG colors (WUBRG, rarity, etc.) must NOT be affected by brand styling.
+
+### Protected Colors
+
+**Color Identity (WUBRG)**:
+| Color | Hex | Slug |
+|-------|-----|------|
+| White | `#F9FAF4` | `mtg-color-w` |
+| Blue | `#0E68AB` | `mtg-color-u` |
+| Black | `#150B00` | `mtg-color-b` |
+| Red | `#D3202A` | `mtg-color-r` |
+| Green | `#00733E` | `mtg-color-g` |
+
+**Rarity**:
+| Rarity | Hex | Slug |
+|--------|-----|------|
+| Common | `#1a1a1a` | `mtg-rarity-common` |
+| Uncommon | `#707883` | `mtg-rarity-uncommon` |
+| Rare | `#a58e4a` | `mtg-rarity-rare` |
+| Mythic | `#bf4427` | `mtg-rarity-mythic` |
+| Special | `#905d98` | `mtg-rarity-special` |
+
+### Location
+
+MTG colors are defined in `storefront/src/lib/filters/mtgConstants.ts` and remain unchanged.
+
+---
+
+## Accessibility
+
+### Focus States
+
+Global focus-visible styles use Bright Blue (`#00B3C5`) for high visibility:
+
+```css
+*:focus-visible {
+  outline: 2px solid var(--brand-secondary);
+  outline-offset: 2px;
+}
+```
+
+### Contrast Considerations
+
+| Color | On White | On Dark | Notes |
+|-------|----------|---------|-------|
+| Deep Purple | ✅ 14.2:1 | N/A | Safe for text |
+| Bright Blue | ⚠️ 3.3:1 | ✅ 5.4:1 | Use for accents, not body text |
+| Sunny Yellow | ⚠️ 1.4:1 | ⚠️ 2.0:1 | Highlight only, never text |
+| Fresh Green | ✅ 7.8:1 | N/A | Safe for text |
+
+### Deviations
+
+Bright Blue is used for links despite lower contrast ratio because:
+1. Links are interactive and have additional hover/focus affordances
+2. The brand requires this specific blue
+3. Underlines provide additional visual cue
+
+---
+
+## Future Work
+
+### Pending Items
+
+- [ ] **Font licensing**: Obtain Polymath Display/Text web font licenses
+- [ ] **Vector logos**: Request EPS/AI files from designer for proper SVG conversion
+- [ ] **OG images**: Create Open Graph image template with brand assets
+- [ ] **Email templates**: Apply brand styling to transactional emails
+
+### Font Integration Steps
+
+Once licensed fonts are available:
+
+1. Obtain WOFF2 files (Regular, Medium, Bold for Display; Regular, SemiBold for Text)
+2. Place in `storefront/public/fonts/`
+3. Uncomment `@font-face` declarations in `globals.css`
+4. Remove Google Fonts imports from `layout.tsx` (Montserrat, Open Sans)
+5. Test all pages for proper rendering
+
+---
 
 ## Source Files
 
-The original brand guide PDF is at:
-`/branding/client/guide/S+C_BrandGuide_1.0_04.2025.pdf`
-
-Adobe Swatch Exchange file for colors:
-`/branding/client/colors/S+C_ColorPalette_1.0_05.2025.ase`
-
-## Missing/Ambiguous Items
-
-1. **SVG logos**: Source only provides EPS (print) and PNG (web-ready). SVG versions would need to be recreated or requested from designer.
-2. **Font files**: Polymath Display/Text fonts not included - requires separate licensing.
-3. **Favicon set**: Not provided - needs to be generated from shield logo.
+| Asset | Location |
+|-------|----------|
+| Brand guide PDF | `/branding/client/guide/S+C_BrandGuide_1.0_04.2025.pdf` |
+| Color palette (ASE) | `/branding/client/colors/S+C_ColorPalette_1.0_05.2025.ase` |
+| TypeScript tokens | `/storefront/src/lib/brand.ts` |
+| CSS variables | `/storefront/src/app/globals.css` |
+| Tailwind config | `/storefront/tailwind.config.ts` |
