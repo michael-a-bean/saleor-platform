@@ -4,21 +4,20 @@ import { Suspense, type ReactNode } from "react";
 import { type Metadata } from "next";
 import { DraftModeNotification } from "@/ui/components/DraftModeNotification";
 
-// Primary display font - fallback until Polymath Display is available
+// Google Fonts as fallbacks for Polymath (loaded via @font-face in globals.css)
 const montserrat = Montserrat({
 	subsets: ["latin"],
 	variable: "--font-display-fallback",
 	display: "swap",
 });
 
-// Body text font - fallback until Polymath Text is available
 const openSans = Open_Sans({
 	subsets: ["latin"],
 	variable: "--font-text-fallback",
 	display: "swap",
 });
 
-// Inter as base sans-serif
+// Base sans-serif
 const inter = Inter({ subsets: ["latin"] });
 
 const SITE_NAME = "Shuffle and Cut Games";

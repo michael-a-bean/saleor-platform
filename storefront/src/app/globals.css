@@ -120,50 +120,80 @@ body {
 }
 
 /* ============================================================================
-   @font-face DECLARATIONS
+   @font-face DECLARATIONS - Polymath Font Family
 
-   Note: Polymath Display and Polymath Text fonts require licensing.
-   Once font files are obtained, uncomment and update paths below.
+   Polymath Display: Headings, logos, display text
+   Polymath Text: Body copy, UI text
    ============================================================================ */
 
-/*
+/* Polymath Display - Regular (400) */
 @font-face {
 	font-family: 'Polymath Display';
-	src: url('/fonts/PolymathDisplay-Regular.woff2') format('woff2');
+	src: url('/fonts/PolymathDispDemo-Regular.woff2') format('woff2');
 	font-weight: 400;
 	font-style: normal;
 	font-display: swap;
 }
 
+/* Polymath Display - Medium (500) */
 @font-face {
 	font-family: 'Polymath Display';
-	src: url('/fonts/PolymathDisplay-Medium.woff2') format('woff2');
+	src: url('/fonts/PolymathDispDemo-Medium.woff2') format('woff2');
 	font-weight: 500;
 	font-style: normal;
 	font-display: swap;
 }
 
+/* Polymath Display - Bold (700) */
 @font-face {
 	font-family: 'Polymath Display';
-	src: url('/fonts/PolymathDisplay-Bold.woff2') format('woff2');
+	src: url('/fonts/PolymathDispDemo-Bold.woff2') format('woff2');
 	font-weight: 700;
 	font-style: normal;
 	font-display: swap;
 }
 
+/* Polymath Display - Super (800) */
+@font-face {
+	font-family: 'Polymath Display';
+	src: url('/fonts/PolymathDispDemo-Super.woff2') format('woff2');
+	font-weight: 800;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Polymath Text - Regular (400) */
 @font-face {
 	font-family: 'Polymath Text';
-	src: url('/fonts/PolymathText-Regular.woff2') format('woff2');
+	src: url('/fonts/PolymathTextDemo-Regular.woff2') format('woff2');
 	font-weight: 400;
 	font-style: normal;
 	font-display: swap;
 }
 
+/* Polymath Text - Regular Italic (400) */
 @font-face {
 	font-family: 'Polymath Text';
-	src: url('/fonts/PolymathText-SemiBold.woff2') format('woff2');
+	src: url('/fonts/PolymathTextDemo-Italic.woff2') format('woff2');
+	font-weight: 400;
+	font-style: italic;
+	font-display: swap;
+}
+
+/* Polymath Text - SemiBold (600) */
+@font-face {
+	font-family: 'Polymath Text';
+	src: url('/fonts/PolymathTextDemo-Semibold.woff2') format('woff2');
 	font-weight: 600;
 	font-style: normal;
 	font-display: swap;
 }
-*/
+
+/* Polymath Text - SemiBold Italic (600) */
+@font-face {
+	font-family: 'Polymath Text';
+	src: url('/fonts/PolymathTextDemo-SemiboldIt.woff2') format('woff2');
+	font-weight: 600;
+	font-style: italic;
+	font-display: swap;
+}
