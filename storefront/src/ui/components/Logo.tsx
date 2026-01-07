@@ -8,21 +8,21 @@ const COMPANY_NAME = "Shuffle and Cut Games";
 
 /**
  * Brand logo component for header navigation.
- * Uses the horizontal wordmark (logotype) for best fit in navigation.
+ * Uses Rolland mascot logo for brand personality.
  *
- * Logo variant: S+C_Logotype_FullColor.png
- * Minimum width: 120px per brand guidelines
+ * Logo variant: S+C_Logo_Rolland_FullColor.png
+ * Original dimensions: 2700x583 (ratio ~4.6:1)
  */
 export const Logo = () => {
 	const pathname = usePathname();
 
 	const logoContent = (
 		<Image
-			src="/brand/logo-full-color.png"
+			src="/brand/logo-rolland-full-color.png"
 			alt={COMPANY_NAME}
-			width={180}
-			height={19}
-			className="h-auto w-[140px] sm:w-[180px]"
+			width={230}
+			height={50}
+			className="h-auto w-[180px] sm:w-[230px]"
 			priority
 		/>
 	);
