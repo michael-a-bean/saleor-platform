@@ -122,8 +122,8 @@ services:
       - HOSTNAME=0.0.0.0
       - PORT=3000
       - NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/
-      # Note: SALEOR_API_URL intentionally not set - falls back to NEXT_PUBLIC_SALEOR_API_URL
-      # This is required for JWT issuer validation (token iss must match request URL)
+      - SALEOR_API_URL=http://localhost:8000/graphql/
+      # SALEOR_API_URL must match NEXT_PUBLIC_SALEOR_API_URL for JWT issuer check
       # The extra_hosts config allows localhost to reach the host machine
       - NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
       - NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
