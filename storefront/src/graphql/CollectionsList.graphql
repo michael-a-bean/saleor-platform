@@ -1,0 +1,11 @@
+query CollectionsList($channel: String!) {
+	collections(first: 100, channel: $channel) {
+		edges {
+			node {
+				id
+				slug
+				name
+			}
+		}
+	}
+}
