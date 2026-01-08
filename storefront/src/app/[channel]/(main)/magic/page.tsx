@@ -58,7 +58,7 @@ export default async function MagicLandingPage(props: { params: Promise<{ channe
 
 			{/* Hero Section */}
 			<div className="mb-12 text-center">
-				<h1 className="pb-4 text-4xl font-bold text-neutral-900">Magic: The Gathering</h1>
+				<h1 className="pb-4 font-display text-4xl font-bold text-neutral-900">Magic: The Gathering</h1>
 				<p className="mx-auto max-w-2xl text-lg text-neutral-600">
 					Your destination for MTG singles and sealed products. From the latest releases to classic
 					sets, find everything you need to build your collection.
@@ -80,7 +80,7 @@ export default async function MagicLandingPage(props: { params: Promise<{ channe
 						</div>
 						<div className="flex flex-1 flex-col p-6">
 							<div className="mb-2 flex items-center justify-between">
-								<h2 className="text-xl font-bold text-neutral-900 group-hover:text-purple-600">
+								<h2 className="font-display text-xl font-bold text-neutral-900 group-hover:text-brand-bright-blue">
 									{section.name}
 								</h2>
 								<span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600">
@@ -88,7 +88,7 @@ export default async function MagicLandingPage(props: { params: Promise<{ channe
 								</span>
 							</div>
 							<p className="text-neutral-500">{section.description}</p>
-							<div className="mt-4 flex items-center text-sm font-medium text-purple-600 group-hover:text-purple-700">
+							<div className="mt-4 flex items-center text-sm font-medium text-brand-bright-blue group-hover:text-brand-deep-purple">
 								Browse {section.name}
 								<svg
 									className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1"
@@ -111,13 +111,13 @@ export default async function MagicLandingPage(props: { params: Promise<{ channe
 
 			{/* Quick Links */}
 			<div className="rounded-xl border border-neutral-200 bg-neutral-50 p-6">
-				<h2 className="mb-4 text-lg font-semibold text-neutral-900">Popular Categories</h2>
+				<h2 className="mb-4 font-display text-lg font-semibold text-neutral-900">Popular Categories</h2>
 				<div className="flex flex-wrap gap-3">
 					{QUICK_LINKS.map((link) => (
 						<Link
 							key={link.name}
 							href={link.href(params.channel)}
-							className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
+							className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:border-brand-bright-blue hover:bg-brand-bright-blue/5 hover:text-brand-deep-purple"
 						>
 							{link.name}
 						</Link>
@@ -126,17 +126,17 @@ export default async function MagicLandingPage(props: { params: Promise<{ channe
 			</div>
 
 			{/* Info Banner */}
-			<div className="mt-8 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white">
+			<div className="mt-8 rounded-xl bg-gradient-to-r from-brand-deep-purple to-brand-bright-blue p-6 text-white">
 				<div className="flex flex-col items-center justify-between gap-4 md:flex-row">
 					<div>
-						<h3 className="text-lg font-semibold">Looking for something specific?</h3>
-						<p className="text-purple-100">
+						<h3 className="font-display text-lg font-semibold">Looking for something specific?</h3>
+						<p className="text-white/80">
 							Use our search to find any card by name, set, or other attributes.
 						</p>
 					</div>
 					<Link
 						href={`/${params.channel}/search`}
-						className="inline-flex items-center rounded-lg bg-white px-6 py-3 font-medium text-purple-600 transition-colors hover:bg-purple-50"
+						className="inline-flex items-center rounded-lg bg-white px-6 py-3 font-medium text-brand-deep-purple transition-colors hover:bg-brand-bright-blue/10"
 					>
 						Search Cards
 						<svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

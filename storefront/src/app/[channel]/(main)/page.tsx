@@ -33,9 +33,9 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	return (
 		<div className="min-h-screen">
 			{/* Hero Section */}
-			<section className="bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 py-16 text-white">
+			<section className="bg-gradient-to-br from-brand-deep-purple via-brand-deep-purple/90 to-brand-deep-purple py-16 text-white">
 				<div className="mx-auto max-w-4xl px-8 text-center">
-					<h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+					<h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
 						MTG Card Marketplace
 					</h1>
 					<p className="mt-4 text-lg text-neutral-300">
@@ -49,11 +49,11 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 								type="text"
 								name="search"
 								placeholder="Search for cards... (e.g., Lightning Bolt, Black Lotus)"
-								className="h-14 w-full rounded-lg border-2 border-neutral-600 bg-neutral-800 px-5 pr-14 text-lg text-white placeholder:text-neutral-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+								className="h-14 w-full rounded-lg border-2 border-neutral-600 bg-neutral-800 px-5 pr-14 text-lg text-white placeholder:text-neutral-400 focus:border-brand-bright-blue focus:outline-none focus:ring-2 focus:ring-brand-bright-blue/20"
 							/>
 							<button
 								type="submit"
-								className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-amber-500 p-2.5 text-neutral-900 transition-colors hover:bg-amber-400"
+								className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-brand-bright-blue p-2.5 text-white transition-colors hover:bg-brand-bright-blue/90"
 							>
 								<SearchIcon className="h-5 w-5" />
 								<span className="sr-only">Search</span>
@@ -68,7 +68,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 				<section className="border-b border-neutral-200 bg-neutral-50 py-10">
 					<div className="mx-auto max-w-7xl px-8">
 						<div className="mb-6 flex items-center justify-between">
-							<h2 className="text-xl font-bold text-neutral-900">Browse Latest Sets</h2>
+							<h2 className="font-display text-xl font-bold text-neutral-900">Browse Latest Sets</h2>
 						</div>
 						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 							{latestSets.map((set) => (
@@ -88,7 +88,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 										/>
 									</div>
 									<div className="min-w-0 flex-1">
-										<h3 className="truncate font-semibold text-neutral-900 group-hover:text-amber-600">
+										<h3 className="truncate font-semibold text-neutral-900 group-hover:text-brand-bright-blue">
 											{set.name}
 										</h3>
 										<p className="text-sm text-neutral-500">
@@ -107,10 +107,10 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 			{/* Trending Products */}
 			<section className="mx-auto max-w-7xl p-8 pb-16">
 				<div className="mb-8 flex items-center justify-between">
-					<h2 className="text-2xl font-bold text-neutral-900">Trending Cards</h2>
+					<h2 className="font-display text-2xl font-bold text-neutral-900">Trending Cards</h2>
 					<Link
 						href={`/${params.channel}/products`}
-						className="text-sm font-medium text-amber-600 hover:text-amber-700"
+						className="text-sm font-medium text-brand-bright-blue hover:text-brand-deep-purple"
 					>
 						View all cards →
 					</Link>

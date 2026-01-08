@@ -271,7 +271,7 @@ Bright Blue is used for links despite lower contrast ratio because:
 ### Pending Items
 
 - [x] **Font licensing**: ~~Obtain Polymath Display/Text web font licenses~~ (DONE)
-- [ ] **Vector logos**: Request EPS/AI files from designer for proper SVG conversion
+- [x] **Vector logos**: ~~Request EPS/AI files from designer for proper SVG conversion~~ (DONE - EPS files added 2026-01-08)
 - [ ] **OG images**: Create Open Graph image template with brand assets
 - [ ] **Email templates**: Apply brand styling to transactional emails
 
@@ -282,7 +282,11 @@ Bright Blue is used for links despite lower contrast ratio because:
 | Asset | Location |
 |-------|----------|
 | Brand guide PDF | `/branding/client/guide/S+C_BrandGuide_1.0_04.2025.pdf` |
+| Brand guide AI (source) | `/branding/client/guide/source/S+C_BrandGuide_1.0_04.2025.ai` |
 | Color palette (ASE) | `/branding/client/colors/S+C_ColorPalette_1.0_05.2025.ase` |
+| Color palette AI (source) | `/branding/client/colors/source/S+C_ColorPalette_1.0_05.2025.ai` |
+| Logo EPS files | `/branding/client/logo/*/eps/*.eps` |
+| Pattern EPS files | `/branding/client/patterns/eps/*.eps` |
 | TypeScript tokens | `/storefront/src/lib/brand.ts` |
 | CSS variables | `/storefront/src/app/globals.css` |
 | Tailwind config | `/storefront/tailwind.config.ts` |
