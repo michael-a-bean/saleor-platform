@@ -1,7 +1,6 @@
 import { type Metadata } from "next";
 import Link from "next/link";
-import { CollectionsListDocument } from "@/gql/graphql";
-import { executeGraphQL } from "@/lib/graphql";
+import { getAllSets } from "@/lib/filters";
 import { Breadcrumb } from "@/ui/components/Breadcrumb";
 import { MagicSubNav } from "@/ui/components/MagicSubNav";
 
@@ -14,27 +13,12 @@ export const metadata: Metadata = {
 
 export default async function SetsPage(props: { params: Promise<{ channel: string }> }) {
 	const params = await props.params;
-	const { collections } = await executeGraphQL(CollectionsListDocument, {
-		variables: { channel: params.channel },
-		revalidate: 60,
-	});
-
-	// Filter to only MTG set collections (slug starts with "mtg-set-")
-	const mtgSets =
-		collections?.edges
-			.map((e) => e.node)
-			.filter((c) => c.slug.startsWith("mtg-set-"))
-			.map((c) => ({
-				...c,
-				// Use collection name if available, otherwise extract from slug
-				displayName: c.name || c.slug.replace("mtg-set-", "").toUpperCase(),
-			}))
-			.sort((a, b) => a.displayName.localeCompare(b.displayName)) || [];
+	const allSets = await getAllSets();
 
 	// Group sets by first letter for easier browsing
-	const groupedSets: Record<string, typeof mtgSets> = {};
-	mtgSets.forEach((set) => {
-		const firstChar = set.displayName.charAt(0).toUpperCase();
+	const groupedSets: Record<string, typeof allSets> = {};
+	allSets.forEach((set) => {
+		const firstChar = set.name.charAt(0).toUpperCase();
 		const key = /[A-Z0-9]/.test(firstChar) ? firstChar : "#";
 		if (!groupedSets[key]) {
 			groupedSets[key] = [];
@@ -78,27 +62,45 @@ export default async function SetsPage(props: { params: Promise<{ channel: strin
 
 			<div className="mb-6 rounded-lg bg-purple-50 p-4">
 				<p className="text-sm text-purple-800">
-					<strong>{mtgSets.length}</strong> sets available
+					<strong>{allSets.length}</strong> sets available
 				</p>
 			</div>
 
 			{sortedKeys.map((letter) => (
 				<div key={letter} id={`section-${letter}`} className="mb-8">
 					<h2 className="mb-4 border-b border-neutral-200 pb-2 text-lg font-semibold">{letter}</h2>
-					<div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 						{groupedSets[letter].map((set) => (
 							<Link
-								key={set.id}
-								href={`/${params.channel}/collections/${set.slug}`}
-								className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white p-3 transition-colors hover:border-purple-300 hover:bg-purple-50"
+								key={set.code}
+								href={`/${params.channel}/search?query=${encodeURIComponent(set.name)}&set=${encodeURIComponent(set.name)}`}
+								className="group flex items-center gap-4 rounded-lg border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-300 hover:shadow-md"
 							>
-								<span className="font-medium text-neutral-900">{set.displayName}</span>
+								{/* Set Icon */}
+								<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-neutral-100 p-2 group-hover:bg-neutral-200">
+									{/* eslint-disable-next-line @next/next/no-img-element */}
+									<img
+										src={set.iconUri}
+										alt={`${set.name} set icon`}
+										className="h-8 w-8 object-contain"
+										style={{ filter: "brightness(0)" }}
+									/>
+								</div>
+								<div className="min-w-0 flex-1">
+									<h3 className="truncate font-semibold text-neutral-900 group-hover:text-brand-bright-blue">
+										{set.name}
+									</h3>
+									<p className="text-sm text-neutral-500">
+										{set.cardCount.toLocaleString()} cards
+										<span className="mx-1.5">·</span>
+										<span className="uppercase">{set.code}</span>
+									</p>
+								</div>
 							</Link>
 						))}
 					</div>
 				</div>
 			))}
-
 		</div>
 	);
 }

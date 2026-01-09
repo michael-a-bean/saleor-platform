@@ -14,20 +14,20 @@ export const metadata: Metadata = {
 
 const MAGIC_SECTIONS = [
 	{
-		name: "Singles",
-		slug: "singles",
-		href: (channel: string) => `/${channel}/magic/singles`,
-		description: "Individual cards from all sets. Near Mint to Heavily Played conditions available.",
-		stats: "100,000+ cards",
-		image: "/images/categories/mtg-singles.png",
-	},
-	{
 		name: "Sealed Products",
 		slug: "sealed",
 		href: (channel: string) => `/${channel}/magic/sealed`,
 		description: "Factory-sealed booster boxes, bundles, commander decks, and more.",
 		stats: "1,800+ products",
 		image: "/images/categories/mtg-sealed.png",
+	},
+	{
+		name: "Singles",
+		slug: "singles",
+		href: (channel: string) => `/${channel}/magic/singles`,
+		description: "Individual cards from all sets. Near Mint to Heavily Played conditions available.",
+		stats: "100,000+ cards",
+		image: "/images/categories/mtg-singles.png",
 	},
 	{
 		name: "Browse by Set",

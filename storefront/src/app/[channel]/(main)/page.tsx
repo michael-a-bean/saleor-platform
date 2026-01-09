@@ -92,7 +92,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 											{set.name}
 										</h3>
 										<p className="text-sm text-neutral-500">
-											{set.productCount.toLocaleString()} cards
+											{set.cardCount.toLocaleString()} cards
 											<span className="mx-1.5">·</span>
 											<span className="uppercase">{set.code}</span>
 										</p>

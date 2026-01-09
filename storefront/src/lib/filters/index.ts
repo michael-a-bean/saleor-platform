@@ -3,5 +3,6 @@ export * from "./urlFilters";
 export * from "./buildGraphQLFilter";
 export * from "./mtgConstants";
 export * from "./getAvailableSets";
+export * from "./getAllSets";
 export * from "./getLatestSets";
 export * from "./getTrendingProducts";
