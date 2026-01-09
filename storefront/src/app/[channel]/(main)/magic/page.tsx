@@ -1,4 +1,5 @@
 import { type Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Breadcrumb } from "@/ui/components/Breadcrumb";
 import { MagicSubNav } from "@/ui/components/MagicSubNav";
@@ -18,8 +19,7 @@ const MAGIC_SECTIONS = [
 		href: (channel: string) => `/${channel}/magic/singles`,
 		description: "Individual cards from all sets. Near Mint to Heavily Played conditions available.",
 		stats: "100,000+ cards",
-		gradient: "from-blue-600 to-indigo-600",
-		icon: "🃏",
+		image: "/images/categories/mtg-singles.png",
 	},
 	{
 		name: "Sealed Products",
@@ -27,8 +27,7 @@ const MAGIC_SECTIONS = [
 		href: (channel: string) => `/${channel}/magic/sealed`,
 		description: "Factory-sealed booster boxes, bundles, commander decks, and more.",
 		stats: "1,800+ products",
-		gradient: "from-purple-600 to-pink-600",
-		icon: "📦",
+		image: "/images/categories/mtg-sealed.png",
 	},
 	{
 		name: "Browse by Set",
@@ -36,8 +35,7 @@ const MAGIC_SECTIONS = [
 		href: (channel: string) => `/${channel}/magic/sets`,
 		description: "Find cards and sealed products organized by expansion set.",
 		stats: "264 sets",
-		gradient: "from-amber-500 to-orange-600",
-		icon: "📚",
+		image: "/images/categories/mtg-sets.png",
 	},
 ];
 
@@ -73,10 +71,13 @@ export default async function MagicLandingPage(props: { params: Promise<{ channe
 						href={section.href(params.channel)}
 						className="group relative flex flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition-all hover:shadow-lg"
 					>
-						<div
-							className={`flex h-40 items-center justify-center bg-gradient-to-br ${section.gradient}`}
-						>
-							<span className="text-6xl">{section.icon}</span>
+						<div className="relative h-48 overflow-hidden bg-gradient-to-br from-brand-deep-purple/5 to-brand-bright-blue/5">
+							<Image
+								src={section.image}
+								alt={section.name}
+								fill
+								className="object-contain p-4 transition-transform group-hover:scale-105"
+							/>
 						</div>
 						<div className="flex flex-1 flex-col p-6">
 							<div className="mb-2 flex items-center justify-between">
