@@ -69,14 +69,21 @@ export async function generateMetadata(
 }
 
 export async function generateStaticParams({ params }: { params: { channel: string } }) {
-	const { products } = await executeGraphQL(ProductListDocument, {
-		revalidate: 60,
-		variables: { first: 20, channel: params.channel },
-		withAuth: false,
-	});
+	try {
+		const { products } = await executeGraphQL(ProductListDocument, {
+			revalidate: 60,
+			variables: { first: 20, channel: params.channel },
+			withAuth: false,
+		});
 
-	const paths = products?.edges.map(({ node: { slug } }) => ({ slug })) || [];
-	return paths;
+		const paths = products?.edges.map(({ node: { slug } }) => ({ slug })) || [];
+		return paths;
+	} catch (error) {
+		// Return empty params if API is unreachable during build
+		// Page will be generated on-demand at runtime
+		console.warn("[generateStaticParams] API unreachable, skipping pre-generation:", error);
+		return [];
+	}
 }
 
 export default async function Page(props: {
