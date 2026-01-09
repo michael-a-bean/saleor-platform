@@ -13,7 +13,7 @@ interface ScryfallSetsResponse {
 	data: ScryfallSet[];
 }
 
-export interface LatestSet {
+export interface MtgSet {
 	name: string;
 	code: string;
 	releasedAt: string;
@@ -22,15 +22,11 @@ export interface LatestSet {
 }
 
 /**
- * Fetches the latest MTG sets from Scryfall API.
- * Returns the most recently released sets.
+ * Fetches all MTG sets from Scryfall API that are valid product sets.
+ * Filters out tokens, art series, promos, and unreleased sets.
  */
-export async function getLatestSets(
-	_channel: string = "webstore",
-	limit: number = 9,
-): Promise<LatestSet[]> {
+export async function getAllSets(): Promise<MtgSet[]> {
 	try {
-		// Fetch sets from Scryfall
 		const response = await fetch("https://api.scryfall.com/sets", {
 			next: { revalidate: 3600 }, // Cache for 1 hour
 		});
@@ -43,8 +39,24 @@ export async function getLatestSets(
 		const today = new Date().toISOString().split("T")[0];
 
 		// Filter to valid set types that have been released
-		const validTypes = ["core", "expansion", "masters", "draft_innovation", "commander", "funny"];
-		const recentSets = data.data
+		const validTypes = [
+			"core",
+			"expansion",
+			"masters",
+			"draft_innovation",
+			"commander",
+			"funny",
+			"starter",
+			"box",
+			"duel_deck",
+			"premium_deck",
+			"from_the_vault",
+			"spellbook",
+			"arsenal",
+			"masterpiece",
+		];
+
+		const sets = data.data
 			.filter(
 				(s) =>
 					s.released_at &&
@@ -54,17 +66,16 @@ export async function getLatestSets(
 					!s.name.includes("Art Series") &&
 					!s.name.includes("Promos"),
 			)
-			.sort((a, b) => b.released_at.localeCompare(a.released_at))
-			.slice(0, limit)
 			.map((s) => ({
 				name: s.name,
 				code: s.code,
 				releasedAt: s.released_at,
 				iconUri: s.icon_svg_uri,
 				cardCount: s.card_count,
-			}));
+			}))
+			.sort((a, b) => a.name.localeCompare(b.name));
 
-		return recentSets;
+		return sets;
 	} catch {
 		return [];
 	}

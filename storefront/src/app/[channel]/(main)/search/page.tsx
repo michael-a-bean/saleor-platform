@@ -34,17 +34,21 @@ const getSortVariables = (sortParam?: string | string[]) => {
 
 // Convert sort param to Meilisearch sort format
 // Returns undefined if sortable attributes aren't configured on the index
-const getMeilisearchSort = (sortParam?: string | string[]): string[] | undefined => {
+const getMeilisearchSort = (sortParam?: string | string[], hasSetFilter?: boolean): string[] | undefined => {
 	const sortValue = Array.isArray(sortParam) ? sortParam[0] : sortParam;
+
+	// Base sort: type_line ascending puts sealed products (empty type_line) before singles
+	const sealedFirstSort = hasSetFilter ? ["type_line:asc"] : [];
 
 	switch (sortValue) {
 		case "price-asc":
-			return ["min_price:asc"];
+			return [...sealedFirstSort, "min_price:asc"];
 		case "price-desc":
-			return ["min_price:desc"];
+			return [...sealedFirstSort, "min_price:desc"];
 		default:
-			// Don't sort by default - Meilisearch uses relevance ranking
-			return undefined;
+			// When viewing a set, sort sealed first then by name
+			// Otherwise use Meilisearch relevance ranking
+			return hasSetFilter ? [...sealedFirstSort, "name:asc"] : undefined;
 	}
 };
 
@@ -162,7 +166,9 @@ export default async function Page(props: {
 		// Use the search query directly - setName and typeLine are filtered separately
 		const combinedQuery = searchValue;
 
-		const meilisearchSort = getMeilisearchSort(searchParams.sort);
+		// When viewing a set, sort sealed products before singles
+		const hasSetFilter = !!filters.setName;
+		const meilisearchSort = getMeilisearchSort(searchParams.sort, hasSetFilter);
 
 		const result = await searchWebstore(combinedQuery, params.channel, {
 			limit,

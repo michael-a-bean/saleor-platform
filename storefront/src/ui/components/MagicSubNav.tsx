@@ -5,8 +5,8 @@ import { LinkWithChannel } from "../atoms/LinkWithChannel";
 
 const NAV_ITEMS = [
 	{ label: "Overview", href: "/magic", match: (path: string) => path.endsWith("/magic") },
-	{ label: "Singles", href: "/magic/singles", match: (path: string) => path.includes("/magic/singles") },
 	{ label: "Sealed", href: "/magic/sealed", match: (path: string) => path.includes("/magic/sealed") },
+	{ label: "Singles", href: "/magic/singles", match: (path: string) => path.includes("/magic/singles") },
 	{ label: "Browse by Set", href: "/magic/sets", match: (path: string) => path.includes("/magic/sets") },
 ];
 
