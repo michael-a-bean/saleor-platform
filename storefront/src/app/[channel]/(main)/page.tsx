@@ -253,7 +253,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 							{latestSets.map((set) => (
 								<Link
 									key={set.code}
-									href={`/${params.channel}/search?set=${encodeURIComponent(set.name)}`}
+									href={`/${params.channel}/search?query=${encodeURIComponent(set.name)}&set=${encodeURIComponent(set.name)}`}
 									className="group flex items-center gap-4 rounded-lg border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-300 hover:shadow-md"
 								>
 									{/* Set Icon */}
