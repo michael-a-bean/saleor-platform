@@ -6,6 +6,9 @@ const config = {
 				hostname: "*",
 			},
 		],
+		// Skip image optimization to avoid Docker networking issues with localhost URLs
+		dangerouslyAllowSVG: true,
+		unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED !== "false",
 	},
 	typedRoutes: false,
 	// used in the Dockerfile

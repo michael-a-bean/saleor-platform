@@ -21,3 +21,6 @@ backups/
 *.sql.gz
 saleor_backup_*.sql.gz
 saleor-mcp/
+
+# WPN marketing images (large binary assets - see docs/setup/sealed-product-images.md)
+scripts/mtg_sealed_import/wpn_images/
