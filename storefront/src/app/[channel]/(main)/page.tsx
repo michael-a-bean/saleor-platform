@@ -14,43 +14,43 @@ export const metadata = {
 		"Your local game store for Magic: The Gathering, board games, miniatures, and gaming supplies. Shop singles, sealed products, and preorder the latest releases.",
 };
 
-// Lorwyn Eclipsed Preorder Products
+// Lorwyn Eclipsed Preorder Products - link directly to product pages
 const ECL_PREORDER_PRODUCTS = [
 	{
 		name: "Play Booster Box",
 		image: "/images/sets/ecl/MTGECL_EN_DspBx_Play_01_01.png",
 		description: "36 Play Boosters",
-		href: (channel: string) => `/${channel}/magic/sealed/play-booster-boxes?set=Lorwyn+Eclipsed`,
+		href: (channel: string) => `/${channel}/products/ecl-lorwyn-eclipsed-play-booster-box`,
 	},
 	{
 		name: "Collector Booster Box",
 		image: "/images/sets/ecl/MTGECL_EN_DspBx_Clctr_01_01.png",
 		description: "12 Collector Boosters",
-		href: (channel: string) => `/${channel}/magic/sealed/collector-booster-boxes?set=Lorwyn+Eclipsed`,
+		href: (channel: string) => `/${channel}/products/ecl-lorwyn-eclipsed-collector-booster-box`,
 	},
 	{
 		name: "Bundle",
 		image: "/images/sets/ecl/MTGECL_EN_OtrBx_Bndl_01_01.png",
 		description: "8 Play Boosters + Accessories",
-		href: (channel: string) => `/${channel}/magic/sealed/bundles?set=Lorwyn+Eclipsed`,
+		href: (channel: string) => `/${channel}/products/ecl-lorwyn-eclipsed-bundle`,
 	},
 	{
 		name: "Prerelease Kit",
 		image: "/images/sets/ecl/MTGECL_EN_OtrBx_Prrls_01_01.png",
 		description: "6 Play Boosters + Promo",
-		href: (channel: string) => `/${channel}/magic/sealed/prerelease-kits?set=Lorwyn+Eclipsed`,
+		href: (channel: string) => `/${channel}/products/ecl-lorwyn-eclipsed-prerelease-pack`,
 	},
 	{
 		name: "Commander: Dance of Elements",
 		image: "/images/sets/ecl/MTGECL_EN_OtrBx_Cmndr_01_01.png",
 		description: "100-Card Commander Deck",
-		href: (channel: string) => `/${channel}/magic/sealed/commander-decks?set=Lorwyn+Eclipsed`,
+		href: (channel: string) => `/${channel}/products/lorwyn-eclipsed-commander-deck-dance-of-the-elements`,
 	},
 	{
 		name: "Commander: Blight Curse",
 		image: "/images/sets/ecl/MTGECL_EN_OtrBx_Cmndr_02_01.png",
 		description: "100-Card Commander Deck",
-		href: (channel: string) => `/${channel}/magic/sealed/commander-decks?set=Lorwyn+Eclipsed`,
+		href: (channel: string) => `/${channel}/products/lorwyn-eclipsed-commander-deck-blight-curse`,
 	},
 ];
 
