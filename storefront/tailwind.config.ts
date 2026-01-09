@@ -36,6 +36,13 @@ const config: Config = {
 					success: "var(--brand-success)",
 					surface: "var(--brand-surface)",
 				},
+				// MTG rarity colors
+				mtg: {
+					mythic: "#bf4427",
+					rare: "#a58e4a",
+					uncommon: "#707883",
+					common: "#1a1a1a",
+				},
 			},
 
 			// Brand typography
