@@ -24,6 +24,14 @@ export function buildProductFilter(filters: MTGFilterState): ProductFilterInput 
 		});
 	}
 
+	// Finish filter (variant attribute for foil/non-foil)
+	if (filters.finish.length > 0) {
+		attributeFilters.push({
+			slug: ATTRIBUTE_SLUGS.finish,
+			values: filters.finish,
+		});
+	}
+
 	// Boolean filters
 	if (filters.reservedList !== null) {
 		attributeFilters.push({

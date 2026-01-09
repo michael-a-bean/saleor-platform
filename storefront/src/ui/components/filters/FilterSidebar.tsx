@@ -7,7 +7,7 @@ import { RangeFilter } from "./RangeFilter";
 import { BooleanFilter } from "./BooleanFilter";
 import { SetFilterDropdown } from "./SetFilterDropdown";
 import { useFilters } from "./useFilters";
-import { RARITY_OPTIONS, CARD_TYPE_OPTIONS, COLOR_IDENTITY_OPTIONS } from "@/lib/filters";
+import { RARITY_OPTIONS, CARD_TYPE_OPTIONS, COLOR_IDENTITY_OPTIONS, FINISH_OPTIONS } from "@/lib/filters";
 
 export const FilterSidebar = () => {
 	const params = useParams<{ channel: string }>();
@@ -49,6 +49,14 @@ export const FilterSidebar = () => {
 					options={COLOR_IDENTITY_OPTIONS}
 					value={filters.colorIdentity}
 					onChange={(v) => updateFilter("colorIdentity", v)}
+				/>
+			</FilterSection>
+
+			<FilterSection title="Finish">
+				<MultiSelectFilter
+					options={FINISH_OPTIONS}
+					value={filters.finish}
+					onChange={(v) => updateFilter("finish", v)}
 				/>
 			</FilterSection>
 

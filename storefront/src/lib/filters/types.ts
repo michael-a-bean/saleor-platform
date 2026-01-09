@@ -2,6 +2,7 @@ export interface MTGFilterState {
 	// Multiselect dropdown filters
 	rarity: string[];
 	colorIdentity: string[];
+	finish: string[];
 
 	// Numeric range filters
 	manaValue: { min?: number; max?: number };
@@ -20,6 +21,7 @@ export interface MTGFilterState {
 export const DEFAULT_FILTER_STATE: MTGFilterState = {
 	rarity: [],
 	colorIdentity: [],
+	finish: [],
 	manaValue: {},
 	price: {},
 	typeLine: "",

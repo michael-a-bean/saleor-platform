@@ -8,6 +8,7 @@ export function parseFiltersFromURL(searchParams: URLSearchParams): MTGFilterSta
 	return {
 		rarity: parseArrayParam(searchParams.get(URL_PARAMS.rarity)),
 		colorIdentity: parseArrayParam(searchParams.get(URL_PARAMS.colorIdentity)),
+		finish: parseArrayParam(searchParams.get(URL_PARAMS.finish)),
 		manaValue: {
 			min: parseNumberParam(searchParams.get(URL_PARAMS.manaValueMin)),
 			max: parseNumberParam(searchParams.get(URL_PARAMS.manaValueMax)),
@@ -42,6 +43,9 @@ export function serializeFiltersToURL(
 	}
 	if (filters.colorIdentity.length > 0) {
 		params.set(URL_PARAMS.colorIdentity, filters.colorIdentity.join(","));
+	}
+	if (filters.finish.length > 0) {
+		params.set(URL_PARAMS.finish, filters.finish.join(","));
 	}
 
 	// Set text params
@@ -88,6 +92,7 @@ export function getActiveFilterCount(filters: MTGFilterState): number {
 
 	if (filters.rarity.length > 0) count++;
 	if (filters.colorIdentity.length > 0) count++;
+	if (filters.finish.length > 0) count++;
 	if (filters.typeLine) count++;
 	if (filters.setName) count++;
 	if (filters.manaValue.min !== undefined || filters.manaValue.max !== undefined) count++;
