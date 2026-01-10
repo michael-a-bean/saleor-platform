@@ -14,9 +14,9 @@ interface SinglesResultsProps {
 	hasNextPage: boolean;
 	onLoadMore: () => void;
 	isLoadingMore: boolean;
-	onQuickAdd: (variantId: string, quantity: number) => void;
-	onUpdateQuantity: (lineId: string, quantity: number) => void;
-	onRemoveLine: (lineId: string) => void;
+	onQuickAdd: (variantId: string, quantity: number) => Promise<void>;
+	onUpdateQuantity: (lineId: string, quantity: number) => Promise<void>;
+	onRemoveLine: (lineId: string) => Promise<void>;
 	cartLines?: Map<string, CartLineInfo>; // Map of variantId -> cart line info
 }
 
@@ -140,7 +140,7 @@ export function SinglesResults({
 						const product = products[virtualRow.index];
 						return (
 							<div
-								key={virtualRow.key}
+								key={product.id}
 								data-index={virtualRow.index}
 								ref={virtualizer.measureElement}
 								style={{
