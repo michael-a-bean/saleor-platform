@@ -55,7 +55,7 @@ async function SearchResults({
 				</svg>
 				<h3 className="mt-4 text-lg font-medium text-gray-900">Search for cards</h3>
 				<p className="mt-2 text-gray-500">
-					Start typing to search for MTG singles across all printings and variants.
+					Start typing to search for Magic: The Gathering singles across all printings and variants.
 				</p>
 			</div>
 		);

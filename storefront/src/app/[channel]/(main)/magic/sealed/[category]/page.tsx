@@ -38,7 +38,7 @@ export const generateMetadata = async (
 	});
 
 	return {
-		title: `${category?.name || "Category"} | MTG Sealed | ${(await parent).title?.absolute}`,
+		title: `${category?.name || "Category"} | Magic: The Gathering Sealed | ${(await parent).title?.absolute}`,
 		description:
 			category?.seoDescription ||
 			`Browse ${category?.name || "sealed"} Magic: The Gathering products`,
@@ -64,7 +64,7 @@ export default async function SealedCategoryPage(props: {
 		<div className="mx-auto max-w-7xl p-8 pb-16">
 			<Breadcrumb
 				items={[
-					{ label: "Magic", href: "/magic" },
+					{ label: "Magic: The Gathering", href: "/magic" },
 					{ label: "Sealed", href: "/magic/sealed" },
 					{ label: name },
 				]}

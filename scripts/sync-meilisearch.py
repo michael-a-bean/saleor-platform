@@ -328,6 +328,7 @@ def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
             "min_price",
             "set_name",
             "collector_number",
+            "type_line",  # For sorting sealed (empty type_line) before singles
         ],
         "typoTolerance": {
             "enabled": True,

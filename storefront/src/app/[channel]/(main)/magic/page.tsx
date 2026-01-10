@@ -51,14 +51,14 @@ export default async function MagicLandingPage(props: { params: Promise<{ channe
 
 	return (
 		<div className="mx-auto max-w-7xl p-8 pb-16">
-			<Breadcrumb items={[{ label: "Magic" }]} className="mb-4" />
+			<Breadcrumb items={[{ label: "Magic: The Gathering" }]} className="mb-4" />
 			<MagicSubNav />
 
 			{/* Hero Section */}
 			<div className="mb-12 text-center">
 				<h1 className="pb-4 font-display text-4xl font-bold text-neutral-900">Magic: The Gathering</h1>
 				<p className="mx-auto max-w-2xl text-lg text-neutral-600">
-					Your destination for MTG singles and sealed products. From the latest releases to classic
+					Your destination for Magic: The Gathering singles and sealed products. From the latest releases to classic
 					sets, find everything you need to build your collection.
 				</p>
 			</div>

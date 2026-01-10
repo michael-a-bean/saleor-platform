@@ -6,7 +6,7 @@ import { MagicSubNav } from "@/ui/components/MagicSubNav";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-	title: "MTG Sealed Products",
+	title: "Magic: The Gathering Sealed Products",
 	description: "Browse Magic: The Gathering sealed products - booster boxes, bundles, commander decks, and more.",
 };
 
@@ -35,14 +35,14 @@ export default async function SealedPage(props: { params: Promise<{ channel: str
 		<div className="mx-auto max-w-7xl p-8 pb-16">
 			<Breadcrumb
 				items={[
-					{ label: "Magic", href: "/magic" },
+					{ label: "Magic: The Gathering", href: "/magic" },
 					{ label: "Sealed" },
 				]}
 				className="mb-4"
 			/>
 			<MagicSubNav />
 
-			<h1 className="pb-2 text-2xl font-bold">MTG Sealed Products</h1>
+			<h1 className="pb-2 text-2xl font-bold">Magic: The Gathering Sealed Products</h1>
 			<p className="pb-8 text-neutral-500">
 				Factory-sealed Magic: The Gathering products - booster boxes, bundles, commander decks, and more.
 			</p>
@@ -70,7 +70,7 @@ export default async function SealedPage(props: { params: Promise<{ channel: str
 			<div className="mt-12 border-t border-neutral-200 pt-8">
 				<h2 className="pb-4 text-lg font-semibold">Browse by Set</h2>
 				<p className="pb-4 text-neutral-500">
-					Looking for a specific set? Browse all MTG sets with both singles and sealed products.
+					Looking for a specific set? Browse all Magic: The Gathering sets with both singles and sealed products.
 				</p>
 				<Link
 					href={`/${params.channel}/magic/sets`}

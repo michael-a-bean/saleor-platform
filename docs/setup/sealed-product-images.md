@@ -56,9 +56,25 @@ python3 scripts/mtg_sealed_import/download_wpn_images.py
 ```
 
 The script tries multiple URL patterns for each set:
-- `{set}_pds_en.zip`
-- `{set}_onlinestore_assets_en.zip`
-- `{set}_online_storefront_en.zip`
+- `{set}_pds_en.zip` - Standard pattern
+- `{set}_pds_preorder_en.zip` - Preorder variant (e.g., Fallout/PIP)
+- `{set}_pds_preorder_cluedo_en.zip` - Cluedo variant (e.g., MKM)
+- `{set}_onlinestore_assets_en.zip` - Alternative pattern
+
+It also tries multiple years per set (WotC sometimes uploads 2025 releases under 2024 paths).
+
+### Currently Available Sets
+
+| Set | Code | Images | Notes |
+|-----|------|--------|-------|
+| Bloomburrow | BLB | 19 | |
+| Duskmourn | DSK | 23 | |
+| Foundations | FDN | 20 | |
+| Modern Horizons 3 | MH3 | 24 | |
+| Murders at Karlov Manor | MKM | 50 | Uses cluedo URL variant |
+| Outlaws of Thunder Junction | OTJ | 8 | |
+| Aetherdrift | DFT | 18 | Uses 2024 year path |
+| Fallout | PIP | 12 | Universes Beyond, 2023 |
 
 ## Troubleshooting
 

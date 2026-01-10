@@ -78,7 +78,7 @@ export default async function SetDetailPage(props: {
 		<div className="mx-auto max-w-7xl p-8 pb-16">
 			<Breadcrumb
 				items={[
-					{ label: "Magic", href: "/magic" },
+					{ label: "Magic: The Gathering", href: "/magic" },
 					{ label: "Sets", href: "/magic/sets" },
 					{ label: collection.name },
 				]}
