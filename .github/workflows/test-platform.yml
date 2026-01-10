@@ -1,17 +1,53 @@
 name: test-platform
-on: pull_request
+
+on:
+  pull_request:
+  push:
+    branches:
+      - platform/main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  # =============================================================================
+  # BACKEND TESTS
+  # =============================================================================
   verify_backend:
     name: Backend Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build containers
-        run: docker compose build
-      - name: Run backend tests
-        run: docker compose run api pytest -n logical --allow-hosts cache
+        with:
+          submodules: recursive
 
+      - name: Set up environment
+        run: |
+          # Create minimal .env for docker compose config validation
+          cat > .env << 'EOF'
+          SECRET_KEY=ci-test-secret-key-not-for-production
+          POSTGRES_USER=saleor
+          POSTGRES_PASSWORD=saleor
+          STRIPE_APP_SECRET_KEY=ci-stripe-key
+          INVENTORY_OPS_SECRET_KEY=ci-inventory-key
+          BUYLIST_SECRET_KEY=ci-buylist-key
+          POS_SECRET_KEY=ci-pos-key
+          INVENTORY_DATABASE_URL=postgresql://inventory:inventory@inventory-ops-db:5432/inventory_ops
+          INVENTORY_POSTGRES_USER=inventory
+          INVENTORY_POSTGRES_PASSWORD=inventory
+          SALEOR_DATABASE_URL=postgresql://saleor:saleor@db:5432/saleor
+          EOF
+
+      - name: Build containers
+        run: docker compose build api
+
+      - name: Run backend tests
+        run: docker compose run --rm api pytest -n logical --allow-hosts cache
+
+  # =============================================================================
+  # STOREFRONT CHECKS
+  # =============================================================================
   verify_storefront:
     name: Storefront Checks
     runs-on: ubuntu-latest
@@ -44,3 +80,233 @@ jobs:
 
       - name: Run tests
         run: pnpm test
+
+  # =============================================================================
+  # SALEOR APPS CHECKS
+  # =============================================================================
+  verify_apps:
+    name: Apps Checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./saleor-apps
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: saleor-apps/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm check-types
+
+      - name: Run tests
+        run: pnpm test:ci
+
+  # =============================================================================
+  # MIGRATION VALIDATION
+  # =============================================================================
+  validate_migrations:
+    name: Migration Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        working-directory: ./saleor-apps/apps/inventory-ops
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate Prisma schema
+        working-directory: ./saleor-apps/apps/inventory-ops
+        run: pnpm prisma validate
+
+      - name: Check Prisma schema format
+        working-directory: ./saleor-apps/apps/inventory-ops
+        run: pnpm prisma format --check || echo "Schema formatting differs (non-blocking)"
+
+  # =============================================================================
+  # SECURITY SCANNING
+  # =============================================================================
+  security_scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
+          GITLEAKS_ENABLE_SUMMARY: true
+
+  # =============================================================================
+  # CONTAINER BUILDS
+  # =============================================================================
+  verify_builds:
+    name: Container Builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build storefront
+        uses: docker/build-push-action@v6
+        with:
+          context: ./storefront
+          push: false
+          build-args: |
+            NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/
+            NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
+            NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
+          tags: storefront:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build inventory-ops app
+        uses: docker/build-push-action@v6
+        with:
+          context: ./saleor-apps
+          file: ./saleor-apps/apps/inventory-ops/Dockerfile
+          push: false
+          tags: inventory-ops:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build buylist app
+        uses: docker/build-push-action@v6
+        with:
+          context: ./saleor-apps
+          file: ./saleor-apps/apps/buylist/Dockerfile
+          push: false
+          tags: buylist:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build pos app
+        uses: docker/build-push-action@v6
+        with:
+          context: ./saleor-apps
+          file: ./saleor-apps/apps/pos/Dockerfile
+          push: false
+          tags: pos:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build stripe app
+        uses: docker/build-push-action@v6
+        with:
+          context: ./saleor-apps
+          file: ./saleor-apps/apps/stripe/Dockerfile
+          push: false
+          tags: stripe:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # =============================================================================
+  # CONTAINER SECURITY SCAN
+  # =============================================================================
+  container_scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    needs: verify_builds
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build storefront for scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: ./storefront
+          push: false
+          load: true
+          build-args: |
+            NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/
+            NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
+            NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
+          tags: storefront:scan
+          cache-from: type=gha
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'storefront:scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # =============================================================================
+  # DOCKER COMPOSE VALIDATION
+  # =============================================================================
+  validate_compose:
+    name: Docker Compose Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up environment
+        run: |
+          # Create minimal .env for docker compose config validation
+          cat > .env << 'EOF'
+          SECRET_KEY=ci-test-secret-key
+          POSTGRES_USER=saleor
+          POSTGRES_PASSWORD=saleor
+          STRIPE_APP_SECRET_KEY=ci-stripe-key
+          INVENTORY_OPS_SECRET_KEY=ci-inventory-key
+          BUYLIST_SECRET_KEY=ci-buylist-key
+          POS_SECRET_KEY=ci-pos-key
+          INVENTORY_DATABASE_URL=postgresql://inventory:inventory@inventory-ops-db:5432/inventory_ops
+          INVENTORY_POSTGRES_USER=inventory
+          INVENTORY_POSTGRES_PASSWORD=inventory
+          SALEOR_DATABASE_URL=postgresql://saleor:saleor@db:5432/saleor
+          EOF
+
+      - name: Validate docker-compose.yml
+        run: docker compose config > /dev/null

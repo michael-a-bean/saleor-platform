@@ -1,0 +1,28 @@
+# Gitleaks Configuration
+# See: https://github.com/gitleaks/gitleaks
+
+title = "Saleor Platform Gitleaks Configuration"
+
+[extend]
+# Extend default gitleaks rules
+useDefault = true
+
+# CI test secrets are allowed only in workflow files
+# These are clearly marked as not for production use
+
+# Allow placeholder values in example files and CI workflows
+[allowlist]
+paths = [
+    '''.env\.example$''',
+    '''\.env\.sample$''',
+    '''docs/.*\.md$''',
+    '''\.github/workflows/.*\.yml$''',
+]
+
+# Allow known false positives
+regexes = [
+    '''SECRET_KEY=changeme''',
+    '''SECRET_KEY=ci-test''',
+    '''password=saleor''',
+    '''password=inventory''',
+]
