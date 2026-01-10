@@ -2,7 +2,7 @@
 """
 Delivery Pipeline Multi-Agent Review Script
 
-Calls GPT and Gemini APIs for specification/security review of delivery phases.
+Calls GPT-5.2 and Gemini 3 APIs for specification/security review of delivery phases.
 
 Usage:
     python review_phase.py <phase_number> --plan <plan_file>
@@ -17,7 +17,6 @@ Output:
 """
 
 import os
-import json
 import sys
 import argparse
 from datetime import datetime
@@ -30,6 +29,10 @@ REVIEWS_DIR = PROJECT_ROOT / "docs" / "ai-reviews"
 
 # Ensure reviews directory exists
 REVIEWS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Model configuration
+OPENAI_MODEL = "gpt-5.2"  # GPT-5.2 for specification correctness
+GEMINI_MODEL = "gemini-3-pro-preview"  # Gemini 3 Pro for security/ops review
 
 GPT_SYSTEM_PROMPT = """You are GPT-5.2, a senior software architect reviewing delivery/CI-CD pipeline changes.
 
@@ -96,22 +99,20 @@ Format your response as:
 
 
 def call_gemini(plan_content: str, phase: int) -> tuple[str, dict]:
-    """Call Gemini API with plan content."""
-    import google.generativeai as genai
+    """Call Gemini 3 API with plan content."""
+    try:
+        # Try new google.genai library first
+        from google import genai
 
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError("GEMINI_API_KEY environment variable not set")
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY environment variable not set")
 
-    genai.configure(api_key=api_key)
+        client = genai.Client(api_key=api_key)
 
-    # Use Gemini 2.0 Flash (latest available)
-    model = genai.GenerativeModel(
-        model_name="gemini-2.0-flash-exp",
-        system_instruction=GEMINI_SYSTEM_PROMPT
-    )
+        prompt = f"""{GEMINI_SYSTEM_PROMPT}
 
-    prompt = f"""# Phase {phase} Delivery Plan Review Request
+# Phase {phase} Delivery Plan Review Request
 
 Please review this delivery phase plan for security and operational risks.
 
@@ -123,22 +124,67 @@ Please review this delivery phase plan for security and operational risks.
 
 Provide your security and ops risk analysis."""
 
-    start_time = datetime.now()
-    response = model.generate_content(prompt)
-    end_time = datetime.now()
+        start_time = datetime.now()
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt
+        )
+        end_time = datetime.now()
 
-    metadata = {
-        "model": "gemini-2.0-flash-exp",
-        "role": "Security & Ops Risk Analysis",
-        "timestamp": start_time.isoformat(),
-        "duration_seconds": (end_time - start_time).total_seconds(),
-    }
+        metadata = {
+            "model": GEMINI_MODEL,
+            "role": "Security & Ops Risk Analysis",
+            "timestamp": start_time.isoformat(),
+            "duration_seconds": (end_time - start_time).total_seconds(),
+        }
 
-    return response.text, metadata
+        return response.text, metadata
+
+    except ImportError:
+        # Fallback to deprecated library
+        import warnings
+        warnings.filterwarnings('ignore')
+        import google.generativeai as genai
+
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY environment variable not set")
+
+        genai.configure(api_key=api_key)
+
+        model = genai.GenerativeModel(
+            model_name=GEMINI_MODEL,
+            system_instruction=GEMINI_SYSTEM_PROMPT
+        )
+
+        prompt = f"""# Phase {phase} Delivery Plan Review Request
+
+Please review this delivery phase plan for security and operational risks.
+
+---
+
+{plan_content}
+
+---
+
+Provide your security and ops risk analysis."""
+
+        start_time = datetime.now()
+        response = model.generate_content(prompt)
+        end_time = datetime.now()
+
+        metadata = {
+            "model": GEMINI_MODEL,
+            "role": "Security & Ops Risk Analysis",
+            "timestamp": start_time.isoformat(),
+            "duration_seconds": (end_time - start_time).total_seconds(),
+        }
+
+        return response.text, metadata
 
 
 def call_gpt(plan_content: str, phase: int) -> tuple[str, dict]:
-    """Call OpenAI GPT API with plan content."""
+    """Call OpenAI GPT-5.2 API with plan content."""
     from openai import OpenAI
 
     api_key = os.environ.get("OPENAI_API_KEY")
@@ -161,18 +207,18 @@ Provide your specification review."""
 
     start_time = datetime.now()
     response = client.chat.completions.create(
-        model="gpt-4o",  # Using gpt-4o as GPT-5.2 equivalent
+        model=OPENAI_MODEL,
         messages=[
             {"role": "system", "content": GPT_SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt}
         ],
         temperature=0.3,
-        max_tokens=4096
+        max_completion_tokens=4096  # GPT-5.x uses max_completion_tokens
     )
     end_time = datetime.now()
 
     metadata = {
-        "model": "gpt-4o",
+        "model": OPENAI_MODEL,
         "role": "Specification Correctness",
         "timestamp": start_time.isoformat(),
         "duration_seconds": (end_time - start_time).total_seconds(),
@@ -224,39 +270,41 @@ def main():
     print("=" * 60)
     print(f"Plan file: {plan_path}")
     print(f"Plan size: {len(plan_content)} chars")
+    print(f"GPT Model: {OPENAI_MODEL}")
+    print(f"Gemini Model: {GEMINI_MODEL}")
 
     results = {}
 
-    # Call GPT
+    # Call GPT-5.2
     if not args.gemini_only:
         print("\n" + "-" * 40)
-        print("Calling GPT (Specification Correctness)...")
+        print(f"Calling {OPENAI_MODEL} (Specification Correctness)...")
         try:
             gpt_response, gpt_meta = call_gpt(plan_content, args.phase)
-            gpt_output = format_output(gpt_response, "GPT", "Specification", args.phase, gpt_meta)
+            gpt_output = format_output(gpt_response, "GPT-5.2", "Specification", args.phase, gpt_meta)
             gpt_file = REVIEWS_DIR / f"phase{args.phase}-gpt-review.md"
             gpt_file.write_text(gpt_output)
             results["gpt"] = {"status": "success", "file": str(gpt_file), **gpt_meta}
-            print(f"✓ GPT review complete ({gpt_meta['duration_seconds']:.2f}s)")
+            print(f"✓ GPT-5.2 review complete ({gpt_meta['duration_seconds']:.2f}s)")
             print(f"  Output: {gpt_file.relative_to(PROJECT_ROOT)}")
         except Exception as e:
-            print(f"✗ GPT error: {e}")
+            print(f"✗ GPT-5.2 error: {e}")
             results["gpt"] = {"status": "error", "error": str(e)}
 
-    # Call Gemini
+    # Call Gemini 3
     if not args.gpt_only:
         print("\n" + "-" * 40)
-        print("Calling Gemini (Security & Ops Risk)...")
+        print(f"Calling {GEMINI_MODEL} (Security & Ops Risk)...")
         try:
             gemini_response, gemini_meta = call_gemini(plan_content, args.phase)
-            gemini_output = format_output(gemini_response, "Gemini", "Security & Ops", args.phase, gemini_meta)
+            gemini_output = format_output(gemini_response, "Gemini 3", "Security & Ops", args.phase, gemini_meta)
             gemini_file = REVIEWS_DIR / f"phase{args.phase}-gemini-review.md"
             gemini_file.write_text(gemini_output)
             results["gemini"] = {"status": "success", "file": str(gemini_file), **gemini_meta}
-            print(f"✓ Gemini review complete ({gemini_meta['duration_seconds']:.2f}s)")
+            print(f"✓ Gemini 3 review complete ({gemini_meta['duration_seconds']:.2f}s)")
             print(f"  Output: {gemini_file.relative_to(PROJECT_ROOT)}")
         except Exception as e:
-            print(f"✗ Gemini error: {e}")
+            print(f"✗ Gemini 3 error: {e}")
             results["gemini"] = {"status": "error", "error": str(e)}
 
     # Summary
