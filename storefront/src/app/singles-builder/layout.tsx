@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { type ReactNode } from "react";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { executeGraphQL } from "@/lib/graphql";
 import { CurrentUserDocument } from "@/gql/graphql";
 import { StaffProvider } from "./StaffContext";
@@ -32,7 +34,7 @@ export default async function SinglesBuilderLayout({
 
 	// Redirect if not authenticated
 	if (!user) {
-		redirect("/webstore/login?redirect=/singles-builder/singles-builder");
+		redirect("/webstore/login?redirect=/singles-builder/webstore");
 	}
 
 	// Redirect if not staff
@@ -64,6 +66,17 @@ export default async function SinglesBuilderLayout({
 					</div>
 				</header>
 				<main>{children}</main>
+				<ToastContainer
+					position="bottom-right"
+					autoClose={3000}
+					hideProgressBar={false}
+					newestOnTop
+					closeOnClick
+					pauseOnFocusLoss
+					draggable
+					pauseOnHover
+					theme="light"
+				/>
 			</div>
 		</StaffProvider>
 	);

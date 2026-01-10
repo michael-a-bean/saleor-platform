@@ -131,7 +131,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 						</p>
 						<div className="mt-8 flex flex-wrap gap-4">
 							<Link
-								href={`/${params.channel}/magic/sealed?set=Lorwyn+Eclipsed`}
+								href="#preorder-products"
 								className="inline-flex items-center rounded-lg bg-white px-6 py-3 font-semibold text-neutral-900 transition-colors hover:bg-neutral-100"
 							>
 								Shop Preorders
@@ -140,7 +140,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 								</svg>
 							</Link>
 							<Link
-								href={`/${params.channel}/search?set=Lorwyn+Eclipsed`}
+								href={`/${params.channel}/magic/singles?set=Lorwyn+Eclipsed`}
 								className="inline-flex items-center rounded-lg border border-white/30 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20"
 							>
 								Browse Singles
@@ -151,7 +151,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 			</section>
 
 			{/* Preorder Products Grid */}
-			<section className="bg-gradient-to-b from-neutral-100 to-white py-12">
+			<section id="preorder-products" className="scroll-mt-20 bg-gradient-to-b from-neutral-100 to-white py-12">
 				<div className="mx-auto max-w-7xl px-8">
 					<div className="mb-8 text-center">
 						<h2 className="font-display text-2xl font-bold text-neutral-900">Lorwyn Eclipsed Products</h2>

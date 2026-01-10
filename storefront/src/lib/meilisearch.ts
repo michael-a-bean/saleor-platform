@@ -8,8 +8,12 @@ const MEILISEARCH_URL = process.env.MEILISEARCH_URL || "http://localhost:7700";
 /**
  * Get the Meilisearch index name for a channel.
  * Each channel has its own index for channel-specific pricing/stock.
+ * Use indexPrefix to override the default channel-based naming (e.g., "singles-builder" for singles search).
  */
-function getIndexName(channel: string): string {
+function getIndexName(channel: string, indexPrefix?: string): string {
+	if (indexPrefix) {
+		return `${indexPrefix}-products`;
+	}
 	return `${channel}-products`;
 }
 
@@ -131,10 +135,11 @@ export async function searchProducts(
 		offset?: number;
 		filters?: SearchFilters;
 		sort?: string[];
+		indexPrefix?: string;
 	} = {},
 ): Promise<MeilisearchSearchResult> {
-	const { limit = 50, offset = 0, filters = {}, sort } = options;
-	const indexName = getIndexName(channel);
+	const { limit = 50, offset = 0, filters = {}, sort, indexPrefix } = options;
+	const indexName = getIndexName(channel, indexPrefix);
 
 	const searchParams: Record<string, unknown> = {
 		q: query,

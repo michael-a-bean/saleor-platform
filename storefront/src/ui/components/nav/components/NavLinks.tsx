@@ -12,6 +12,9 @@ export const NavLinks = async ({ channel }: { channel: string }) => {
 	return (
 		<>
 			<NavLink href="/magic">Magic</NavLink>
+			<NavLink href="/board-games">Board Games</NavLink>
+			<NavLink href="/miniatures">Miniatures</NavLink>
+			<NavLink href="/supplies">Supplies</NavLink>
 			{navLinks.menu?.items?.map((item) => {
 				if (item.category) {
 					return (
@@ -43,7 +46,6 @@ export const NavLinks = async ({ channel }: { channel: string }) => {
 				}
 				return null;
 			})}
-			<NavLink href="/magic">All</NavLink>
 		</>
 	);
 };
