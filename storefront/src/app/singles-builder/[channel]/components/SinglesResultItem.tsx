@@ -37,9 +37,9 @@ export interface CartLineInfo {
 
 interface SinglesResultItemProps {
 	product: SinglesBuilderProductFragment;
-	onQuickAdd: (variantId: string, quantity: number) => void;
-	onUpdateQuantity: (lineId: string, quantity: number) => void;
-	onRemoveLine: (lineId: string) => void;
+	onQuickAdd: (variantId: string, quantity: number) => Promise<void>;
+	onUpdateQuantity: (lineId: string, quantity: number) => Promise<void>;
+	onRemoveLine: (lineId: string) => Promise<void>;
 	cartLines?: Map<string, CartLineInfo>; // Map of variantId -> cart line info
 	style?: React.CSSProperties;
 }
@@ -47,9 +47,9 @@ interface SinglesResultItemProps {
 // Inline variant row with condition, qty controls, stock, and price
 interface VariantRowProps {
 	variant: SinglesBuilderVariantFragment;
-	onQuickAdd: (variantId: string, quantity: number) => void;
-	onUpdateQuantity: (lineId: string, quantity: number) => void;
-	onRemoveLine: (lineId: string) => void;
+	onQuickAdd: (variantId: string, quantity: number) => Promise<void>;
+	onUpdateQuantity: (lineId: string, quantity: number) => Promise<void>;
+	onRemoveLine: (lineId: string) => Promise<void>;
 	cartLine?: CartLineInfo; // Cart line info if this variant is in cart
 }
 
