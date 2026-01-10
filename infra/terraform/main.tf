@@ -1,0 +1,304 @@
+# Root Module - Saleor Platform Infrastructure
+# Composes all modules for AWS ECS/Fargate deployment
+
+data "aws_caller_identity" "current" {}
+
+locals {
+  name_prefix = "${var.project_name}-${var.environment}"
+  account_id  = data.aws_caller_identity.current.account_id
+}
+
+# =============================================================================
+# VPC (or use existing)
+# =============================================================================
+
+module "vpc" {
+  source = "./modules/vpc"
+  count  = var.create_vpc ? 1 : 0
+
+  project_name       = var.project_name
+  environment        = var.environment
+  aws_region         = var.aws_region
+  vpc_cidr           = var.vpc_cidr
+  availability_zones = var.availability_zones
+  single_nat_gateway = var.environment == "staging"
+  create_vpc_endpoints = true
+}
+
+locals {
+  vpc_id              = var.create_vpc ? module.vpc[0].vpc_id : var.existing_vpc_id
+  public_subnet_ids   = var.create_vpc ? module.vpc[0].public_subnet_ids : var.existing_public_subnet_ids
+  private_subnet_ids  = var.create_vpc ? module.vpc[0].private_subnet_ids : var.existing_private_subnet_ids
+}
+
+# =============================================================================
+# S3 Media Bucket
+# =============================================================================
+
+module "s3" {
+  source = "./modules/s3"
+
+  project_name = var.project_name
+  environment  = var.environment
+  account_id   = local.account_id
+
+  cors_allowed_origins = [
+    "https://www.${var.domain_name}",
+    "https://api.${var.domain_name}",
+    "https://dashboard.${var.domain_name}"
+  ]
+}
+
+# =============================================================================
+# ECR Repositories
+# =============================================================================
+
+module "ecr" {
+  source = "./modules/ecr"
+
+  project_name = var.project_name
+  environment  = var.environment
+}
+
+# =============================================================================
+# ALB and Security Groups
+# =============================================================================
+
+module "alb" {
+  source = "./modules/alb"
+
+  project_name      = var.project_name
+  environment       = var.environment
+  vpc_id            = local.vpc_id
+  public_subnet_ids = local.public_subnet_ids
+  domain_name       = var.domain_name
+  certificate_arn   = var.create_acm_certificate ? aws_acm_certificate.main[0].arn : ""
+
+  enable_deletion_protection = var.environment == "production"
+}
+
+# =============================================================================
+# RDS PostgreSQL
+# =============================================================================
+
+# Generate master password if not provided
+resource "random_password" "db_master" {
+  length           = 32
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+}
+
+module "rds" {
+  source = "./modules/rds"
+
+  project_name                  = var.project_name
+  environment                   = var.environment
+  vpc_id                        = local.vpc_id
+  private_subnet_ids            = local.private_subnet_ids
+  ecs_backend_security_group_id = module.alb.ecs_backend_security_group_id
+
+  instance_class         = var.db_instance_class
+  allocated_storage      = var.db_allocated_storage
+  multi_az               = var.db_multi_az
+  backup_retention_days  = var.db_backup_retention_days
+  deletion_protection    = var.db_deletion_protection
+  skip_final_snapshot    = var.environment == "staging"
+  master_password        = random_password.db_master.result
+
+  create_separate_inventory_db = var.create_separate_inventory_db
+  inventory_password           = var.create_separate_inventory_db ? random_password.db_master.result : ""
+
+  enable_performance_insights = var.environment == "production"
+  enable_enhanced_monitoring  = var.environment == "production"
+}
+
+# =============================================================================
+# ElastiCache Redis
+# =============================================================================
+
+module "elasticache" {
+  source = "./modules/elasticache"
+
+  project_name                  = var.project_name
+  environment                   = var.environment
+  vpc_id                        = local.vpc_id
+  private_subnet_ids            = local.private_subnet_ids
+  ecs_backend_security_group_id = module.alb.ecs_backend_security_group_id
+
+  node_type = var.redis_node_type
+  multi_az  = var.redis_multi_az
+
+  create_separate_celery_cache = var.create_separate_celery_cache
+}
+
+# =============================================================================
+# ECS Cluster and Services
+# =============================================================================
+
+module "ecs" {
+  source = "./modules/ecs"
+
+  project_name = var.project_name
+  environment  = var.environment
+  aws_region   = var.aws_region
+  domain_name  = var.domain_name
+
+  private_subnet_ids             = local.private_subnet_ids
+  ecs_backend_security_group_id  = module.alb.ecs_backend_security_group_id
+  ecs_frontend_security_group_id = module.alb.ecs_frontend_security_group_id
+
+  task_execution_role_arn  = module.iam.ecs_task_execution_role_arn
+  api_task_role_arn        = module.iam.ecs_api_task_role_arn
+  worker_task_role_arn     = module.iam.ecs_worker_task_role_arn
+  storefront_task_role_arn = module.iam.ecs_storefront_task_role_arn
+
+  api_target_group_arn        = module.alb.api_target_group_arn
+  storefront_target_group_arn = module.alb.storefront_target_group_arn
+  dashboard_target_group_arn  = module.alb.dashboard_target_group_arn
+
+  saleor_api_image       = var.saleor_api_image
+  saleor_dashboard_image = var.saleor_dashboard_image
+  storefront_image       = "${module.ecr.storefront_repository_url}:latest"  # Placeholder, updated by CI
+
+  ssm_path_prefix   = "/saleor/${var.environment}"
+  media_bucket_name = module.s3.bucket_name
+  allowed_hosts     = "api.${var.domain_name},localhost"
+  meilisearch_url   = "http://meilisearch.${local.name_prefix}.local:7700"
+
+  api_desired_count        = var.api_desired_count
+  api_cpu                  = var.api_cpu
+  api_memory               = var.api_memory
+  worker_desired_count     = var.worker_desired_count
+  worker_cpu               = var.worker_cpu
+  worker_memory            = var.worker_memory
+  storefront_desired_count = var.storefront_desired_count
+  storefront_cpu           = var.storefront_cpu
+  storefront_memory        = var.storefront_memory
+
+  enable_container_insights = var.enable_container_insights
+  log_retention_days        = var.log_retention_days
+}
+
+# =============================================================================
+# IAM Roles
+# =============================================================================
+
+module "iam" {
+  source = "./modules/iam"
+
+  project_name = var.project_name
+  environment  = var.environment
+  aws_region   = var.aws_region
+
+  github_org    = var.github_org
+  github_repo   = var.github_repo
+  github_branch = var.github_branch
+
+  ecs_cluster_name = module.ecs.cluster_name
+  ecs_cluster_arn  = module.ecs.cluster_arn
+  media_bucket_arn = module.s3.bucket_arn
+}
+
+# =============================================================================
+# ACM Certificate (optional)
+# =============================================================================
+
+resource "aws_acm_certificate" "main" {
+  count = var.create_acm_certificate ? 1 : 0
+
+  domain_name               = var.domain_name
+  subject_alternative_names = ["*.${var.domain_name}"]
+  validation_method         = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = {
+    Name = "${local.name_prefix}-cert"
+  }
+}
+
+resource "aws_acm_certificate_validation" "main" {
+  count = var.create_acm_certificate && var.route53_zone_id != "" ? 1 : 0
+
+  certificate_arn         = aws_acm_certificate.main[0].arn
+  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
+}
+
+resource "aws_route53_record" "cert_validation" {
+  for_each = var.create_acm_certificate && var.route53_zone_id != "" ? {
+    for dvo in aws_acm_certificate.main[0].domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  } : {}
+
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 60
+  type            = each.value.type
+  zone_id         = var.route53_zone_id
+}
+
+# =============================================================================
+# Route53 Records (optional)
+# =============================================================================
+
+resource "aws_route53_record" "api" {
+  count = var.route53_zone_id != "" ? 1 : 0
+
+  zone_id = var.route53_zone_id
+  name    = "api.${var.domain_name}"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "www" {
+  count = var.route53_zone_id != "" ? 1 : 0
+
+  zone_id = var.route53_zone_id
+  name    = "www.${var.domain_name}"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "dashboard" {
+  count = var.route53_zone_id != "" ? 1 : 0
+
+  zone_id = var.route53_zone_id
+  name    = "dashboard.${var.domain_name}"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "apps" {
+  count = var.route53_zone_id != "" ? 1 : 0
+
+  zone_id = var.route53_zone_id
+  name    = "apps.${var.domain_name}"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}

@@ -310,3 +310,56 @@ jobs:
 
       - name: Validate docker-compose.yml
         run: docker compose config > /dev/null
+
+  # =============================================================================
+  # TERRAFORM VALIDATION
+  # =============================================================================
+  terraform_validate:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5"
+
+      - name: Terraform Format Check
+        working-directory: infra/terraform
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        working-directory: infra/terraform
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        working-directory: infra/terraform
+        run: terraform validate
+
+  # =============================================================================
+  # LOCAL REVIEW GATE
+  # =============================================================================
+  localreview_ci:
+    name: Local Review Gate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: git fetch origin platform/main
+
+      - name: Run localreview
+        run: |
+          chmod +x scripts/localreview.sh
+          FAIL_ON=HIGH BASE_REF=origin/platform/main ./scripts/localreview.sh
+
+      - name: Upload review report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: localreview-report
+          path: docs/ai-reviews/localreview.md

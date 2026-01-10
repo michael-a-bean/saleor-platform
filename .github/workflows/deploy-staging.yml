@@ -1,0 +1,275 @@
+# Deploy to Staging
+# Triggers on merge to platform/main or manual dispatch
+# Builds images, runs migrations, deploys ECS services, runs smoke tests
+
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [platform/main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+permissions:
+  id-token: write  # Required for OIDC
+  contents: read
+
+env:
+  AWS_REGION: us-west-2
+  ENVIRONMENT: staging
+  ECS_CLUSTER: saleor-platform-staging
+
+jobs:
+  # ==========================================================================
+  # Build and Push Images
+  # ==========================================================================
+  build:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    outputs:
+      sha_short: ${{ steps.vars.outputs.sha_short }}
+      storefront_image: ${{ steps.build.outputs.storefront_image }}
+      stripe_app_image: ${{ steps.build.outputs.stripe_app_image }}
+      inventory_ops_app_image: ${{ steps.build.outputs.inventory_ops_app_image }}
+      buylist_app_image: ${{ steps.build.outputs.buylist_app_image }}
+      pos_app_image: ${{ steps.build.outputs.pos_app_image }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set variables
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/saleor-platform-staging-github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push storefront
+        id: build-storefront
+        uses: docker/build-push-action@v6
+        with:
+          context: ./storefront
+          push: true
+          build-args: |
+            NEXT_PUBLIC_SALEOR_API_URL=${{ vars.STAGING_API_URL }}/graphql/
+            NEXT_PUBLIC_STOREFRONT_URL=${{ vars.STAGING_STOREFRONT_URL }}
+            NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/storefront:${{ steps.vars.outputs.sha_short }}
+            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/storefront:staging-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push stripe-app
+        uses: docker/build-push-action@v6
+        with:
+          context: ./saleor-apps
+          file: ./saleor-apps/apps/stripe/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/stripe-app:${{ steps.vars.outputs.sha_short }}
+            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/stripe-app:staging-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push inventory-ops-app
+        uses: docker/build-push-action@v6
+        with:
+          context: ./saleor-apps
+          file: ./saleor-apps/apps/inventory-ops/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/inventory-ops-app:${{ steps.vars.outputs.sha_short }}
+            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/inventory-ops-app:staging-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push buylist-app
+        uses: docker/build-push-action@v6
+        with:
+          context: ./saleor-apps
+          file: ./saleor-apps/apps/buylist/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/buylist-app:${{ steps.vars.outputs.sha_short }}
+            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/buylist-app:staging-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push pos-app
+        uses: docker/build-push-action@v6
+        with:
+          context: ./saleor-apps
+          file: ./saleor-apps/apps/pos/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/pos-app:${{ steps.vars.outputs.sha_short }}
+            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/pos-app:staging-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Set output images
+        id: build
+        run: |
+          ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          SHA="${{ steps.vars.outputs.sha_short }}"
+          echo "storefront_image=${ECR_REGISTRY}/saleor-platform/storefront:${SHA}" >> $GITHUB_OUTPUT
+          echo "stripe_app_image=${ECR_REGISTRY}/saleor-platform/stripe-app:${SHA}" >> $GITHUB_OUTPUT
+          echo "inventory_ops_app_image=${ECR_REGISTRY}/saleor-platform/inventory-ops-app:${SHA}" >> $GITHUB_OUTPUT
+          echo "buylist_app_image=${ECR_REGISTRY}/saleor-platform/buylist-app:${SHA}" >> $GITHUB_OUTPUT
+          echo "pos_app_image=${ECR_REGISTRY}/saleor-platform/pos-app:${SHA}" >> $GITHUB_OUTPUT
+
+  # ==========================================================================
+  # Run Migrations
+  # ==========================================================================
+  migrate:
+    name: Run Migrations
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/saleor-platform-staging-github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Pre-migration snapshot for safety (Gemini review recommendation)
+      - name: Create pre-migration RDS snapshot
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          SNAPSHOT_ID="saleor-platform-staging-pre-migrate-${TIMESTAMP}"
+          echo "Creating snapshot: ${SNAPSHOT_ID}"
+          aws rds create-db-snapshot \
+            --db-instance-identifier saleor-platform-staging-saleor \
+            --db-snapshot-identifier "${SNAPSHOT_ID}" || true
+          echo "Snapshot creation initiated (not waiting for completion)"
+
+      - name: Run Django migrations
+        run: |
+          ./scripts/deploy/aws/run-migrations.sh staging django
+        env:
+          SHA: ${{ needs.build.outputs.sha_short }}
+
+      - name: Run Prisma migrations
+        run: |
+          ./scripts/deploy/aws/run-migrations.sh staging prisma
+        env:
+          SHA: ${{ needs.build.outputs.sha_short }}
+
+  # ==========================================================================
+  # Deploy Services
+  # ==========================================================================
+  deploy:
+    name: Deploy Services
+    needs: [build, migrate]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [api, worker, storefront, dashboard]
+      fail-fast: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/saleor-platform-staging-github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy ${{ matrix.service }}
+        run: |
+          ./scripts/deploy/aws/deploy-service.sh staging ${{ matrix.service }} ${{ needs.build.outputs.sha_short }}
+        env:
+          STOREFRONT_IMAGE: ${{ needs.build.outputs.storefront_image }}
+
+      - name: Wait for service stability
+        run: |
+          echo "Waiting for ${{ matrix.service }} to reach steady state..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ matrix.service }} \
+            --region ${{ env.AWS_REGION }}
+          echo "Service ${{ matrix.service }} is stable"
+
+  # ==========================================================================
+  # Deploy Apps
+  # ==========================================================================
+  deploy-apps:
+    name: Deploy Apps
+    needs: [build, migrate, deploy]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [stripe-app, inventory-ops-app, buylist-app, pos-app]
+      fail-fast: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/saleor-platform-staging-github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy ${{ matrix.service }}
+        run: |
+          ./scripts/deploy/aws/deploy-service.sh staging ${{ matrix.service }} ${{ needs.build.outputs.sha_short }}
+        env:
+          STRIPE_APP_IMAGE: ${{ needs.build.outputs.stripe_app_image }}
+          INVENTORY_OPS_APP_IMAGE: ${{ needs.build.outputs.inventory_ops_app_image }}
+          BUYLIST_APP_IMAGE: ${{ needs.build.outputs.buylist_app_image }}
+          POS_APP_IMAGE: ${{ needs.build.outputs.pos_app_image }}
+
+  # ==========================================================================
+  # Smoke Tests
+  # ==========================================================================
+  smoke-test:
+    name: Smoke Tests
+    needs: [deploy, deploy-apps]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run smoke tests
+        run: |
+          ./scripts/deploy/aws/smoke-test.sh staging
+        env:
+          STAGING_API_URL: ${{ vars.STAGING_API_URL }}
+          STAGING_STOREFRONT_URL: ${{ vars.STAGING_STOREFRONT_URL }}
+          STAGING_DASHBOARD_URL: ${{ vars.STAGING_DASHBOARD_URL }}
+
+      - name: Report deployment success
+        if: success()
+        run: |
+          echo "## Staging Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ needs.build.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **API**: ${{ vars.STAGING_API_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Storefront**: ${{ vars.STAGING_STOREFRONT_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dashboard**: ${{ vars.STAGING_DASHBOARD_URL }}" >> $GITHUB_STEP_SUMMARY
