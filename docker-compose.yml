@@ -23,6 +23,8 @@ services:
       - common.env
       - backend.env
     environment:
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY is required}
+      - DATABASE_URL=postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db/saleor
       - DASHBOARD_URL=http://localhost:9000/
       - ALLOWED_HOSTS=localhost,127.0.0.1,api,stripe-app,inventory-ops-app,buylist-app,pos-app,host.docker.internal
       - HTTP_IP_FILTER_ENABLED=False
@@ -44,8 +46,8 @@ services:
       - saleor-db:/var/lib/postgresql/data
       - ./replica_user.sql:/docker-entrypoint-initdb.d/replica_user.sql:ro,z
     environment:
-      - POSTGRES_USER=saleor
-      - POSTGRES_PASSWORD=saleor
+      - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER is required}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
 
   cache:
     image: valkey/valkey:8.1-alpine
@@ -69,6 +71,8 @@ services:
       - common.env
       - backend.env
     environment:
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY is required}
+      - DATABASE_URL=postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db/saleor
       - HTTP_IP_FILTER_ENABLED=False
     depends_on:
       - cache
@@ -148,7 +152,7 @@ services:
     volumes:
       - ./scripts:/scripts:ro
     environment:
-      - SECRET_KEY=677a28c7a3f6f9b615a3dbe4657d0cf816080e482a432892f0b4c5f07dce0b54
+      - SECRET_KEY=${STRIPE_APP_SECRET_KEY:?STRIPE_APP_SECRET_KEY is required}
       - ALLOWED_DOMAIN_PATTERN=/.*/
       - APP_IFRAME_BASE_URL=http://localhost:3001
       - APP_API_BASE_URL=http://host.docker.internal:3001
@@ -189,8 +193,8 @@ services:
     volumes:
       - inventory-ops-apl:/app/apps/inventory-ops/data
     environment:
-      - SECRET_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
-      - DATABASE_URL=postgresql://inventory:inventory@inventory-ops-db:5432/inventory_ops
+      - SECRET_KEY=${INVENTORY_OPS_SECRET_KEY:?INVENTORY_OPS_SECRET_KEY is required}
+      - DATABASE_URL=${INVENTORY_DATABASE_URL:?INVENTORY_DATABASE_URL is required}
       - ALLOWED_DOMAIN_PATTERN=/.*/
       - APP_IFRAME_BASE_URL=http://localhost:3002
       - APP_API_BASE_URL=http://inventory-ops-app:3002
@@ -208,8 +212,8 @@ services:
     volumes:
       - inventory-ops-db:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=inventory
-      - POSTGRES_PASSWORD=inventory
+      - POSTGRES_USER=${INVENTORY_POSTGRES_USER:?INVENTORY_POSTGRES_USER is required}
+      - POSTGRES_PASSWORD=${INVENTORY_POSTGRES_PASSWORD:?INVENTORY_POSTGRES_PASSWORD is required}
       - POSTGRES_DB=inventory_ops
 
   # Saleor MCP Server for AI assistant integration
@@ -248,8 +252,8 @@ services:
     volumes:
       - buylist-apl:/app/apps/buylist/data
     environment:
-      - SECRET_KEY=b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a1
-      - DATABASE_URL=postgresql://inventory:inventory@inventory-ops-db:5432/inventory_ops
+      - SECRET_KEY=${BUYLIST_SECRET_KEY:?BUYLIST_SECRET_KEY is required}
+      - DATABASE_URL=${INVENTORY_DATABASE_URL:?INVENTORY_DATABASE_URL is required}
       - ALLOWED_DOMAIN_PATTERN=/.*/
       - APP_IFRAME_BASE_URL=http://localhost:3003
       - APP_API_BASE_URL=http://buylist-app:3003
@@ -278,8 +282,8 @@ services:
     volumes:
       - pos-apl:/app/apps/pos/data
     environment:
-      - SECRET_KEY=c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a1b2
-      - DATABASE_URL=postgresql://inventory:inventory@inventory-ops-db:5432/inventory_ops
+      - SECRET_KEY=${POS_SECRET_KEY:?POS_SECRET_KEY is required}
+      - DATABASE_URL=${INVENTORY_DATABASE_URL:?INVENTORY_DATABASE_URL is required}
       - ALLOWED_DOMAIN_PATTERN=/.*/
       - APP_IFRAME_BASE_URL=http://localhost:3004
       - APP_API_BASE_URL=http://pos-app:3004
@@ -316,13 +320,13 @@ services:
       - db
       - inventory-ops-db
     environment:
-      - DATABASE_URL=postgresql://inventory:inventory@inventory-ops-db:5432/inventory_ops
-      - SALEOR_DATABASE_URL=postgresql://saleor:saleor@db:5432/saleor
-      - INSTALLATION_ID=2735990c-b6b1-44ad-8336-1e20bcaa7ccd
-      - SALEOR_CHANNEL_ID=webstore
-      - SCRYFALL_RATE_LIMIT_MS=100
-      - BATCH_SIZE=100
-      - LOG_LEVEL=info
+      - DATABASE_URL=${INVENTORY_DATABASE_URL:?INVENTORY_DATABASE_URL is required}
+      - SALEOR_DATABASE_URL=${SALEOR_DATABASE_URL:?SALEOR_DATABASE_URL is required}
+      - INSTALLATION_ID=${INSTALLATION_ID:-}
+      - SALEOR_CHANNEL_ID=${SALEOR_CHANNEL_ID:-webstore}
+      - SCRYFALL_RATE_LIMIT_MS=${SCRYFALL_RATE_LIMIT_MS:-100}
+      - BATCH_SIZE=${BATCH_SIZE:-100}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     profiles:
       - tools
 
@@ -338,13 +342,13 @@ services:
       - db
       - inventory-ops-db
     environment:
-      - DATABASE_URL=postgresql://inventory:inventory@inventory-ops-db:5432/inventory_ops
-      - SALEOR_DATABASE_URL=postgresql://saleor:saleor@db:5432/saleor
-      - INSTALLATION_ID=2735990c-b6b1-44ad-8336-1e20bcaa7ccd
-      - SALEOR_CHANNEL_ID=webstore
-      - SCRYFALL_RATE_LIMIT_MS=100
-      - BATCH_SIZE=100
-      - LOG_LEVEL=info
+      - DATABASE_URL=${INVENTORY_DATABASE_URL:?INVENTORY_DATABASE_URL is required}
+      - SALEOR_DATABASE_URL=${SALEOR_DATABASE_URL:?SALEOR_DATABASE_URL is required}
+      - INSTALLATION_ID=${INSTALLATION_ID:-}
+      - SALEOR_CHANNEL_ID=${SALEOR_CHANNEL_ID:-webstore}
+      - SCRYFALL_RATE_LIMIT_MS=${SCRYFALL_RATE_LIMIT_MS:-100}
+      - BATCH_SIZE=${BATCH_SIZE:-100}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     restart: unless-stopped
     profiles:
       - workers

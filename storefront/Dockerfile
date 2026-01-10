@@ -11,7 +11,9 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm i --no-frozen-lockfile
+# IMPORTANT: Use --frozen-lockfile for reproducible builds
+# If this fails, update pnpm-lock.yaml locally first: pnpm install
+RUN pnpm install --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
