@@ -79,13 +79,13 @@ describe("meilisearch", () => {
 		});
 
 		it("builds rarity filter with single value", () => {
-			const filters = { rarity: "mythic" };
+			const filters: { rarity: string | string[] } = { rarity: "mythic" };
 			const parts: string[] = [];
 
 			if (filters.rarity) {
 				const rarities = Array.isArray(filters.rarity) ? filters.rarity : [filters.rarity];
 				if (rarities.length > 0) {
-					const rarityFilters = rarities.map((r) => `rarity = "${r.toLowerCase()}"`);
+					const rarityFilters = rarities.map((r: string) => `rarity = "${r.toLowerCase()}"`);
 					parts.push(`(${rarityFilters.join(" OR ")})`);
 				}
 			}
@@ -94,13 +94,13 @@ describe("meilisearch", () => {
 		});
 
 		it("builds rarity filter with array", () => {
-			const filters = { rarity: ["rare", "mythic"] };
+			const filters: { rarity: string | string[] } = { rarity: ["rare", "mythic"] };
 			const parts: string[] = [];
 
 			if (filters.rarity) {
 				const rarities = Array.isArray(filters.rarity) ? filters.rarity : [filters.rarity];
 				if (rarities.length > 0) {
-					const rarityFilters = rarities.map((r) => `rarity = "${r.toLowerCase()}"`);
+					const rarityFilters = rarities.map((r: string) => `rarity = "${r.toLowerCase()}"`);
 					parts.push(`(${rarityFilters.join(" OR ")})`);
 				}
 			}
@@ -120,7 +120,7 @@ describe("meilisearch", () => {
 		});
 
 		it("builds price range filter with min only", () => {
-			const filters = { priceRange: { min: 10 } };
+			const filters: { priceRange: { min?: number; max?: number } } = { priceRange: { min: 10 } };
 			const parts: string[] = [];
 
 			if (filters.priceRange) {
@@ -136,7 +136,7 @@ describe("meilisearch", () => {
 		});
 
 		it("builds price range filter with max only", () => {
-			const filters = { priceRange: { max: 100 } };
+			const filters: { priceRange: { min?: number; max?: number } } = { priceRange: { max: 100 } };
 			const parts: string[] = [];
 
 			if (filters.priceRange) {
@@ -197,7 +197,6 @@ describe("meilisearch", () => {
 		});
 
 		it("returns undefined for empty filters", () => {
-			const filters = {};
 			const parts: string[] = [];
 
 			const result = parts.length > 0 ? parts.join(" AND ") : undefined;
@@ -308,7 +307,7 @@ describe("meilisearch", () => {
 			});
 
 			expect(response.ok).toBe(true);
-			const data = await response.json();
+			const data = (await response.json()) as typeof mockResponse;
 			expect(data.hits).toHaveLength(1);
 			expect(data.hits[0].name).toBe("Black Lotus");
 			expect(data.estimatedTotalHits).toBe(1);
