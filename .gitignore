@@ -13,6 +13,7 @@ docs/all-cards-20251214224928.json
 # Saleor apps monorepo - see saleor-apps/.gitignore for nested rules
 
 # Environment files with secrets
+.env
 stripe.env
 *.env.local
 backups/
