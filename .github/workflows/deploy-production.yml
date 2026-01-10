@@ -1,0 +1,279 @@
+# Deploy to Production
+# Manual trigger with approval gate via GitHub Environments
+# Promotes staging images (no rebuild) to production
+
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging_sha:
+        description: 'Git SHA deployed to staging (for verification)'
+        required: true
+        type: string
+      skip_approval:
+        description: 'Skip manual approval (EMERGENCY ONLY - requires break-glass)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-west-2
+  ENVIRONMENT: production
+  ECS_CLUSTER: saleor-platform-production
+
+jobs:
+  # ==========================================================================
+  # Verify Staging Deployment
+  # ==========================================================================
+  verify-staging:
+    name: Verify Staging Deployment
+    runs-on: ubuntu-latest
+    outputs:
+      verified: ${{ steps.verify.outputs.verified }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/saleor-platform-production-github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify staging images exist with SHA
+        id: verify
+        run: |
+          SHA="${{ inputs.staging_sha }}"
+          echo "Verifying images with SHA: ${SHA}"
+
+          SERVICES="storefront stripe-app inventory-ops-app buylist-app pos-app"
+          ALL_EXIST=true
+
+          for SERVICE in $SERVICES; do
+            IMAGE_TAG="${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/saleor-platform/${SERVICE}:${SHA}"
+            if aws ecr describe-images --repository-name "saleor-platform/${SERVICE}" --image-ids imageTag="${SHA}" 2>/dev/null; then
+              echo "Found: ${IMAGE_TAG}"
+            else
+              echo "MISSING: ${IMAGE_TAG}"
+              ALL_EXIST=false
+            fi
+          done
+
+          if [ "$ALL_EXIST" = true ]; then
+            echo "All staging images verified"
+            echo "verified=true" >> $GITHUB_OUTPUT
+          else
+            echo "Some images missing - cannot promote to production"
+            echo "verified=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+  # ==========================================================================
+  # Manual Approval Gate
+  # ==========================================================================
+  approval:
+    name: Production Approval
+    needs: verify-staging
+    if: ${{ !inputs.skip_approval }}
+    runs-on: ubuntu-latest
+    environment: production  # Requires configured reviewers
+
+    steps:
+      - name: Approval checkpoint
+        run: |
+          echo "Production deployment approved"
+          echo "SHA: ${{ inputs.staging_sha }}"
+
+  # ==========================================================================
+  # Pre-deployment Backup
+  # ==========================================================================
+  backup:
+    name: Pre-deployment Backup
+    needs: [verify-staging, approval]
+    if: always() && needs.verify-staging.result == 'success' && (needs.approval.result == 'success' || inputs.skip_approval)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/saleor-platform-production-github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create RDS snapshot before deployment
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          SNAPSHOT_ID="saleor-platform-production-pre-deploy-${TIMESTAMP}"
+          echo "Creating production snapshot: ${SNAPSHOT_ID}"
+          aws rds create-db-snapshot \
+            --db-instance-identifier saleor-platform-production-saleor \
+            --db-snapshot-identifier "${SNAPSHOT_ID}"
+          echo "Waiting for snapshot to be available..."
+          aws rds wait db-snapshot-available --db-snapshot-identifier "${SNAPSHOT_ID}"
+          echo "Snapshot ready: ${SNAPSHOT_ID}"
+
+  # ==========================================================================
+  # Run Migrations
+  # ==========================================================================
+  migrate:
+    name: Run Migrations
+    needs: backup
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/saleor-platform-production-github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run Django migrations
+        run: |
+          ./scripts/deploy/aws/run-migrations.sh production django
+        env:
+          SHA: ${{ inputs.staging_sha }}
+
+      - name: Run Prisma migrations
+        run: |
+          ./scripts/deploy/aws/run-migrations.sh production prisma
+        env:
+          SHA: ${{ inputs.staging_sha }}
+
+  # ==========================================================================
+  # Deploy Core Services
+  # ==========================================================================
+  deploy-core:
+    name: Deploy Core Services
+    needs: migrate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [api, worker, storefront, dashboard]
+      fail-fast: true  # Stop on first failure in production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/saleor-platform-production-github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Promote and deploy ${{ matrix.service }}
+        run: |
+          ./scripts/deploy/aws/deploy-service.sh production ${{ matrix.service }} ${{ inputs.staging_sha }}
+
+      - name: Wait for service stability
+        run: |
+          echo "Waiting for ${{ matrix.service }} to reach steady state..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ matrix.service }} \
+            --region ${{ env.AWS_REGION }}
+          echo "Service ${{ matrix.service }} is stable"
+
+  # ==========================================================================
+  # Deploy Apps
+  # ==========================================================================
+  deploy-apps:
+    name: Deploy Apps
+    needs: deploy-core
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [stripe-app, inventory-ops-app, buylist-app, pos-app]
+      fail-fast: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/saleor-platform-production-github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy ${{ matrix.service }}
+        run: |
+          ./scripts/deploy/aws/deploy-service.sh production ${{ matrix.service }} ${{ inputs.staging_sha }}
+
+  # ==========================================================================
+  # Smoke Tests
+  # ==========================================================================
+  smoke-test:
+    name: Production Smoke Tests
+    needs: [deploy-core, deploy-apps]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run smoke tests
+        run: |
+          ./scripts/deploy/aws/smoke-test.sh production
+        env:
+          PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
+          PRODUCTION_STOREFRONT_URL: ${{ vars.PRODUCTION_STOREFRONT_URL }}
+          PRODUCTION_DASHBOARD_URL: ${{ vars.PRODUCTION_DASHBOARD_URL }}
+
+      - name: Report deployment success
+        if: success()
+        run: |
+          echo "## Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ inputs.staging_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **API**: ${{ vars.PRODUCTION_API_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Storefront**: ${{ vars.PRODUCTION_STOREFRONT_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dashboard**: ${{ vars.PRODUCTION_DASHBOARD_URL }}" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================================================
+  # Rollback on Failure
+  # ==========================================================================
+  rollback:
+    name: Rollback on Failure
+    needs: [deploy-core, deploy-apps, smoke-test]
+    if: failure()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/saleor-platform-production-github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Rollback ECS services
+        run: |
+          echo "DEPLOYMENT FAILED - Initiating rollback"
+          ./scripts/deploy/aws/rollback.sh production
+        continue-on-error: true
+
+      - name: Create failure summary
+        run: |
+          echo "## Production Deployment FAILED" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Rollback initiated. Please check:" >> $GITHUB_STEP_SUMMARY
+          echo "- CloudWatch logs for error details" >> $GITHUB_STEP_SUMMARY
+          echo "- ECS service events for task failures" >> $GITHUB_STEP_SUMMARY
+          echo "- RDS snapshot available for DB restore if needed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Manual intervention may be required.**" >> $GITHUB_STEP_SUMMARY
