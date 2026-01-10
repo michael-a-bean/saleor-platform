@@ -6,6 +6,10 @@ Usage:
     python scripts/sync-meilisearch.py [--full] [--channel CHANNEL]
 
 Examples:
+    # Set required environment variables first:
+    export SALEOR_ADMIN_EMAIL='admin@example.com'
+    export SALEOR_ADMIN_PASSWORD='your-password'
+
     # Sync webstore channel (main storefront)
     python scripts/sync-meilisearch.py --channel webstore
 
@@ -14,6 +18,10 @@ Examples:
 
     # Sync singles-builder channel (default)
     python scripts/sync-meilisearch.py
+
+Environment Variables:
+    SALEOR_ADMIN_EMAIL     (required) Admin user email for API authentication
+    SALEOR_ADMIN_PASSWORD  (required) Admin user password for API authentication
 
 Options:
     --full      Full reindex (deletes and recreates index)
@@ -30,7 +38,12 @@ import argparse
 import sys
 import time
 import base64
+import os
 from typing import Optional
+
+# Admin credentials - MUST be set via environment variables
+SALEOR_ADMIN_EMAIL = os.environ.get("SALEOR_ADMIN_EMAIL")
+SALEOR_ADMIN_PASSWORD = os.environ.get("SALEOR_ADMIN_PASSWORD")
 
 
 def decode_saleor_id(graphql_id: str) -> str:
@@ -72,16 +85,31 @@ class TokenManager:
         return self._token
 
     def _refresh_token(self):
-        """Get a fresh token from Saleor."""
+        """Get a fresh token from Saleor.
+
+        Requires SALEOR_ADMIN_EMAIL and SALEOR_ADMIN_PASSWORD environment variables.
+        """
+        if not SALEOR_ADMIN_EMAIL or not SALEOR_ADMIN_PASSWORD:
+            raise Exception(
+                "Missing Saleor admin credentials.\n"
+                "Set environment variables:\n"
+                "  export SALEOR_ADMIN_EMAIL='your-admin@email.com'\n"
+                "  export SALEOR_ADMIN_PASSWORD='your-password'\n"
+            )
+
         mutation = """
-        mutation {
-            tokenCreate(email: "admin@example.com", password: "admin") {
+        mutation TokenCreate($email: String!, $password: String!) {
+            tokenCreate(email: $email, password: $password) {
                 token
                 errors { message }
             }
         }
         """
-        response = requests.post(SALEOR_API, json={"query": mutation})
+        variables = {
+            "email": SALEOR_ADMIN_EMAIL,
+            "password": SALEOR_ADMIN_PASSWORD,
+        }
+        response = requests.post(SALEOR_API, json={"query": mutation, "variables": variables})
         data = response.json()
         if data.get("data", {}).get("tokenCreate", {}).get("token"):
             self._token = data["data"]["tokenCreate"]["token"]
