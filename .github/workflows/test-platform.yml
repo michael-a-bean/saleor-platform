@@ -2,12 +2,45 @@ name: test-platform
 on: pull_request
 
 jobs:
-  verify_pull_request:
+  verify_backend:
+    name: Backend Tests
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
-      - name: Build
+      - uses: actions/checkout@v4
+      - name: Build containers
         run: docker compose build
       - name: Run backend tests
         run: docker compose run api pytest -n logical --allow-hosts cache
+
+  verify_storefront:
+    name: Storefront Checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./storefront
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: storefront/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Run tests
+        run: pnpm test
