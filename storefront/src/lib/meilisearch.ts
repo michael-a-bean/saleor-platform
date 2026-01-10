@@ -3,6 +3,10 @@
  * Provides instant search with typo tolerance and partial matching.
  */
 
+import { logger } from "@/lib/logger";
+
+const log = logger.scope("meilisearch");
+
 const MEILISEARCH_URL = process.env.MEILISEARCH_URL || "http://localhost:7700";
 
 /**
@@ -194,7 +198,12 @@ export async function searchProducts(
 
 		return (await response.json()) as MeilisearchSearchResult;
 	} catch (error) {
-		console.error("Meilisearch search error:", error);
+		log.error("search failed", {
+			query,
+			channel,
+			indexName,
+			error: error instanceof Error ? error.message : String(error),
+		});
 		// Return empty results on error
 		return {
 			hits: [],
