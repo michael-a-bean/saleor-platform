@@ -63,46 +63,65 @@ IMAGE_TYPE_MAP = {
     "Cmdr": "commander-deck",
 }
 
-# Recent sets with known WPN URLs (set_code: year)
+# Recent sets with known WPN URLs (set_code: [years to try])
+# WotC sometimes uploads marketing materials in the prior year
 KNOWN_SETS = {
+    # 2023 sets
+    "pip": [2023],  # Fallout (Universes Beyond)
     # 2024 sets
-    "mkm": 2024,  # Murders at Karlov Manor
-    "otj": 2024,  # Outlaws of Thunder Junction
-    "mh3": 2024,  # Modern Horizons 3
-    "blb": 2024,  # Bloomburrow
-    "dsk": 2024,  # Duskmourn
-    "fdn": 2024,  # Foundations
-    # 2025 sets
-    "dft": 2025,  # Aetherdrift
-    "ecl": 2025,  # Lorwyn Eclipsed (upcoming)
-    "tmt": 2025,  # TMNT (upcoming)
-    "spm": 2025,  # Spider-Man
+    "mkm": [2024],  # Murders at Karlov Manor (uses cluedo variant URL)
+    "otj": [2024],  # Outlaws of Thunder Junction
+    "mh3": [2024],  # Modern Horizons 3
+    "blb": [2024],  # Bloomburrow
+    "dsk": [2024],  # Duskmourn
+    "fdn": [2024],  # Foundations
+    # 2025 sets (often available under prior year)
+    "dft": [2024, 2025],  # Aetherdrift - uploaded to 2024 path
+    "ecl": [2025, 2024],  # Lorwyn Eclipsed (upcoming)
+    "tmt": [2025, 2024],  # TMNT (upcoming)
+    "spm": [2025, 2024],  # Spider-Man
 }
 
 
+# URL filename patterns to try for each set
+URL_PATTERNS = [
+    "{set}_pds_en.zip",                    # Standard pattern
+    "{set}_pds_preorder_en.zip",           # Preorder variant (PIP/Fallout)
+    "{set}_pds_preorder_cluedo_en.zip",    # MKM/Cluedo variant
+    "{set}_onlinestore_assets_en.zip",     # Alternative pattern
+]
+
+
 def download_wpn_zip(set_code: str, year: int, output_dir: Path) -> Path | None:
-    """Download WPN product shots ZIP for a set."""
-    url = f"https://media.wizards.com/{year}/wpn/marketing_materials/{set_code}/{set_code}_pds_en.zip"
-    zip_path = output_dir / f"{set_code}_pds_en.zip"
+    """Download WPN product shots ZIP for a set, trying multiple URL patterns."""
+    base_url = f"https://media.wizards.com/{year}/wpn/marketing_materials/{set_code}"
 
-    print(f"  Trying: {url}")
+    for pattern in URL_PATTERNS:
+        filename = pattern.format(set=set_code)
+        url = f"{base_url}/{filename}"
+        zip_path = output_dir / filename
 
-    try:
-        req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urlopen(req, timeout=60) as response:
-            with open(zip_path, "wb") as f:
-                shutil.copyfileobj(response, f)
-        print(f"  Downloaded: {zip_path.name} ({zip_path.stat().st_size / 1024 / 1024:.1f} MB)")
-        return zip_path
-    except HTTPError as e:
-        if e.code == 404:
-            print(f"  Not found (404)")
-        else:
-            print(f"  HTTP Error: {e.code}")
-        return None
-    except Exception as e:
-        print(f"  Error: {e}")
-        return None
+        print(f"  Trying: {url}")
+
+        try:
+            req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urlopen(req, timeout=60) as response:
+                with open(zip_path, "wb") as f:
+                    shutil.copyfileobj(response, f)
+            print(f"  Downloaded: {zip_path.name} ({zip_path.stat().st_size / 1024 / 1024:.1f} MB)")
+            return zip_path
+        except HTTPError as e:
+            if e.code == 404:
+                continue  # Try next pattern
+            else:
+                print(f"  HTTP Error: {e.code}")
+                continue
+        except Exception as e:
+            print(f"  Error: {e}")
+            continue
+
+    print(f"  Not found with any URL pattern")
+    return None
 
 
 def extract_front_images(zip_path: Path, output_dir: Path, set_code: str) -> list:
@@ -192,15 +211,22 @@ def main():
     if args.sets:
         for code in args.sets.split(","):
             code = code.strip().lower()
-            year = KNOWN_SETS.get(code, 2024)  # Default to 2024
-            sets_to_download.append((code, year))
+            years = KNOWN_SETS.get(code, [2024])  # Default to [2024]
+            if isinstance(years, int):
+                years = [years]  # Handle legacy single-year format
+            sets_to_download.append((code, years))
     elif args.year:
-        for code, year in KNOWN_SETS.items():
-            if year == args.year:
-                sets_to_download.append((code, year))
+        for code, years in KNOWN_SETS.items():
+            if isinstance(years, int):
+                years = [years]
+            if args.year in years:
+                sets_to_download.append((code, years))
     else:
         # Download all known sets
-        sets_to_download = list(KNOWN_SETS.items())
+        for code, years in KNOWN_SETS.items():
+            if isinstance(years, int):
+                years = [years]
+            sets_to_download.append((code, years))
 
     print(f"WPN Image Downloader")
     print(f"=" * 50)
@@ -210,10 +236,15 @@ def main():
 
     stats = {"downloaded": 0, "failed": 0, "images": 0}
 
-    for set_code, year in sets_to_download:
-        print(f"\n{set_code.upper()} ({year}):")
+    for set_code, years in sets_to_download:
+        print(f"\n{set_code.upper()}:")
 
-        zip_path = download_wpn_zip(set_code, year, output_dir)
+        # Try each year until one succeeds
+        zip_path = None
+        for year in years:
+            zip_path = download_wpn_zip(set_code, year, output_dir)
+            if zip_path:
+                break
 
         if zip_path:
             stats["downloaded"] += 1

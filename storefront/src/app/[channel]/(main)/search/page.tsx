@@ -15,7 +15,7 @@ import { transformMeilisearchResults, createMeilisearchPageInfo } from "./transf
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-	title: "Search products · MTG Card Marketplace",
+	title: "Search · Magic: The Gathering Marketplace",
 	description: "Search Magic: The Gathering cards",
 };
 

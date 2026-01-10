@@ -7,7 +7,7 @@ import { MagicSubNav } from "@/ui/components/MagicSubNav";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-	title: "MTG Sets",
+	title: "Magic: The Gathering Sets",
 	description: "Browse all Magic: The Gathering sets - view singles and sealed products by expansion.",
 };
 
@@ -36,14 +36,14 @@ export default async function SetsPage(props: { params: Promise<{ channel: strin
 		<div className="mx-auto max-w-7xl p-8 pb-16">
 			<Breadcrumb
 				items={[
-					{ label: "Magic", href: "/magic" },
+					{ label: "Magic: The Gathering", href: "/magic" },
 					{ label: "Sets" },
 				]}
 				className="mb-4"
 			/>
 			<MagicSubNav />
 
-			<h1 className="pb-2 text-2xl font-bold">MTG Sets</h1>
+			<h1 className="pb-2 text-2xl font-bold">Magic: The Gathering Sets</h1>
 			<p className="pb-4 text-neutral-500">
 				Browse Magic: The Gathering by set. Each set includes both singles and sealed products.
 			</p>

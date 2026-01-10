@@ -13,7 +13,7 @@ import { Breadcrumb } from "@/ui/components/Breadcrumb";
 import { MagicSubNav } from "@/ui/components/MagicSubNav";
 
 export const metadata: Metadata = {
-	title: "MTG Singles",
+	title: "Magic: The Gathering Singles",
 	description: "Browse Magic: The Gathering single cards. Filter by rarity, color, set, price, and more.",
 };
 
@@ -79,7 +79,7 @@ export default async function SinglesPage(props: {
 		<section className="mx-auto max-w-7xl p-8 pb-16">
 			<Breadcrumb
 				items={[
-					{ label: "Magic", href: "/magic" },
+					{ label: "Magic: The Gathering", href: "/magic" },
 					{ label: "Singles" },
 				]}
 				className="mb-4"
@@ -87,7 +87,7 @@ export default async function SinglesPage(props: {
 			<MagicSubNav />
 
 			<div className="mb-6">
-				<h1 className="text-2xl font-bold">MTG Singles</h1>
+				<h1 className="text-2xl font-bold">Magic: The Gathering Singles</h1>
 				<p className="mt-1 text-neutral-500">
 					{products.totalCount?.toLocaleString()} cards available
 				</p>
