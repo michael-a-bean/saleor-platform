@@ -24,3 +24,5 @@ saleor-mcp/
 
 # WPN marketing images (large binary assets - see docs/setup/sealed-product-images.md)
 scripts/mtg_sealed_import/wpn_images/
+# Local review reports (generated)
+docs/ai-reviews/

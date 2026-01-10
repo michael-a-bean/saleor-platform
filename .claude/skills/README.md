@@ -20,6 +20,12 @@ Skills provide detailed procedures for specific tasks. Read only the skills rele
 | [price-sync](./price-sync.md) | Scryfall price imports, market price synchronization |
 | [mtg-catalog](./mtg-catalog.md) | Card queries, attributes, catalog data model |
 
+## Validation
+
+| Skill | When to Use |
+|-------|-------------|
+| [local-review](./local-review.md) | Pre-commit review gate, risky pattern detection, secrets scanning |
+
 ## Usage Notes
 
 - Skills contain commands, queries, and procedures that would clutter CLAUDE.md
