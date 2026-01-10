@@ -132,14 +132,14 @@ export default async function MagicLandingPage(props: { params: Promise<{ channe
 					<div>
 						<h3 className="font-display text-lg font-semibold">Looking for something specific?</h3>
 						<p className="text-white/80">
-							Use our search to find any card by name, set, or other attributes.
+							Browse our singles catalog to find cards by name, set, or other attributes.
 						</p>
 					</div>
 					<Link
-						href={`/${params.channel}/search`}
+						href={`/${params.channel}/magic/singles`}
 						className="inline-flex items-center rounded-lg bg-white px-6 py-3 font-medium text-brand-deep-purple transition-colors hover:bg-brand-bright-blue/10"
 					>
-						Search Cards
+						Browse Cards
 						<svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path
 								strokeLinecap="round"
