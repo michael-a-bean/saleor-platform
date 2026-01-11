@@ -208,3 +208,55 @@ redis://<cache-endpoint>:6379/0
 # Broker
 redis://<broker-endpoint>:6379/0
 ```
+
+## Migration Execution Configuration
+
+These variables are required for running ECS migration tasks. They enable first-deploy-safe migrations that do not depend on existing ECS services.
+
+### Required GitHub Actions Variables
+
+| Variable | Source | Description |
+|----------|--------|-------------|
+| `STAGING_ECS_TASK_SUBNETS` | Terraform output | Comma-separated private subnet IDs |
+| `STAGING_ECS_TASK_SECURITY_GROUPS` | Terraform output | Security group ID for ECS tasks |
+| `PRODUCTION_ECS_TASK_SUBNETS` | Terraform output | Comma-separated private subnet IDs |
+| `PRODUCTION_ECS_TASK_SECURITY_GROUPS` | Terraform output | Security group ID for ECS tasks |
+
+### Obtaining Values from Terraform
+
+After running `terraform apply`, capture these values:
+
+```bash
+cd infra/terraform
+
+# For staging
+terraform output ecs_task_subnets        # e.g., subnet-abc123,subnet-def456
+terraform output ecs_task_security_group # e.g., sg-abc123
+
+# Copy these to GitHub Actions repository variables
+```
+
+### Migration Script Environment Variables
+
+The `run-migrations.sh` script accepts these environment variables:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `ECS_TASK_SUBNETS` | Yes* | - | Comma-separated subnet IDs |
+| `ECS_TASK_SECURITY_GROUPS` | Yes* | - | Comma-separated security group IDs |
+| `ECS_TASK_ASSIGN_PUBLIC_IP` | No | `DISABLED` | `ENABLED` or `DISABLED` |
+| `FALLBACK_NETWORK_FROM_SERVICE` | No | `false` | Enable service-based fallback |
+| `SERVICE_NAME` | If fallback | - | Service name for fallback |
+| `DRY_RUN` | No | `false` | Validate config without AWS calls |
+
+*Required unless using fallback mode.
+
+### Testing Migration Configuration Locally
+
+```bash
+# Validate configuration without making AWS calls
+DRY_RUN=true \
+ECS_TASK_SUBNETS="subnet-abc123,subnet-def456" \
+ECS_TASK_SECURITY_GROUPS="sg-abc123" \
+./scripts/deploy/aws/run-migrations.sh staging django
+```

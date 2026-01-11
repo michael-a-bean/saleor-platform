@@ -4,6 +4,17 @@ This document lists all manual steps required to complete the AWS ECS/Fargate de
 
 ---
 
+## Related Documents
+
+Before starting, review these documents for context:
+
+- [FIRST_DEPLOY_TRACE.md](./FIRST_DEPLOY_TRACE.md) - Expected execution behavior
+- [MANUAL_INPUTS_TABLE.md](./MANUAL_INPUTS_TABLE.md) - Complete list of inputs needed
+- [PROMOTION_MODEL.md](./PROMOTION_MODEL.md) - Image promotion semantics
+- [MIGRATION_EXECUTION_MODEL.md](./MIGRATION_EXECUTION_MODEL.md) - Migration procedures
+
+---
+
 ## Prerequisites Checklist
 
 - [ ] AWS Account with admin access
@@ -146,11 +157,12 @@ terraform apply staging.tfplan
 - IAM roles
 - CloudWatch log groups
 
-### 2.3 Note Important Outputs
+### 2.3 Capture Terraform Outputs
 
-After `terraform apply`, save these outputs:
+After `terraform apply`, capture these outputs for GitHub configuration:
 
 ```bash
+# Save all outputs for reference
 terraform output > staging-outputs.txt
 
 # Key outputs to note:
@@ -159,7 +171,15 @@ terraform output > staging-outputs.txt
 # - redis_endpoint: Cache endpoint
 # - github_actions_role_arn: Role for CI/CD
 # - ecr_repository_urls: Image registry URLs
+
+# CRITICAL: Capture migration network config for GitHub Actions
+# These are required for first-deploy-safe migrations
+echo "=== Migration Network Configuration ==="
+echo "STAGING_ECS_TASK_SUBNETS=$(terraform output -raw ecs_task_subnets)"
+echo "STAGING_ECS_TASK_SECURITY_GROUPS=$(terraform output -raw ecs_task_security_group)"
 ```
+
+**Important**: The `ecs_task_subnets` and `ecs_task_security_group` outputs are required for migrations to run before ECS services exist. You must set these as GitHub repository variables (see Phase 5).
 
 ---
 
@@ -325,16 +345,31 @@ In your GitHub repository:
 
 Go to **Settings** → **Secrets and variables** → **Actions** → **Variables**:
 
-| Variable | Value |
-|----------|-------|
-| AWS_ACCOUNT_ID | `123456789012` (your account ID) |
-| AWS_REGION | `us-west-2` |
-| STAGING_API_URL | `https://api.staging.yourdomain.com` |
-| STAGING_STOREFRONT_URL | `https://www.staging.yourdomain.com` |
-| STAGING_DASHBOARD_URL | `https://dashboard.staging.yourdomain.com` |
-| PRODUCTION_API_URL | `https://api.yourdomain.com` |
-| PRODUCTION_STOREFRONT_URL | `https://www.yourdomain.com` |
-| PRODUCTION_DASHBOARD_URL | `https://dashboard.yourdomain.com` |
+| Variable | Value | Notes |
+|----------|-------|-------|
+| AWS_ACCOUNT_ID | `123456789012` | Your account ID |
+| AWS_REGION | `us-west-2` | |
+| STAGING_API_URL | `https://api.staging.yourdomain.com` | |
+| STAGING_STOREFRONT_URL | `https://www.staging.yourdomain.com` | |
+| STAGING_DASHBOARD_URL | `https://dashboard.staging.yourdomain.com` | |
+| STAGING_ECS_TASK_SUBNETS | `subnet-xxx,subnet-yyy` | From `terraform output ecs_task_subnets` |
+| STAGING_ECS_TASK_SECURITY_GROUPS | `sg-xxx` | From `terraform output ecs_task_security_group` |
+| PRODUCTION_API_URL | `https://api.yourdomain.com` | |
+| PRODUCTION_STOREFRONT_URL | `https://www.yourdomain.com` | |
+| PRODUCTION_DASHBOARD_URL | `https://dashboard.yourdomain.com` | |
+| PRODUCTION_ECS_TASK_SUBNETS | `subnet-xxx,subnet-yyy` | From production terraform output |
+| PRODUCTION_ECS_TASK_SECURITY_GROUPS | `sg-xxx` | From production terraform output |
+
+**Migration Network Configuration** (CRITICAL for first deploy):
+
+The `*_ECS_TASK_SUBNETS` and `*_ECS_TASK_SECURITY_GROUPS` variables are **required** for database migrations. Without these, the first deployment will fail because migrations cannot run before ECS services exist.
+
+```bash
+# Get values from Terraform after apply:
+cd infra/terraform
+terraform output ecs_task_subnets        # Copy to STAGING_ECS_TASK_SUBNETS
+terraform output ecs_task_security_group # Copy to STAGING_ECS_TASK_SECURITY_GROUPS
+```
 
 ### 5.3 Verify OIDC Role
 
@@ -390,7 +425,52 @@ curl https://www.staging.yourdomain.com/api/health
 
 ---
 
-## Phase 7: Production Setup
+## Phase 7: Rollback Test (Non-Destructive)
+
+Verify rollback procedures work before relying on them in production.
+
+### 7.1 Test Manual Rollback
+
+```bash
+# Simulate rollback for staging API service
+# This reverts to the previous task definition revision
+
+./scripts/deploy/aws/rollback.sh staging api
+
+# Verify the service rolls back
+aws ecs describe-services \
+  --cluster saleor-platform-staging \
+  --services api \
+  --query 'services[0].taskDefinition'
+
+# Should show previous revision number
+```
+
+### 7.2 Verify Rollback Completes
+
+```bash
+# Wait for service stability
+aws ecs wait services-stable \
+  --cluster saleor-platform-staging \
+  --services api
+
+# Verify API still works
+curl https://api.staging.yourdomain.com/health/
+```
+
+### 7.3 Re-deploy to Latest
+
+After testing rollback, re-deploy to latest by triggering the workflow again or running:
+
+```bash
+./scripts/deploy/aws/deploy-service.sh staging api <latest-sha>
+```
+
+**Note**: Rollback does NOT affect database migrations. If a migration was destructive, database rollback requires restoring from the pre-migration snapshot.
+
+---
+
+## Phase 8: Production Setup
 
 Repeat Phases 2-6 with production configurations:
 

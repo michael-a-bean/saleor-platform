@@ -39,8 +39,49 @@ aws rds wait db-snapshot-available \
 ### Pre-Deployment Snapshots
 
 Deployment workflows automatically create snapshots before migrations:
-- Snapshot ID format: `saleor-platform-{env}-pre-migrate-{timestamp}`
+- Snapshot ID format: `saleor-platform-{env}-pre-deploy-{timestamp}` (production) or `saleor-platform-{env}-pre-migrate-{timestamp}` (staging)
 - These are in addition to automated daily snapshots
+
+#### Snapshot Policy by Environment
+
+| Environment | Behavior | Wait for Completion | Rationale |
+|-------------|----------|---------------------|-----------|
+| **Staging** | Best-effort, async | No | Faster deploys; staging data less critical |
+| **Production** | Required, blocking | Yes (with timeout) | Guaranteed recovery point before migrations |
+
+#### Production Snapshot Timeout
+
+Production deployments wait for the snapshot to become `available` before proceeding with migrations. This ensures a verified recovery point exists.
+
+**Configuration Variables** (set in GitHub Actions repository variables):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SNAPSHOT_WAIT_TIMEOUT_SECONDS` | `1800` (30 min) | Maximum time to wait for snapshot |
+| `ALLOW_DEPLOY_WITHOUT_SNAPSHOT_WAIT` | `false` | Emergency override to proceed without verified snapshot |
+
+**Timeout Behavior:**
+- The workflow polls RDS every 30 seconds until snapshot status is `available`
+- If timeout is reached and `ALLOW_DEPLOY_WITHOUT_SNAPSHOT_WAIT=false`: **workflow fails**
+- If timeout is reached and `ALLOW_DEPLOY_WITHOUT_SNAPSHOT_WAIT=true`: **workflow proceeds with warning**
+
+**When to Adjust Timeout:**
+- Large databases (>100GB) may need longer timeout (e.g., 3600s)
+- If snapshots consistently timeout, check RDS performance or increase timeout
+
+**Emergency Override:**
+Only use `ALLOW_DEPLOY_WITHOUT_SNAPSHOT_WAIT=true` when:
+1. A critical hotfix must deploy immediately
+2. You accept the risk of no verified pre-migration backup
+3. You have verified recent automated snapshot exists
+
+```bash
+# Check for recent automated snapshots before using override
+aws rds describe-db-snapshots \
+  --db-instance-identifier saleor-platform-production-saleor \
+  --query 'DBSnapshots[?Status==`available`]|sort_by(@, &SnapshotCreateTime)[-1].[DBSnapshotIdentifier,SnapshotCreateTime]' \
+  --output table
+```
 
 ### Listing Snapshots
 
