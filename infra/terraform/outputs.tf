@@ -109,6 +109,22 @@ output "migrate_task_definition_arn" {
 }
 
 # =============================================================================
+# Migration Network Configuration
+# These outputs provide the values needed for ECS run-task network config.
+# Use these to set GitHub Actions variables for first-deploy-safe migrations.
+# =============================================================================
+
+output "ecs_task_subnets" {
+  description = "Comma-separated private subnet IDs for ECS task networking (for ECS_TASK_SUBNETS)"
+  value       = join(",", local.private_subnet_ids)
+}
+
+output "ecs_task_security_group" {
+  description = "Security group ID for ECS backend tasks (for ECS_TASK_SECURITY_GROUPS)"
+  value       = module.alb.ecs_backend_security_group_id
+}
+
+# =============================================================================
 # IAM
 # =============================================================================
 
