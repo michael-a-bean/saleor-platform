@@ -1,0 +1,6 @@
+{
+  "enabledPlugins": {
+    "local-review@agent37-skills": true,
+    "pr-review-toolkit@claude-plugins-official": true
+  }
+}
