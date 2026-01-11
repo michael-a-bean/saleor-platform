@@ -286,16 +286,30 @@ make localreview
 
 ### make validate
 
-Runs all validation checks in sequence:
+Runs all validation checks in sequence. **Does not require a local `.env` file.**
 
 | Check | Command | Expected Behavior |
 |-------|---------|-------------------|
+| Docker Config | `docker compose config` | Valid configuration |
 | Lint | `pnpm lint` | All linters pass |
 | Type Check | `tsc --noEmit` | No type errors |
 | Unit Tests | `pnpm test` | All tests pass |
 | Migration Check | See below | No pending migrations |
-| Docker Build | `docker compose config` | Valid configuration |
 | Local Review | `make localreview` | No HIGH findings |
+
+**Environment Handling:**
+- If `.env` exists: Uses it for docker-compose validation
+- If `.env` is missing: Falls back to `.env.example` for validation
+- This allows CI and fresh clones to run `make validate` without secrets
+
+### make validate-with-env
+
+Same as `make validate` but **requires** a properly configured `.env` file. Use this when you need to validate the full local development environment.
+
+```bash
+# Strict validation (fails if .env is missing or incomplete)
+make validate-with-env
+```
 
 ### make localreview
 
