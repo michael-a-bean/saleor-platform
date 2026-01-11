@@ -57,15 +57,18 @@ data "aws_iam_policy_document" "github_actions_assume" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # Restrict to specific repo and branch (hardened per GPT-5.2 review)
+    # Restrict to specific repo and branch (hardened per GPT-5.2 and Gemini 3 reviews)
+    # SECURITY: Using StringEquals (not StringLike) to prevent wildcard bypass
+    # Only exact branch match and environment-based claims are allowed
     condition {
-      test     = "StringLike"
+      test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
+        # Exact branch match for push-triggered workflows
         "repo:${var.github_org}/${var.github_repo}:ref:refs/heads/${var.github_branch}",
-        "repo:${var.github_org}/${var.github_repo}:environment:${var.environment}",
-        # Allow workflow_dispatch from the branch
-        "repo:${var.github_org}/${var.github_repo}:ref:refs/heads/${var.github_branch}:*"
+        # Environment-based claim for workflows using GitHub Environments
+        # This enforces GitHub Environment protection rules (required reviewers)
+        "repo:${var.github_org}/${var.github_repo}:environment:${var.environment}"
       ]
     }
   }
