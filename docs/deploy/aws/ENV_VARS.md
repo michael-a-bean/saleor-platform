@@ -260,3 +260,60 @@ ECS_TASK_SUBNETS="subnet-abc123,subnet-def456" \
 ECS_TASK_SECURITY_GROUPS="sg-abc123" \
 ./scripts/deploy/aws/run-migrations.sh staging django
 ```
+
+## Public URL Configuration
+
+These variables control the public-facing URLs used by applications. They support both custom domains (production) and ALB DNS fallback (staging without DNS).
+
+### GitHub Actions URL Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `STAGING_API_URL` | Yes | Base URL for staging API (e.g., `http://alb-dns` or `https://api.example.com`) |
+| `STAGING_STOREFRONT_URL` | Yes | Base URL for staging storefront |
+| `STAGING_DASHBOARD_URL` | Yes | Base URL for staging dashboard |
+| `PRODUCTION_API_URL` | Yes | Base URL for production API |
+| `PRODUCTION_STOREFRONT_URL` | Yes | Base URL for production storefront |
+| `PRODUCTION_DASHBOARD_URL` | Yes | Base URL for production dashboard |
+
+### Terraform URL Override Variables
+
+These variables are defined in `variables.tf` and can be set in `.tfvars` files:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `public_api_base_url` | (from domain_name) | Override API base URL |
+| `public_storefront_base_url` | (from domain_name) | Override storefront base URL |
+| `public_dashboard_base_url` | (from domain_name) | Override dashboard base URL |
+| `use_https_urls` | `true` | Use HTTPS in auto-generated URLs |
+
+### Staging Without Custom Domain
+
+For staging environments without DNS configured:
+
+1. Set `use_https_urls = false` in `staging.tfvars`
+2. After first deployment, get ALB DNS from Terraform output:
+   ```bash
+   terraform output alb_dns_name
+   ```
+3. Update GitHub Actions variables:
+   ```
+   STAGING_API_URL=http://saleor-platform-staging-alb-XXXXX.us-west-1.elb.amazonaws.com
+   STAGING_STOREFRONT_URL=http://saleor-platform-staging-alb-XXXXX.us-west-1.elb.amazonaws.com
+   STAGING_DASHBOARD_URL=http://saleor-platform-staging-alb-XXXXX.us-west-1.elb.amazonaws.com/dashboard
+   ```
+
+### URL Validation
+
+The deployment workflow includes URL validation to prevent deploying with unreachable URLs:
+
+```bash
+# Manual validation
+./scripts/deploy/aws/validate-urls.sh staging
+```
+
+This validates:
+- URL format is correct
+- DNS resolution succeeds (or ALB DNS is used)
+- Endpoints respond with expected status codes
+- GraphQL endpoint returns valid responses
