@@ -9,7 +9,7 @@ domain_name = "example.com"
 
 # VPC (create new or use existing)
 create_vpc         = true
-vpc_cidr           = "10.1.0.0/16"  # Different CIDR from staging
+vpc_cidr           = "10.1.0.0/16" # Different CIDR from staging
 availability_zones = ["us-west-2a", "us-west-2b"]
 
 # Database (production sizing)
@@ -42,8 +42,8 @@ storefront_memory        = 1024
 
 # Images - PIN BY DIGEST for production (GPT-5.2 recommendation)
 # Get digest: docker pull ghcr.io/saleor/saleor:3.22 && docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/saleor/saleor:3.22
-saleor_api_image       = "ghcr.io/saleor/saleor:3.22"  # Replace with @sha256:... in production
-saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.22.0"  # Replace with @sha256:...
+saleor_api_image       = "ghcr.io/saleor/saleor:3.22"             # Replace with @sha256:... in production
+saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.22.0" # Replace with @sha256:...
 
 # GitHub (update these)
 github_org    = "YOUR_GITHUB_ORG"
@@ -52,7 +52,7 @@ github_branch = "platform/main"
 
 # DNS
 create_acm_certificate = true
-route53_zone_id        = ""  # Set this if using Route53
+route53_zone_id        = "" # Set this if using Route53
 
 # Monitoring
 enable_container_insights = true

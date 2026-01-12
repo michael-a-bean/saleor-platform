@@ -88,6 +88,38 @@ variable "route53_zone_id" {
 }
 
 # =============================================================================
+# Public URL Configuration
+# =============================================================================
+# These variables allow overriding the auto-generated URLs based on domain_name.
+# Useful for staging environments where DNS is not configured yet.
+# When empty, URLs are generated from domain_name.
+# When set, these values are used directly.
+
+variable "public_api_base_url" {
+  description = "Override for public API base URL (e.g., http://alb-dns-name). When empty, uses https://api.{domain_name}"
+  type        = string
+  default     = ""
+}
+
+variable "public_storefront_base_url" {
+  description = "Override for public storefront base URL. When empty, uses https://www.{domain_name}"
+  type        = string
+  default     = ""
+}
+
+variable "public_dashboard_base_url" {
+  description = "Override for public dashboard base URL. When empty, uses https://dashboard.{domain_name}"
+  type        = string
+  default     = ""
+}
+
+variable "use_https_urls" {
+  description = "Whether to use HTTPS in generated URLs (set false for staging without TLS)"
+  type        = bool
+  default     = true
+}
+
+# =============================================================================
 # Database Configuration
 # =============================================================================
 

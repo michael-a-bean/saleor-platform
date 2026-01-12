@@ -143,18 +143,23 @@ output "ecs_task_execution_role_arn" {
 # =============================================================================
 
 output "api_url" {
-  description = "API URL"
-  value       = "https://api.${var.domain_name}"
+  description = "API URL (computed from overrides or domain_name)"
+  value       = local.public_api_base_url
 }
 
 output "storefront_url" {
-  description = "Storefront URL"
-  value       = "https://www.${var.domain_name}"
+  description = "Storefront URL (computed from overrides or domain_name)"
+  value       = local.public_storefront_base_url
 }
 
 output "dashboard_url" {
-  description = "Dashboard URL"
-  value       = "https://dashboard.${var.domain_name}"
+  description = "Dashboard URL (computed from overrides or domain_name)"
+  value       = local.public_dashboard_base_url
+}
+
+output "api_graphql_url" {
+  description = "Full API GraphQL endpoint URL"
+  value       = "${local.public_api_base_url}/graphql/"
 }
 
 # =============================================================================

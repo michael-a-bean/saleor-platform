@@ -20,6 +20,22 @@ variable "domain_name" {
   type        = string
 }
 
+# Public URLs (supports overrides for staging without DNS)
+variable "public_api_base_url" {
+  description = "Public API base URL (e.g., https://api.example.com or http://alb-dns)"
+  type        = string
+}
+
+variable "public_storefront_base_url" {
+  description = "Public storefront base URL"
+  type        = string
+}
+
+variable "public_dashboard_base_url" {
+  description = "Public dashboard base URL"
+  type        = string
+}
+
 # Network
 variable "private_subnet_ids" {
   description = "Private subnet IDs"
