@@ -72,8 +72,9 @@ storefront_cpu           = 256
 storefront_memory        = 512
 
 # Images (pin by digest in production, use tags in staging)
-saleor_api_image       = "ghcr.io/saleor/saleor:3.21"
-saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.21"
+# Updated 2026-01-12: Aligned to 3.22.x (API 3.22, Dashboard 3.22.24)
+saleor_api_image       = "ghcr.io/saleor/saleor:3.22"
+saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.22.24"
 
 # GitHub
 github_org    = "michael-a-bean"

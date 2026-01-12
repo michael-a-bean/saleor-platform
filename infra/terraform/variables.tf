@@ -253,9 +253,9 @@ variable "saleor_api_image" {
 }
 
 variable "saleor_dashboard_image" {
-  description = "Saleor Dashboard image with digest"
+  description = "Saleor Dashboard image (3.22.24 is latest patch for 3.22 series)"
   type        = string
-  default     = "ghcr.io/saleor/saleor-dashboard:3.22.0"
+  default     = "ghcr.io/saleor/saleor-dashboard:3.22.24"
 }
 
 variable "meilisearch_image" {
