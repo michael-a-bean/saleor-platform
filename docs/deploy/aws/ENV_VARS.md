@@ -59,7 +59,11 @@ Uses the same variables as API (shares configuration).
 
 | Variable | Source | Type | Description |
 |----------|--------|------|-------------|
-| `API_URI` | Plain | String | GraphQL endpoint URL |
+| `API_URL` | Runtime | String | GraphQL endpoint URL (e.g., `http://alb-dns/graphql/`) |
+
+> **Note:** The official Saleor Dashboard Docker image (3.22+) expects `API_URL` (not `API_URI`).
+> The container entrypoint script replaces this value at runtime via `/docker-entrypoint.d/50-replace-env-vars.sh`.
+> The URL must include the trailing `/graphql/` path.
 
 ### Stripe App (`stripe-app`)
 
