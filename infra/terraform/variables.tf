@@ -232,6 +232,12 @@ variable "meilisearch_image" {
   default     = "getmeili/meilisearch:v1.6"
 }
 
+variable "storefront_image_tag" {
+  description = "Storefront image tag (e.g., sha-abc1234 or v1.0.0)"
+  type        = string
+  default     = "sha-3f84f6b"
+}
+
 # =============================================================================
 # Monitoring and Logging
 # =============================================================================

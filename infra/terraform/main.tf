@@ -158,11 +158,11 @@ module "ecs" {
 
   saleor_api_image       = var.saleor_api_image
   saleor_dashboard_image = var.saleor_dashboard_image
-  storefront_image       = "${module.ecr.storefront_repository_url}:latest"  # Placeholder, updated by CI
+  storefront_image       = "${module.ecr.storefront_repository_url}:${var.storefront_image_tag}"
 
   ssm_path_prefix   = "/saleor/${var.environment}"
   media_bucket_name = module.s3.bucket_name
-  allowed_hosts     = "api.${var.domain_name},localhost"
+  allowed_hosts     = "api.${var.domain_name},localhost,${module.alb.alb_dns_name}"
   meilisearch_url   = "http://meilisearch.${local.name_prefix}.local:7700"
 
   api_desired_count        = var.api_desired_count

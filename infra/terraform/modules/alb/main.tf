@@ -3,7 +3,8 @@
 # Implements network segregation per Gemini review recommendations
 
 locals {
-  name_prefix = "${var.project_name}-${var.environment}"
+  name_prefix       = "${var.project_name}-${var.environment}"
+  short_name_prefix = "sp-${var.environment}"  # For resources with 32-char limit
 }
 
 # =============================================================================
@@ -195,7 +196,7 @@ resource "aws_lb_target_group" "api" {
 
 # Storefront Target Group
 resource "aws_lb_target_group" "storefront" {
-  name        = "${local.name_prefix}-storefront"
+  name        = "${local.short_name_prefix}-storefront"
   port        = 3000
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -219,7 +220,7 @@ resource "aws_lb_target_group" "storefront" {
 
 # Dashboard Target Group
 resource "aws_lb_target_group" "dashboard" {
-  name        = "${local.name_prefix}-dashboard"
+  name        = "${local.short_name_prefix}-dashboard"
   port        = 80
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -338,19 +339,31 @@ resource "aws_lb_target_group" "pos_app" {
 # Listeners
 # =============================================================================
 
-# HTTP Listener (redirect to HTTPS)
+# HTTP Listener
+# When certificate exists: redirect to HTTPS
+# When no certificate (staging): forward to storefront as default
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80
   protocol          = "HTTP"
 
-  default_action {
-    type = "redirect"
+  dynamic "default_action" {
+    for_each = var.certificate_arn != "" ? [1] : []
+    content {
+      type = "redirect"
+      redirect {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
+    }
+  }
 
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
+  dynamic "default_action" {
+    for_each = var.certificate_arn == "" ? [1] : []
+    content {
+      type             = "forward"
+      target_group_arn = aws_lb_target_group.storefront.arn
     }
   }
 }
@@ -528,6 +541,49 @@ resource "aws_lb_listener_rule" "storefront" {
   condition {
     host_header {
       values = ["www.${var.domain_name}", var.domain_name]
+    }
+  }
+}
+
+# =============================================================================
+# HTTP Listener Rules (for staging without certificate)
+# Uses path-based routing since no custom domains
+# =============================================================================
+
+# API routing on HTTP: /graphql/* and /health/*
+resource "aws_lb_listener_rule" "api_http" {
+  count = var.certificate_arn == "" ? 1 : 0
+
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.api.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/graphql/*", "/health/*", "/media/*"]
+    }
+  }
+}
+
+# Dashboard routing on HTTP: /dashboard/*
+resource "aws_lb_listener_rule" "dashboard_http" {
+  count = var.certificate_arn == "" ? 1 : 0
+
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 110
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.dashboard.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/dashboard/*"]
     }
   }
 }

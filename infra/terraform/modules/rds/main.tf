@@ -60,9 +60,11 @@ resource "aws_db_parameter_group" "main" {
   description = "PostgreSQL 15 parameters for ${local.name_prefix}"
 
   # Performance tuning parameters
+  # Static parameters require pending-reboot apply method
   parameter {
-    name  = "shared_preload_libraries"
-    value = "pg_stat_statements"
+    name         = "shared_preload_libraries"
+    value        = "pg_stat_statements"
+    apply_method = "pending-reboot"
   }
 
   parameter {
@@ -71,8 +73,9 @@ resource "aws_db_parameter_group" "main" {
   }
 
   parameter {
-    name  = "max_connections"
-    value = "200"
+    name         = "max_connections"
+    value        = "200"
+    apply_method = "pending-reboot"
   }
 
   tags = {

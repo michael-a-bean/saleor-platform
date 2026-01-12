@@ -91,11 +91,16 @@ resource "aws_ecs_task_definition" "api" {
         {
           name      = "CELERY_BROKER_URL"
           valueFrom = "${var.ssm_path_prefix}/api/CELERY_BROKER_URL"
+        },
+        {
+          name      = "RSA_PRIVATE_KEY"
+          valueFrom = "${var.ssm_path_prefix}/api/RSA_PRIVATE_KEY"
         }
       ]
       environment = [
         { name = "DEBUG", value = "false" },
         { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
+        { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts },
         { name = "DEFAULT_CHANNEL_SLUG", value = "webstore" },
         { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
         { name = "AWS_S3_REGION_NAME", value = var.aws_region },
@@ -159,10 +164,16 @@ resource "aws_ecs_task_definition" "worker" {
         {
           name      = "CELERY_BROKER_URL"
           valueFrom = "${var.ssm_path_prefix}/api/CELERY_BROKER_URL"
+        },
+        {
+          name      = "RSA_PRIVATE_KEY"
+          valueFrom = "${var.ssm_path_prefix}/api/RSA_PRIVATE_KEY"
         }
       ]
       environment = [
         { name = "DEBUG", value = "false" },
+        { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
+        { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts },
         { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
         { name = "AWS_S3_REGION_NAME", value = var.aws_region }
       ]
@@ -305,10 +316,8 @@ resource "aws_ecs_service" "api" {
     rollback = true
   }
 
-  deployment_configuration {
-    maximum_percent         = 200
-    minimum_healthy_percent = 100
-  }
+  deployment_maximum_percent         = 200
+  deployment_minimum_healthy_percent = 100
 
   tags = {
     Name    = "${local.name_prefix}-api"
@@ -443,10 +452,19 @@ resource "aws_ecs_task_definition" "migrate" {
         {
           name      = "DATABASE_URL"
           valueFrom = "${var.ssm_path_prefix}/api/DATABASE_URL"
+        },
+        {
+          name      = "RSA_PRIVATE_KEY"
+          valueFrom = "${var.ssm_path_prefix}/api/RSA_PRIVATE_KEY"
         }
       ]
       environment = [
-        { name = "DEBUG", value = "false" }
+        { name = "DEBUG", value = "false" },
+        { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
+        { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts },
+        { name = "DEFAULT_CHANNEL_SLUG", value = "webstore" },
+        { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
+        { name = "AWS_S3_REGION_NAME", value = var.aws_region }
       ]
       logConfiguration = {
         logDriver = "awslogs"
