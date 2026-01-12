@@ -104,7 +104,7 @@ resource "aws_ecs_task_definition" "api" {
         { name = "DEFAULT_CHANNEL_SLUG", value = "webstore" },
         { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
         { name = "AWS_S3_REGION_NAME", value = var.aws_region },
-        { name = "DASHBOARD_URL", value = "https://dashboard.${var.domain_name}/" },
+        { name = "DASHBOARD_URL", value = "${var.public_dashboard_base_url}/" },
         { name = "ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL", value = "false" }
       ]
       logConfiguration = {
@@ -148,7 +148,7 @@ resource "aws_ecs_task_definition" "worker" {
       image = var.saleor_api_image
       command = [
         "celery", "-A", "saleor", "--app=saleor.celeryconf:app",
-        "worker", "--loglevel=info", "-B",  # -B only for first worker
+        "worker", "--loglevel=info", "-B", # -B only for first worker
         "--concurrency=2"
       ]
       essential = true
@@ -218,9 +218,9 @@ resource "aws_ecs_task_definition" "storefront" {
       environment = [
         { name = "HOSTNAME", value = "0.0.0.0" },
         { name = "PORT", value = "3000" },
-        { name = "NEXT_PUBLIC_SALEOR_API_URL", value = "https://api.${var.domain_name}/graphql/" },
-        { name = "SALEOR_API_URL", value = "https://api.${var.domain_name}/graphql/" },
-        { name = "NEXT_PUBLIC_STOREFRONT_URL", value = "https://www.${var.domain_name}" },
+        { name = "NEXT_PUBLIC_SALEOR_API_URL", value = "${var.public_api_base_url}/graphql/" },
+        { name = "SALEOR_API_URL", value = "${var.public_api_base_url}/graphql/" },
+        { name = "NEXT_PUBLIC_STOREFRONT_URL", value = var.public_storefront_base_url },
         { name = "NEXT_PUBLIC_DEFAULT_CHANNEL", value = "webstore" },
         { name = "MEILISEARCH_URL", value = var.meilisearch_url }
       ]
@@ -269,7 +269,7 @@ resource "aws_ecs_task_definition" "dashboard" {
       ]
       essential = true
       environment = [
-        { name = "API_URI", value = "https://api.${var.domain_name}/graphql/" }
+        { name = "API_URI", value = "${var.public_api_base_url}/graphql/" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -325,7 +325,7 @@ resource "aws_ecs_service" "api" {
   }
 
   lifecycle {
-    ignore_changes = [task_definition]  # Allow CI/CD to update
+    ignore_changes = [task_definition] # Allow CI/CD to update
   }
 }
 
@@ -440,9 +440,9 @@ resource "aws_ecs_task_definition" "migrate" {
 
   container_definitions = jsonencode([
     {
-      name  = "migrate"
-      image = var.saleor_api_image
-      command = ["python", "manage.py", "migrate", "--noinput"]
+      name      = "migrate"
+      image     = var.saleor_api_image
+      command   = ["python", "manage.py", "migrate", "--noinput"]
       essential = true
       secrets = [
         {

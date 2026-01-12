@@ -114,10 +114,10 @@ resource "aws_elasticache_replication_group" "cache" {
   transit_encryption_enabled = var.transit_encryption_enabled
   auth_token                 = var.transit_encryption_enabled ? var.auth_token : null
 
-  engine               = "redis"
-  engine_version       = "7.0"
-  maintenance_window   = "sun:05:00-sun:06:00"
-  snapshot_window      = "03:00-04:00"
+  engine                   = "redis"
+  engine_version           = "7.0"
+  maintenance_window       = "sun:05:00-sun:06:00"
+  snapshot_window          = "03:00-04:00"
   snapshot_retention_limit = 7
 
   apply_immediately = false
@@ -153,10 +153,10 @@ resource "aws_elasticache_replication_group" "broker" {
   transit_encryption_enabled = var.transit_encryption_enabled
   auth_token                 = var.transit_encryption_enabled ? var.broker_auth_token : null
 
-  engine               = "redis"
-  engine_version       = "7.0"
-  maintenance_window   = "sun:05:00-sun:06:00"
-  snapshot_window      = "03:00-04:00"
+  engine                   = "redis"
+  engine_version           = "7.0"
+  maintenance_window       = "sun:05:00-sun:06:00"
+  snapshot_window          = "03:00-04:00"
   snapshot_retention_limit = 7
 
   apply_immediately = false

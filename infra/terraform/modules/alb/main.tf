@@ -4,7 +4,7 @@
 
 locals {
   name_prefix       = "${var.project_name}-${var.environment}"
-  short_name_prefix = "sp-${var.environment}"  # For resources with 32-char limit
+  short_name_prefix = "sp-${var.environment}" # For resources with 32-char limit
 }
 
 # =============================================================================

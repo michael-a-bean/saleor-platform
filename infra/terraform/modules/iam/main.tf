@@ -122,7 +122,7 @@ data "aws_iam_policy_document" "github_actions_ecs" {
       "ecs:DescribeTaskDefinition",
       "ecs:DeregisterTaskDefinition"
     ]
-    resources = ["*"]  # Task definitions don't support resource-level permissions for register
+    resources = ["*"] # Task definitions don't support resource-level permissions for register
   }
 
   statement {

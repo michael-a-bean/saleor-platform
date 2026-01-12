@@ -4,8 +4,39 @@
 environment = "staging"
 aws_region  = "us-west-1"
 
-# Domain (placeholder - using ALB defaults for staging, no custom DNS)
+# Domain (placeholder - custom domain not yet configured)
 domain_name = "staging.shuffleandcut.com"
+
+# =============================================================================
+# Public URL Configuration (TWO-PHASE DEPLOYMENT)
+# =============================================================================
+#
+# IMPORTANT: Staging uses ALB DNS directly since custom domain DNS is not configured.
+# This requires a two-phase deployment:
+#
+# PHASE 1 (First Deploy):
+#   1. Run: terraform apply -var-file=environments/staging.tfvars
+#   2. Note the ALB DNS from output: terraform output alb_dns_name
+#   3. Services will start but may have connectivity issues until Phase 2
+#
+# PHASE 2 (Configure URLs):
+#   1. Uncomment and set the public_*_base_url variables below with the ALB DNS
+#   2. Update GitHub Actions variables (STAGING_API_URL, STAGING_STOREFRONT_URL)
+#   3. Run: terraform apply -var-file=environments/staging.tfvars
+#   4. Redeploy services to pick up correct URLs
+#
+# Once custom domain is configured with DNS and TLS:
+#   - Set create_acm_certificate = true
+#   - Set route53_zone_id to your hosted zone ID
+#   - Remove the public_*_base_url overrides (will use domain_name)
+#   - Set use_https_urls = true
+#
+use_https_urls = false
+
+# Uncomment after first deploy and set to actual ALB DNS name from terraform output:
+# public_api_base_url = "http://saleor-platform-staging-alb-XXXXXXXXX.us-west-1.elb.amazonaws.com"
+# public_storefront_base_url = "http://saleor-platform-staging-alb-XXXXXXXXX.us-west-1.elb.amazonaws.com"
+# public_dashboard_base_url = "http://saleor-platform-staging-alb-XXXXXXXXX.us-west-1.elb.amazonaws.com/dashboard"
 
 # VPC (create new for staging)
 create_vpc         = true

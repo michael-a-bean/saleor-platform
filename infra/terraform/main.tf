@@ -6,6 +6,27 @@ data "aws_caller_identity" "current" {}
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
   account_id  = data.aws_caller_identity.current.account_id
+
+  # URL scheme based on TLS availability
+  url_scheme = var.use_https_urls ? "https" : "http"
+
+  # Computed public URLs with override support
+  # When override is empty, generate from domain_name
+  # When override is set, use it directly
+  public_api_base_url = (
+    var.public_api_base_url != "" ? var.public_api_base_url :
+    "${local.url_scheme}://api.${var.domain_name}"
+  )
+
+  public_storefront_base_url = (
+    var.public_storefront_base_url != "" ? var.public_storefront_base_url :
+    "${local.url_scheme}://www.${var.domain_name}"
+  )
+
+  public_dashboard_base_url = (
+    var.public_dashboard_base_url != "" ? var.public_dashboard_base_url :
+    "${local.url_scheme}://dashboard.${var.domain_name}"
+  )
 }
 
 # =============================================================================
@@ -16,19 +37,19 @@ module "vpc" {
   source = "./modules/vpc"
   count  = var.create_vpc ? 1 : 0
 
-  project_name       = var.project_name
-  environment        = var.environment
-  aws_region         = var.aws_region
-  vpc_cidr           = var.vpc_cidr
-  availability_zones = var.availability_zones
-  single_nat_gateway = var.environment == "staging"
+  project_name         = var.project_name
+  environment          = var.environment
+  aws_region           = var.aws_region
+  vpc_cidr             = var.vpc_cidr
+  availability_zones   = var.availability_zones
+  single_nat_gateway   = var.environment == "staging"
   create_vpc_endpoints = true
 }
 
 locals {
-  vpc_id              = var.create_vpc ? module.vpc[0].vpc_id : var.existing_vpc_id
-  public_subnet_ids   = var.create_vpc ? module.vpc[0].public_subnet_ids : var.existing_public_subnet_ids
-  private_subnet_ids  = var.create_vpc ? module.vpc[0].private_subnet_ids : var.existing_private_subnet_ids
+  vpc_id             = var.create_vpc ? module.vpc[0].vpc_id : var.existing_vpc_id
+  public_subnet_ids  = var.create_vpc ? module.vpc[0].public_subnet_ids : var.existing_public_subnet_ids
+  private_subnet_ids = var.create_vpc ? module.vpc[0].private_subnet_ids : var.existing_private_subnet_ids
 }
 
 # =============================================================================
@@ -97,13 +118,13 @@ module "rds" {
   private_subnet_ids            = local.private_subnet_ids
   ecs_backend_security_group_id = module.alb.ecs_backend_security_group_id
 
-  instance_class         = var.db_instance_class
-  allocated_storage      = var.db_allocated_storage
-  multi_az               = var.db_multi_az
-  backup_retention_days  = var.db_backup_retention_days
-  deletion_protection    = var.db_deletion_protection
-  skip_final_snapshot    = var.environment == "staging"
-  master_password        = random_password.db_master.result
+  instance_class        = var.db_instance_class
+  allocated_storage     = var.db_allocated_storage
+  multi_az              = var.db_multi_az
+  backup_retention_days = var.db_backup_retention_days
+  deletion_protection   = var.db_deletion_protection
+  skip_final_snapshot   = var.environment == "staging"
+  master_password       = random_password.db_master.result
 
   create_separate_inventory_db = var.create_separate_inventory_db
   inventory_password           = var.create_separate_inventory_db ? random_password.db_master.result : ""
@@ -142,6 +163,11 @@ module "ecs" {
   environment  = var.environment
   aws_region   = var.aws_region
   domain_name  = var.domain_name
+
+  # Public URLs for applications (supports overrides for staging without DNS)
+  public_api_base_url        = local.public_api_base_url
+  public_storefront_base_url = local.public_storefront_base_url
+  public_dashboard_base_url  = local.public_dashboard_base_url
 
   private_subnet_ids             = local.private_subnet_ids
   ecs_backend_security_group_id  = module.alb.ecs_backend_security_group_id

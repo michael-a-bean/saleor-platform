@@ -69,7 +69,7 @@ resource "aws_db_parameter_group" "main" {
 
   parameter {
     name  = "log_min_duration_statement"
-    value = "1000"  # Log queries taking more than 1s
+    value = "1000" # Log queries taking more than 1s
   }
 
   parameter {
@@ -145,7 +145,7 @@ resource "aws_db_instance" "main" {
   }
 
   lifecycle {
-    prevent_destroy = false  # Set to true in production
+    prevent_destroy = false # Set to true in production
   }
 }
 
