@@ -59,6 +59,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "media" {
     id     = "transition-to-ia"
     status = "Enabled"
 
+    filter {}
+
     transition {
       days          = 90
       storage_class = "STANDARD_IA"
@@ -69,6 +71,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "media" {
     id     = "transition-old-to-glacier"
     status = "Enabled"
 
+    filter {}
+
     transition {
       days          = 365
       storage_class = "GLACIER"
@@ -78,6 +82,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "media" {
   rule {
     id     = "cleanup-old-versions"
     status = "Enabled"
+
+    filter {}
 
     noncurrent_version_transition {
       noncurrent_days = 30

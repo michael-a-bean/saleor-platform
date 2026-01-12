@@ -1,6 +1,8 @@
-# Manual Steps for Michael
+# Manual Steps for AWS Deployment
 
 This document lists all manual steps required to complete the AWS ECS/Fargate deployment that cannot be done from the repo side due to AWS account access or sudo requirements.
+
+**Last Updated**: 2026-01-11 (after successful staging deployment)
 
 ---
 
@@ -17,11 +19,26 @@ Before starting, review these documents for context:
 
 ## Prerequisites Checklist
 
-- [ ] AWS Account with admin access
-- [ ] AWS CLI installed (`aws --version` should show 2.x)
-- [ ] Terraform installed (version 1.5+)
-- [ ] jq installed for JSON processing
-- [ ] GitHub repository admin access
+- [x] AWS Account with admin access
+- [x] AWS CLI installed (`aws --version` should show 2.x)
+- [x] Terraform installed (version 1.5+)
+- [ ] jq installed for JSON processing (optional)
+- [x] GitHub repository admin access
+- [x] Docker installed for building images
+
+---
+
+## Staging Deployment Status
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Terraform State Backend | ✅ Complete | S3 + DynamoDB |
+| GitHub OIDC | ✅ Complete | Provider imported |
+| Infrastructure | ✅ Complete | VPC, RDS, Redis, ECS, ALB |
+| Secrets (SSM) | ✅ Complete | All secrets stored |
+| Database Migrations | ✅ Complete | All migrations applied |
+| ECS Services | ✅ Running | API, Worker, Storefront, Dashboard |
+| DNS/TLS | ⏳ Pending | Using ALB defaults for now |
 
 ---
 
@@ -34,7 +51,7 @@ The Terraform state must be stored remotely in S3 with DynamoDB locking.
 ```bash
 # Set your account ID
 export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-export AWS_REGION=us-west-2
+export AWS_REGION=us-west-1  # IMPORTANT: We use us-west-1
 
 # Create S3 bucket for state
 aws s3api create-bucket \
@@ -73,27 +90,21 @@ aws dynamodb create-table \
   --region ${AWS_REGION}
 ```
 
+**Staging Values (Deployed 2026-01-11):**
+- Bucket: `saleor-platform-tfstate-546464732019`
+- DynamoDB Table: `saleor-platform-tfstate-lock`
+- Region: `us-west-1`
+
 ### 1.2 Configure Terraform Backend
 
-```bash
-cd infra/terraform
+Create `infra/terraform/backend.tf`:
 
-# Copy backend template and edit
-cp backend.tf.example backend.tf
-
-# Edit backend.tf with your values:
-# - Replace ACCOUNT_ID with your AWS account ID
-# - Replace ENV with 'staging' or 'production'
-# - Verify region is correct
-```
-
-**backend.tf for staging:**
 ```hcl
 terraform {
   backend "s3" {
-    bucket         = "saleor-platform-tfstate-YOUR_ACCOUNT_ID"
+    bucket         = "saleor-platform-tfstate-546464732019"
     key            = "staging/terraform.tfstate"
-    region         = "us-west-2"
+    region         = "us-west-1"
     encrypt        = true
     dynamodb_table = "saleor-platform-tfstate-lock"
   }
@@ -106,10 +117,19 @@ AWS needs to trust GitHub Actions for OIDC authentication.
 
 ```bash
 # Create OIDC provider (only needed once per account)
+# NOTE: If provider already exists, import it into Terraform instead
 aws iam create-open-id-connect-provider \
   --url https://token.actions.githubusercontent.com \
   --client-id-list sts.amazonaws.com \
   --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
+```
+
+**If provider already exists:**
+```bash
+# Import into Terraform
+cd infra/terraform
+terraform import module.iam.aws_iam_openid_connect_provider.github \
+  arn:aws:iam::546464732019:oidc-provider/token.actions.githubusercontent.com
 ```
 
 ---
@@ -118,16 +138,27 @@ aws iam create-open-id-connect-provider \
 
 ### 2.1 Update Environment Variables
 
-Edit the tfvars files with your specific values:
+Edit `infra/terraform/environments/staging.tfvars`:
 
-```bash
-# Edit staging configuration
-vi infra/terraform/environments/staging.tfvars
+```hcl
+# Core settings
+environment = "staging"
+aws_region  = "us-west-1"
 
-# Update these values:
-# - domain_name = "staging.yourdomain.com"
-# - github_org = "your-github-org"
-# - route53_zone_id = "Z0123456789ABC" (if using Route53)
+# Domain (using ALB defaults until DNS is configured)
+domain_name            = "staging.shuffleandcut.com"
+create_acm_certificate = false  # No HTTPS for initial staging
+
+# Availability zones
+availability_zones = ["us-west-1a", "us-west-1b"]
+
+# GitHub (for OIDC)
+github_org    = "michael-a-bean"
+github_repo   = "saleor-platform"
+
+# Images - IMPORTANT: Use 3.21, not 3.22 (3.22 doesn't exist!)
+saleor_api_image       = "ghcr.io/saleor/saleor:3.21"
+saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.21"
 ```
 
 ### 2.2 Deploy Staging Infrastructure
@@ -159,71 +190,38 @@ terraform apply staging.tfplan
 
 ### 2.3 Capture Terraform Outputs
 
-After `terraform apply`, capture these outputs for GitHub configuration:
+**Staging Outputs (2026-01-11):**
 
-```bash
-# Save all outputs for reference
-terraform output > staging-outputs.txt
-
-# Key outputs to note:
-# - alb_dns_name: ALB URL before DNS setup
-# - rds_endpoint: Database endpoint
-# - redis_endpoint: Cache endpoint
-# - github_actions_role_arn: Role for CI/CD
-# - ecr_repository_urls: Image registry URLs
-
-# CRITICAL: Capture migration network config for GitHub Actions
-# These are required for first-deploy-safe migrations
-echo "=== Migration Network Configuration ==="
-echo "STAGING_ECS_TASK_SUBNETS=$(terraform output -raw ecs_task_subnets)"
-echo "STAGING_ECS_TASK_SECURITY_GROUPS=$(terraform output -raw ecs_task_security_group)"
-```
-
-**Important**: The `ecs_task_subnets` and `ecs_task_security_group` outputs are required for migrations to run before ECS services exist. You must set these as GitHub repository variables (see Phase 5).
+| Output | Value |
+|--------|-------|
+| ALB DNS | `saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com` |
+| RDS Endpoint | `saleor-platform-staging-saleor.ct8eqa82m5c9.us-west-1.rds.amazonaws.com:5432` |
+| Redis Endpoint | `saleor-platform-staging-cache.kybrvw.ng.0001.usw1.cache.amazonaws.com` |
+| ECS Cluster | `saleor-platform-staging` |
+| VPC ID | `vpc-03bec79de659bddf7` |
+| ECS Task Subnets | `subnet-0049e63c14fbb3825,subnet-0f12843b826424978` |
+| ECS Task Security Group | `sg-0c35fbd209ae520f7` |
 
 ---
 
 ## Phase 3: DNS and TLS Setup
 
-### 3.1 Route53 Setup (If Using Route53)
+### 3.1 Staging Without Custom Domain
 
-If you have a Route53 hosted zone:
+For initial staging, we use the ALB DNS name directly:
 
-```bash
-# Get your hosted zone ID
-aws route53 list-hosted-zones
+- **Storefront**: http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/
+- **Dashboard**: http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/dashboard/
+- **API**: http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/graphql/
 
-# The Terraform config will create:
-# - api.staging.yourdomain.com -> ALB
-# - www.staging.yourdomain.com -> ALB
-# - dashboard.staging.yourdomain.com -> ALB
-# - apps.staging.yourdomain.com -> ALB
-```
+### 3.2 Production Domain Setup (When Ready)
 
-### 3.2 Manual DNS Setup (If Not Using Route53)
+When `shuffleandcut.com` is available:
 
-If managing DNS elsewhere, create these CNAME records:
-
-| Record | Type | Value |
-|--------|------|-------|
-| api.staging.yourdomain.com | CNAME | <alb_dns_name from outputs> |
-| www.staging.yourdomain.com | CNAME | <alb_dns_name from outputs> |
-| dashboard.staging.yourdomain.com | CNAME | <alb_dns_name from outputs> |
-| apps.staging.yourdomain.com | CNAME | <alb_dns_name from outputs> |
-
-### 3.3 ACM Certificate Validation
-
-If ACM certificate was created, validate it:
-
-```bash
-# Get certificate validation records
-aws acm describe-certificate \
-  --certificate-arn <certificate_arn_from_outputs> \
-  --query 'Certificate.DomainValidationOptions'
-
-# Create DNS validation records (if not using Route53)
-# Add CNAME records as shown in the output
-```
+1. Create ACM certificate in us-west-1
+2. Add DNS records in Route53/external DNS
+3. Update `create_acm_certificate = true` in tfvars
+4. Re-apply Terraform
 
 ---
 
@@ -236,301 +234,366 @@ aws acm describe-certificate \
 DJANGO_SECRET=$(openssl rand -hex 32)
 echo "Django Secret Key: ${DJANGO_SECRET}"
 
-# Generate app secret keys
-STRIPE_APP_SECRET=$(openssl rand -hex 32)
-INVENTORY_OPS_SECRET=$(openssl rand -hex 32)
-BUYLIST_SECRET=$(openssl rand -hex 32)
-POS_SECRET=$(openssl rand -hex 32)
+# Generate RSA private key for JWT (REQUIRED when DEBUG=False)
+RSA_PRIVATE_KEY=$(openssl genrsa 2048 2>/dev/null)
+echo "RSA Key generated"
+
+# Generate RDS password
+RDS_PASSWORD=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 24)
+echo "RDS Password: ${RDS_PASSWORD}"
 ```
 
 ### 4.2 Create SSM Parameters
 
+**CRITICAL: All these secrets are required for Saleor to start in production mode (DEBUG=False)**
+
 ```bash
-# Get database password from Terraform
-# (or retrieve from AWS Console -> RDS -> Modify -> Show password)
-DB_PASSWORD="<from_terraform_or_console>"
-
-# Get endpoints from Terraform outputs
-RDS_ENDPOINT=$(terraform output -raw rds_endpoint)
-REDIS_ENDPOINT=$(terraform output -raw redis_endpoint)
-
-# Create API secrets
-aws ssm put-parameter \
+# Core API secrets
+aws ssm put-parameter --region us-west-1 \
   --name "/saleor/staging/api/SECRET_KEY" \
   --type "SecureString" \
-  --value "${DJANGO_SECRET}"
+  --value "${DJANGO_SECRET}" \
+  --overwrite
 
-aws ssm put-parameter \
+aws ssm put-parameter --region us-west-1 \
   --name "/saleor/staging/api/DATABASE_URL" \
   --type "SecureString" \
-  --value "postgresql://saleor:${DB_PASSWORD}@${RDS_ENDPOINT}/saleor"
+  --value "postgresql://saleor:${RDS_PASSWORD}@saleor-platform-staging-saleor.ct8eqa82m5c9.us-west-1.rds.amazonaws.com:5432/saleor" \
+  --overwrite
 
-aws ssm put-parameter \
+aws ssm put-parameter --region us-west-1 \
   --name "/saleor/staging/api/CELERY_BROKER_URL" \
   --type "SecureString" \
-  --value "redis://${REDIS_ENDPOINT}:6379/1"
+  --value "redis://saleor-platform-staging-cache.kybrvw.ng.0001.usw1.cache.amazonaws.com:6379/1" \
+  --overwrite
 
-# Create app secrets
-aws ssm put-parameter \
-  --name "/saleor/staging/stripe-app/SECRET_KEY" \
+# RSA Private Key for JWT (CRITICAL - required when DEBUG=False)
+aws ssm put-parameter --region us-west-1 \
+  --name "/saleor/staging/api/RSA_PRIVATE_KEY" \
   --type "SecureString" \
-  --value "${STRIPE_APP_SECRET}"
-
-aws ssm put-parameter \
-  --name "/saleor/staging/inventory-ops-app/SECRET_KEY" \
-  --type "SecureString" \
-  --value "${INVENTORY_OPS_SECRET}"
-
-aws ssm put-parameter \
-  --name "/saleor/staging/inventory-ops-app/DATABASE_URL" \
-  --type "SecureString" \
-  --value "postgresql://saleor:${DB_PASSWORD}@${RDS_ENDPOINT}/inventory_ops"
-
-aws ssm put-parameter \
-  --name "/saleor/staging/buylist-app/SECRET_KEY" \
-  --type "SecureString" \
-  --value "${BUYLIST_SECRET}"
-
-aws ssm put-parameter \
-  --name "/saleor/staging/buylist-app/DATABASE_URL" \
-  --type "SecureString" \
-  --value "postgresql://saleor:${DB_PASSWORD}@${RDS_ENDPOINT}/inventory_ops"
-
-aws ssm put-parameter \
-  --name "/saleor/staging/pos-app/SECRET_KEY" \
-  --type "SecureString" \
-  --value "${POS_SECRET}"
-
-aws ssm put-parameter \
-  --name "/saleor/staging/pos-app/DATABASE_URL" \
-  --type "SecureString" \
-  --value "postgresql://saleor:${DB_PASSWORD}@${RDS_ENDPOINT}/inventory_ops"
+  --value "${RSA_PRIVATE_KEY}" \
+  --overwrite
 ```
 
-### 4.3 Create inventory_ops Database
+### 4.3 Update RDS Password (If Changed)
 
-Connect to RDS and create the inventory_ops database:
+If you generated a new password, update RDS:
 
 ```bash
-# Install psql if needed (on your local machine)
-# On macOS: brew install postgresql
-# On Ubuntu: sudo apt install postgresql-client
-
-# Get RDS endpoint
-RDS_ENDPOINT=$(terraform output -raw rds_endpoint | cut -d: -f1)
-
-# Connect to RDS (you may need to temporarily allow your IP in security group)
-psql -h ${RDS_ENDPOINT} -U saleor -d saleor
-
-# In psql:
-CREATE DATABASE inventory_ops;
-\q
+aws rds modify-db-instance \
+  --region us-west-1 \
+  --db-instance-identifier saleor-platform-staging-saleor \
+  --master-user-password "${RDS_PASSWORD}" \
+  --apply-immediately
 ```
 
 ---
 
-## Phase 5: GitHub Configuration
+## Phase 5: Build and Push Storefront Image
 
-### 5.1 Create GitHub Environments
+The storefront requires a custom build because it needs GraphQL schema at build time.
 
-In your GitHub repository:
-
-1. Go to **Settings** → **Environments**
-2. Create `staging` environment
-3. Create `production` environment
-   - Add **Required reviewers** (select approvers)
-   - Optionally add **Wait timer** for cooldown
-
-### 5.2 Set Repository Variables
-
-Go to **Settings** → **Secrets and variables** → **Actions** → **Variables**:
-
-| Variable | Value | Notes |
-|----------|-------|-------|
-| AWS_ACCOUNT_ID | `123456789012` | Your account ID |
-| AWS_REGION | `us-west-2` | |
-| STAGING_API_URL | `https://api.staging.yourdomain.com` | |
-| STAGING_STOREFRONT_URL | `https://www.staging.yourdomain.com` | |
-| STAGING_DASHBOARD_URL | `https://dashboard.staging.yourdomain.com` | |
-| STAGING_ECS_TASK_SUBNETS | `subnet-xxx,subnet-yyy` | From `terraform output ecs_task_subnets` |
-| STAGING_ECS_TASK_SECURITY_GROUPS | `sg-xxx` | From `terraform output ecs_task_security_group` |
-| PRODUCTION_API_URL | `https://api.yourdomain.com` | |
-| PRODUCTION_STOREFRONT_URL | `https://www.yourdomain.com` | |
-| PRODUCTION_DASHBOARD_URL | `https://dashboard.yourdomain.com` | |
-| PRODUCTION_ECS_TASK_SUBNETS | `subnet-xxx,subnet-yyy` | From production terraform output |
-| PRODUCTION_ECS_TASK_SECURITY_GROUPS | `sg-xxx` | From production terraform output |
-
-**Migration Network Configuration** (CRITICAL for first deploy):
-
-The `*_ECS_TASK_SUBNETS` and `*_ECS_TASK_SECURITY_GROUPS` variables are **required** for database migrations. Without these, the first deployment will fail because migrations cannot run before ECS services exist.
+### 5.1 Generate Schema File
 
 ```bash
-# Get values from Terraform after apply:
-cd infra/terraform
-terraform output ecs_task_subnets        # Copy to STAGING_ECS_TASK_SUBNETS
-terraform output ecs_task_security_group # Copy to STAGING_ECS_TASK_SECURITY_GROUPS
+cd /path/to/saleor-platform/storefront
+
+# Generate schema from local running API
+bunx get-graphql-schema http://localhost:8000/graphql/ > schema.graphql
 ```
 
-### 5.3 Verify OIDC Role
-
-Ensure the GitHub Actions role was created correctly:
+### 5.2 Build and Push Image
 
 ```bash
-# Get role ARN from Terraform
-terraform output github_actions_role_arn
+# Login to ECR
+aws ecr get-login-password --region us-west-1 | \
+  docker login --username AWS --password-stdin 546464732019.dkr.ecr.us-west-1.amazonaws.com
 
-# Verify trust policy
-aws iam get-role \
-  --role-name saleor-platform-staging-github-actions-deploy \
-  --query 'Role.AssumeRolePolicyDocument'
+# Get git SHA for image tag
+GIT_SHA=$(git rev-parse --short HEAD)
+
+# Build with staging URLs
+docker build \
+  --build-arg NEXT_PUBLIC_SALEOR_API_URL=http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/graphql/ \
+  --build-arg NEXT_PUBLIC_STOREFRONT_URL=http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com \
+  --build-arg NEXT_PUBLIC_DEFAULT_CHANNEL=default-channel \
+  -t 546464732019.dkr.ecr.us-west-1.amazonaws.com/saleor-platform/storefront:sha-${GIT_SHA} \
+  .
+
+# Push to ECR
+docker push 546464732019.dkr.ecr.us-west-1.amazonaws.com/saleor-platform/storefront:sha-${GIT_SHA}
+```
+
+### 5.3 Update Terraform with Image Tag
+
+In `variables.tf`, update or add:
+
+```hcl
+variable "storefront_image_tag" {
+  description = "Storefront image tag"
+  type        = string
+  default     = "sha-3f84f6b"  # Update with your SHA
+}
 ```
 
 ---
 
-## Phase 6: First Deployment
+## Phase 6: Run Database Migrations
 
-### 6.1 Trigger Staging Deployment
-
-1. Push to `platform/main` branch OR
-2. Go to **Actions** → **Deploy to Staging** → **Run workflow**
-
-### 6.2 Monitor Deployment
-
-1. Watch GitHub Actions progress
-2. Check CloudWatch Logs:
-   ```bash
-   aws logs tail /ecs/saleor-platform-staging/api --follow
-   ```
-3. Check ECS service status:
-   ```bash
-   aws ecs describe-services \
-     --cluster saleor-platform-staging \
-     --services api worker storefront dashboard
-   ```
-
-### 6.3 Verify Deployment
+### 6.1 Run Migration Task
 
 ```bash
-# Check API health
-curl https://api.staging.yourdomain.com/health/
-
-# Check GraphQL
-curl -X POST https://api.staging.yourdomain.com/graphql/ \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ channels { slug } }"}'
-
-# Check storefront
-curl https://www.staging.yourdomain.com/api/health
-```
-
----
-
-## Phase 7: Rollback Test (Non-Destructive)
-
-Verify rollback procedures work before relying on them in production.
-
-### 7.1 Test Manual Rollback
-
-```bash
-# Simulate rollback for staging API service
-# This reverts to the previous task definition revision
-
-./scripts/deploy/aws/rollback.sh staging api
-
-# Verify the service rolls back
-aws ecs describe-services \
+aws ecs run-task \
+  --region us-west-1 \
   --cluster saleor-platform-staging \
-  --services api \
-  --query 'services[0].taskDefinition'
-
-# Should show previous revision number
+  --task-definition saleor-platform-staging-migrate \
+  --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[subnet-0049e63c14fbb3825,subnet-0f12843b826424978],securityGroups=[sg-0c35fbd209ae520f7],assignPublicIp=DISABLED}"
 ```
 
-### 7.2 Verify Rollback Completes
+### 6.2 Monitor Migration
 
 ```bash
-# Wait for service stability
+# Wait for task to complete
+TASK_ARN="<task-arn-from-above>"
+aws ecs wait tasks-stopped --region us-west-1 --cluster saleor-platform-staging --tasks "$TASK_ARN"
+
+# Check result
+aws ecs describe-tasks --region us-west-1 --cluster saleor-platform-staging --tasks "$TASK_ARN" \
+  --query 'tasks[0].containers[0].exitCode'
+# Should return: 0
+```
+
+---
+
+## Phase 7: Start ECS Services
+
+### 7.1 Update Services to Latest Task Definitions
+
+After Terraform changes, ECS services may not automatically use new task definitions:
+
+```bash
+for service in api worker dashboard storefront; do
+  LATEST_DEF=$(aws ecs list-task-definitions --region us-west-1 \
+    --family-prefix "saleor-platform-staging-$service" \
+    --sort DESC --max-items 1 \
+    --query 'taskDefinitionArns[0]' --output text)
+
+  echo "Updating $service to $LATEST_DEF"
+
+  aws ecs update-service \
+    --region us-west-1 \
+    --cluster saleor-platform-staging \
+    --service $service \
+    --task-definition "$LATEST_DEF" \
+    --force-new-deployment
+done
+```
+
+### 7.2 Wait for Services to Stabilize
+
+```bash
 aws ecs wait services-stable \
+  --region us-west-1 \
   --cluster saleor-platform-staging \
-  --services api
-
-# Verify API still works
-curl https://api.staging.yourdomain.com/health/
+  --services api worker storefront dashboard
 ```
 
-### 7.3 Re-deploy to Latest
+---
 
-After testing rollback, re-deploy to latest by triggering the workflow again or running:
+## Phase 8: Verification
+
+### 8.1 Check Service Status
 
 ```bash
-./scripts/deploy/aws/deploy-service.sh staging api <latest-sha>
+aws ecs describe-services --region us-west-1 \
+  --cluster saleor-platform-staging \
+  --services api dashboard storefront worker \
+  --query 'services[*].{name:serviceName,running:runningCount,desired:desiredCount}' \
+  --output table
 ```
 
-**Note**: Rollback does NOT affect database migrations. If a migration was destructive, database rollback requires restoring from the pre-migration snapshot.
+Expected output:
+```
++---------+--------------+----------+
+| desired |    name      | running  |
++---------+--------------+----------+
+|  1      |  api         |  1       |
+|  1      |  dashboard   |  1       |
+|  1      |  storefront  |  1       |
+|  1      |  worker      |  1       |
++---------+--------------+----------+
+```
 
----
+### 8.2 Test Endpoints
 
-## Phase 8: Production Setup
+```bash
+ALB_URL="http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com"
 
-Repeat Phases 2-6 with production configurations:
+# Health check
+curl -s "$ALB_URL/health/"
+# Should return empty 200
 
-1. Update `infra/terraform/environments/production.tfvars`
-2. Create separate backend.tf for production state
-3. Run `terraform apply -var-file=environments/production.tfvars`
-4. Create production SSM parameters
-5. Verify GitHub production environment reviewers
-6. Test production deployment workflow
+# GraphQL test
+curl -s "$ALB_URL/graphql/" \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "{ shop { name } }"}'
+# Should return: {"data": {"shop": {"name": "Saleor e-commerce"}}}
 
----
-
-## Verification Checklist
-
-After setup is complete:
-
-- [ ] Terraform state stored in S3
-- [ ] Staging infrastructure created
-- [ ] DNS records point to ALB
-- [ ] ACM certificate validated
-- [ ] SSM parameters created
-- [ ] GitHub environments configured
-- [ ] First staging deployment successful
-- [ ] API health check passes
-- [ ] Storefront loads
-- [ ] Dashboard accessible
+# Storefront
+curl -s -o /dev/null -w "%{http_code}" "$ALB_URL/"
+# Should return: 307 (redirects to /default-channel)
+```
 
 ---
 
 ## Troubleshooting
 
-### GitHub Actions Can't Assume Role
+### Error: ALLOWED_CLIENT_HOSTS not set
 
-Check OIDC trust policy:
-```bash
-aws iam get-role --role-name saleor-platform-staging-github-actions-deploy
+**Symptom**: API containers fail with:
+```
+django.core.exceptions.ImproperlyConfigured: ALLOWED_CLIENT_HOSTS environment variable must be set when DEBUG=False.
 ```
 
-Verify the `sub` condition matches your repo/branch.
+**Solution**: Ensure the ECS task definition includes both `ALLOWED_HOSTS` and `ALLOWED_CLIENT_HOSTS` environment variables. They should include the ALB DNS name:
 
-### ECS Tasks Failing to Start
+```hcl
+environment = [
+  { name = "ALLOWED_HOSTS", value = "api.staging.shuffleandcut.com,localhost,saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com" },
+  { name = "ALLOWED_CLIENT_HOSTS", value = "api.staging.shuffleandcut.com,localhost,saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com" },
+]
+```
 
-Check CloudWatch logs and task stopped reason:
+### Error: RSA_PRIVATE_KEY not set
+
+**Symptom**: API containers fail with:
+```
+django.core.exceptions.ImproperlyConfigured: Variable RSA_PRIVATE_KEY is not provided. It is required for running in not DEBUG mode.
+```
+
+**Solution**: Generate and store RSA key in SSM:
 ```bash
-aws ecs describe-tasks \
+RSA_PRIVATE_KEY=$(openssl genrsa 2048 2>/dev/null)
+aws ssm put-parameter --region us-west-1 \
+  --name "/saleor/staging/api/RSA_PRIVATE_KEY" \
+  --type "SecureString" \
+  --value "$RSA_PRIVATE_KEY" \
+  --overwrite
+```
+
+Then add to ECS task definition secrets.
+
+### Error: Image not found (ECR)
+
+**Symptom**: `CannotPullContainerError: ... not found`
+
+**Causes**:
+1. Image tag doesn't exist in ECR
+2. ECR uses IMMUTABLE tags - can't overwrite `:latest`
+
+**Solution**: Use SHA-based tags:
+```bash
+docker tag myimage:latest 546464732019.dkr.ecr.us-west-1.amazonaws.com/saleor-platform/storefront:sha-abc1234
+docker push 546464732019.dkr.ecr.us-west-1.amazonaws.com/saleor-platform/storefront:sha-abc1234
+```
+
+### Error: Saleor Dashboard shows localhost API
+
+**Symptom**: Dashboard loads but can't connect to API
+
+**Cause**: Official Saleor dashboard image has `API_URL` hardcoded to `localhost:8000`
+
+**Solution**: Build custom dashboard image with correct API_URL, or configure at runtime if supported by newer versions.
+
+### ECS Service Not Using New Task Definition
+
+**Symptom**: After `terraform apply`, services still use old task definition
+
+**Cause**: ECS services don't automatically update when task definition changes
+
+**Solution**: Force new deployment:
+```bash
+aws ecs update-service \
+  --region us-west-1 \
   --cluster saleor-platform-staging \
-  --tasks $(aws ecs list-tasks --cluster saleor-platform-staging --service-name api --query 'taskArns[0]' --output text)
+  --service api \
+  --task-definition saleor-platform-staging-api:4 \
+  --force-new-deployment
 ```
 
-### Database Connection Failed
+### GraphQL Returns 400 Bad Request
 
-1. Verify SSM parameter path is correct
-2. Check security group allows ECS tasks to connect
-3. Verify database and user exist
+**Symptom**: GraphQL queries return 400 error
 
-### ALB Not Routing
+**Causes**:
+1. Missing CSRF token (for mutations)
+2. ALLOWED_HOSTS doesn't include request host
+3. Incorrect Content-Type header
 
-1. Check target group health
-2. Verify listener rules
-3. Check security group ingress rules
+**Solution**: Ensure ALLOWED_HOSTS includes ALB DNS name and use proper headers:
+```bash
+curl -X POST "$ALB_URL/graphql/" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ shop { name } }"}'
+```
+
+---
+
+## Quick Reference
+
+### Staging Access URLs
+
+| Service | URL |
+|---------|-----|
+| Storefront | http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/ |
+| Dashboard | http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/dashboard/ |
+| API Health | http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/health/ |
+| GraphQL | http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/graphql/ |
+
+### Key SSM Parameters
+
+| Parameter | Purpose |
+|-----------|---------|
+| `/saleor/staging/api/SECRET_KEY` | Django secret key |
+| `/saleor/staging/api/DATABASE_URL` | PostgreSQL connection string |
+| `/saleor/staging/api/CELERY_BROKER_URL` | Redis connection for Celery |
+| `/saleor/staging/api/RSA_PRIVATE_KEY` | JWT signing key (required!) |
+
+### Useful Commands
+
+```bash
+# Check service status
+aws ecs describe-services --region us-west-1 --cluster saleor-platform-staging \
+  --services api worker storefront dashboard \
+  --query 'services[*].{name:serviceName,running:runningCount}'
+
+# View logs
+aws logs tail /ecs/saleor-platform-staging/api --follow --region us-west-1
+
+# Force restart a service
+aws ecs update-service --region us-west-1 --cluster saleor-platform-staging \
+  --service api --force-new-deployment
+
+# List task definitions
+aws ecs list-task-definitions --region us-west-1 \
+  --family-prefix saleor-platform-staging-api --sort DESC
+```
+
+---
+
+## Production Deployment
+
+When ready for production:
+
+1. Update `infra/terraform/environments/production.tfvars`
+2. Set `create_acm_certificate = true`
+3. Configure Route53 or external DNS
+4. Create production SSM parameters
+5. Set up GitHub production environment with required reviewers
+6. Run `terraform apply -var-file=environments/production.tfvars`
+7. Run migrations
+8. Deploy services
 
 ---
 
@@ -539,3 +602,4 @@ aws ecs describe-tasks \
 - Terraform documentation: https://registry.terraform.io/providers/hashicorp/aws/latest/docs
 - ECS troubleshooting: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/troubleshooting.html
 - GitHub OIDC: https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+- Saleor documentation: https://docs.saleor.io/

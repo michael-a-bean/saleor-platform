@@ -2,15 +2,15 @@
 # Use: terraform plan -var-file=environments/staging.tfvars
 
 environment = "staging"
-aws_region  = "us-west-2"
+aws_region  = "us-west-1"
 
-# Domain (update this)
-domain_name = "staging.example.com"
+# Domain (placeholder - using ALB defaults for staging, no custom DNS)
+domain_name = "staging.shuffleandcut.com"
 
 # VPC (create new for staging)
 create_vpc         = true
 vpc_cidr           = "10.0.0.0/16"
-availability_zones = ["us-west-2a", "us-west-2b"]
+availability_zones = ["us-west-1a", "us-west-1b"]
 
 # Database (smaller for staging)
 db_instance_class        = "db.t3.medium"
@@ -41,17 +41,17 @@ storefront_cpu           = 256
 storefront_memory        = 512
 
 # Images (pin by digest in production, use tags in staging)
-saleor_api_image       = "ghcr.io/saleor/saleor:3.22"
-saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.22.0"
+saleor_api_image       = "ghcr.io/saleor/saleor:3.21"
+saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.21"
 
-# GitHub (update these)
-github_org    = "YOUR_GITHUB_ORG"
+# GitHub
+github_org    = "michael-a-bean"
 github_repo   = "saleor-platform"
 github_branch = "platform/main"
 
-# DNS (optional - leave empty if managing DNS manually)
-create_acm_certificate = true
-route53_zone_id        = ""  # Set this if using Route53
+# DNS (disabled for staging - using ALB defaults)
+create_acm_certificate = false
+route53_zone_id        = ""
 
 # Monitoring
 enable_container_insights = true

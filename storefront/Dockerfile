@@ -39,9 +39,13 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
-# Run codegen to generate GraphQL types (requires API to be running)
-# Build with --network=host to access localhost:8000
-RUN pnpm run generate
+# Run codegen to generate GraphQL types
+# If schema.graphql exists, use it; otherwise requires API to be running with --network=host
+RUN if [ -f schema.graphql ]; then \
+      GITHUB_ACTION=generate-schema-from-file pnpm run generate; \
+    else \
+      pnpm run generate; \
+    fi
 
 RUN pnpm next build
 
