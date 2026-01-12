@@ -33,10 +33,10 @@ domain_name = "staging.shuffleandcut.com"
 #
 use_https_urls = false
 
-# Uncomment after first deploy and set to actual ALB DNS name from terraform output:
-# public_api_base_url = "http://saleor-platform-staging-alb-XXXXXXXXX.us-west-1.elb.amazonaws.com"
-# public_storefront_base_url = "http://saleor-platform-staging-alb-XXXXXXXXX.us-west-1.elb.amazonaws.com"
-# public_dashboard_base_url = "http://saleor-platform-staging-alb-XXXXXXXXX.us-west-1.elb.amazonaws.com/dashboard"
+# PHASE 2 ACTIVATED: ALB DNS URLs configured (2026-01-11)
+public_api_base_url        = "http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com"
+public_storefront_base_url = "http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com"
+public_dashboard_base_url  = "http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/dashboard"
 
 # VPC (create new for staging)
 create_vpc         = true
