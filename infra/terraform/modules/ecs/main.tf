@@ -269,7 +269,7 @@ resource "aws_ecs_task_definition" "dashboard" {
       ]
       essential = true
       environment = [
-        { name = "API_URI", value = "${var.public_api_base_url}/graphql/" }
+        { name = "API_URL", value = "${var.public_api_base_url}/graphql/" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
