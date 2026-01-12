@@ -263,11 +263,30 @@ jobs:
           POS_APP_IMAGE: ${{ needs.build.outputs.pos_app_image }}
 
   # ==========================================================================
+  # URL Validation (post-deploy)
+  # ==========================================================================
+  validate-urls:
+    name: Validate URLs
+    needs: [deploy, deploy-apps]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate configured URLs are reachable
+        run: |
+          ./scripts/deploy/aws/validate-urls.sh staging
+        env:
+          STAGING_API_URL: ${{ vars.STAGING_API_URL }}
+          STAGING_STOREFRONT_URL: ${{ vars.STAGING_STOREFRONT_URL }}
+
+  # ==========================================================================
   # Smoke Tests
   # ==========================================================================
   smoke-test:
     name: Smoke Tests
-    needs: [deploy, deploy-apps]
+    needs: [validate-urls]
     runs-on: ubuntu-latest
 
     steps:
