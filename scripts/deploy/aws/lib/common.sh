@@ -45,15 +45,40 @@ get_cluster_name() {
 }
 
 # Get current task definition for a service
+# Returns task definition ARN or empty string if service doesn't exist
 get_current_task_def() {
     local cluster="$1"
     local service="$2"
 
-    aws ecs describe-services \
+    local result
+    result=$(aws ecs describe-services \
         --cluster "$cluster" \
         --services "$service" \
         --query 'services[0].taskDefinition' \
-        --output text
+        --output text 2>/dev/null || echo "")
+
+    # Check if service exists and is not inactive
+    if [[ -z "$result" || "$result" == "None" ]]; then
+        echo ""
+        return 1
+    fi
+
+    echo "$result"
+}
+
+# Check if ECS service exists and is active
+service_exists() {
+    local cluster="$1"
+    local service="$2"
+
+    local status
+    status=$(aws ecs describe-services \
+        --cluster "$cluster" \
+        --services "$service" \
+        --query 'services[0].status' \
+        --output text 2>/dev/null || echo "")
+
+    [[ "$status" == "ACTIVE" ]]
 }
 
 # Wait for ECS service to stabilize

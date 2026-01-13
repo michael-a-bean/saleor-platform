@@ -242,7 +242,11 @@ resource "aws_lb_target_group" "dashboard" {
   }
 }
 
+# =============================================================================
 # Apps Target Groups (stripe, inventory-ops, buylist, pos)
+# NOTE: Health check paths include basePath since ALB preserves full request path
+# =============================================================================
+
 resource "aws_lb_target_group" "stripe_app" {
   name        = "${local.name_prefix}-stripe"
   port        = 3001
@@ -256,7 +260,7 @@ resource "aws_lb_target_group" "stripe_app" {
     unhealthy_threshold = 3
     timeout             = 5
     interval            = 30
-    path                = "/api/health"
+    path                = "/apps/stripe/api/health"
     matcher             = "200"
   }
 
@@ -279,7 +283,7 @@ resource "aws_lb_target_group" "inventory_ops_app" {
     unhealthy_threshold = 3
     timeout             = 5
     interval            = 30
-    path                = "/api/health"
+    path                = "/apps/inventory/api/health"
     matcher             = "200"
   }
 
@@ -302,7 +306,7 @@ resource "aws_lb_target_group" "buylist_app" {
     unhealthy_threshold = 3
     timeout             = 5
     interval            = 30
-    path                = "/api/health"
+    path                = "/apps/buylist/api/health"
     matcher             = "200"
   }
 
@@ -325,7 +329,7 @@ resource "aws_lb_target_group" "pos_app" {
     unhealthy_threshold = 3
     timeout             = 5
     interval            = 30
-    path                = "/api/health"
+    path                = "/apps/pos/api/health"
     matcher             = "200"
   }
 
@@ -584,6 +588,87 @@ resource "aws_lb_listener_rule" "dashboard_http" {
   condition {
     path_pattern {
       values = ["/dashboard/*"]
+    }
+  }
+}
+
+# =============================================================================
+# App HTTP Listener Rules (for staging without certificate)
+# Path-based routing: /apps/{app-name}/*
+# =============================================================================
+
+# Stripe app routing on HTTP: /apps/stripe/*
+resource "aws_lb_listener_rule" "stripe_app_http" {
+  count = var.certificate_arn == "" ? 1 : 0
+
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 200
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.stripe_app.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/apps/stripe/*", "/apps/stripe"]
+    }
+  }
+}
+
+# Inventory ops app routing on HTTP: /apps/inventory/*
+resource "aws_lb_listener_rule" "inventory_ops_app_http" {
+  count = var.certificate_arn == "" ? 1 : 0
+
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 210
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.inventory_ops_app.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/apps/inventory/*", "/apps/inventory"]
+    }
+  }
+}
+
+# Buylist app routing on HTTP: /apps/buylist/*
+resource "aws_lb_listener_rule" "buylist_app_http" {
+  count = var.certificate_arn == "" ? 1 : 0
+
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 220
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.buylist_app.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/apps/buylist/*", "/apps/buylist"]
+    }
+  }
+}
+
+# POS app routing on HTTP: /apps/pos/*
+resource "aws_lb_listener_rule" "pos_app_http" {
+  count = var.certificate_arn == "" ? 1 : 0
+
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 230
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.pos_app.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/apps/pos/*", "/apps/pos"]
     }
   }
 }

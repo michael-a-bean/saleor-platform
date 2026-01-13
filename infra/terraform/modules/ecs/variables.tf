@@ -193,3 +193,43 @@ variable "log_retention_days" {
   type        = number
   default     = 30
 }
+
+# =============================================================================
+# Saleor Apps Configuration
+# =============================================================================
+
+variable "apps_task_role_arn" {
+  description = "ARN of apps task role"
+  type        = string
+  default     = ""
+}
+
+variable "apps_enabled" {
+  description = "Enable Saleor apps deployment"
+  type        = bool
+  default     = true
+}
+
+variable "apps" {
+  description = "Map of Saleor apps to deploy"
+  type = map(object({
+    port             = number
+    cpu              = number
+    memory           = number
+    base_path        = string
+    image            = string
+    target_group_arn = string
+    environment      = optional(map(string), {})
+    secrets = optional(list(object({
+      name      = string
+      valueFrom = string
+    })), [])
+  }))
+  default = {}
+}
+
+variable "apps_desired_count" {
+  description = "Desired count for each app service"
+  type        = number
+  default     = 1
+}
