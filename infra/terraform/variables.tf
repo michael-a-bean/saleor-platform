@@ -271,6 +271,46 @@ variable "storefront_image_tag" {
 }
 
 # =============================================================================
+# Saleor Apps Image Configuration
+# =============================================================================
+
+variable "apps_enabled" {
+  description = "Enable Saleor apps deployment"
+  type        = bool
+  default     = true
+}
+
+variable "apps_desired_count" {
+  description = "Desired count for each app service"
+  type        = number
+  default     = 1
+}
+
+variable "stripe_app_image_tag" {
+  description = "Stripe app image tag"
+  type        = string
+  default     = "staging-latest"
+}
+
+variable "inventory_ops_app_image_tag" {
+  description = "Inventory ops app image tag"
+  type        = string
+  default     = "staging-latest"
+}
+
+variable "buylist_app_image_tag" {
+  description = "Buylist app image tag"
+  type        = string
+  default     = "staging-latest"
+}
+
+variable "pos_app_image_tag" {
+  description = "POS app image tag"
+  type        = string
+  default     = "staging-latest"
+}
+
+# =============================================================================
 # Monitoring and Logging
 # =============================================================================
 

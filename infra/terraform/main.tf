@@ -203,6 +203,85 @@ module "ecs" {
 
   enable_container_insights = var.enable_container_insights
   log_retention_days        = var.log_retention_days
+
+  # ==========================================================================
+  # Saleor Apps Configuration
+  # ==========================================================================
+  apps_enabled       = var.apps_enabled
+  apps_desired_count = var.apps_desired_count
+  apps_task_role_arn = module.iam.ecs_apps_task_role_arn
+
+  apps = {
+    stripe = {
+      port             = 3001
+      cpu              = 256
+      memory           = 512
+      base_path        = "/apps/stripe"
+      image            = "${module.ecr.stripe_app_repository_url}:${var.stripe_app_image_tag}"
+      target_group_arn = module.alb.stripe_app_target_group_arn
+      secrets = [
+        {
+          name      = "STRIPE_SECRET_KEY"
+          valueFrom = "/saleor/${var.environment}/apps/stripe/STRIPE_SECRET_KEY"
+        },
+        {
+          name      = "STRIPE_WEBHOOK_SECRET"
+          valueFrom = "/saleor/${var.environment}/apps/stripe/STRIPE_WEBHOOK_SECRET"
+        }
+      ]
+      environment = {
+        STRIPE_WEBHOOK_URL = "${local.public_api_base_url}/apps/stripe/api/webhooks/stripe"
+      }
+    }
+
+    inventory-ops = {
+      port             = 3002
+      cpu              = 256
+      memory           = 512
+      base_path        = "/apps/inventory"
+      image            = "${module.ecr.inventory_ops_app_repository_url}:${var.inventory_ops_app_image_tag}"
+      target_group_arn = module.alb.inventory_ops_app_target_group_arn
+      secrets = [
+        {
+          name      = "DATABASE_URL"
+          valueFrom = "/saleor/${var.environment}/apps/inventory-ops/DATABASE_URL"
+        }
+      ]
+      environment = {}
+    }
+
+    buylist = {
+      port             = 3003
+      cpu              = 256
+      memory           = 512
+      base_path        = "/apps/buylist"
+      image            = "${module.ecr.buylist_app_repository_url}:${var.buylist_app_image_tag}"
+      target_group_arn = module.alb.buylist_app_target_group_arn
+      secrets = [
+        {
+          name      = "DATABASE_URL"
+          valueFrom = "/saleor/${var.environment}/apps/inventory-ops/DATABASE_URL"
+        }
+      ]
+      environment = {}
+    }
+
+    pos = {
+      port             = 3004
+      cpu              = 256
+      memory           = 512
+      base_path        = "/apps/pos"
+      image            = "${module.ecr.pos_app_repository_url}:${var.pos_app_image_tag}"
+      target_group_arn = module.alb.pos_app_target_group_arn
+      secrets = [
+        {
+          name      = "DATABASE_URL"
+          valueFrom = "/saleor/${var.environment}/apps/inventory-ops/DATABASE_URL"
+        }
+      ]
+      environment = {}
+    }
+  }
 }
 
 # =============================================================================

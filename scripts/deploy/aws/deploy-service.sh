@@ -62,8 +62,20 @@ log_info "Deploying ${SERVICE} to ${ENV}"
 log_info "  Cluster: ${CLUSTER}"
 log_info "  SHA: ${SHA}"
 
+# Verify service exists before attempting deployment
+if ! service_exists "$CLUSTER" "$SERVICE"; then
+    log_error "Service '${SERVICE}' does not exist in cluster '${CLUSTER}'"
+    log_error "ECS services must be created via Terraform before CI can deploy to them."
+    log_error "Run 'terraform apply' first to create the infrastructure."
+    exit 1
+fi
+
 # Get current task definition
 CURRENT_TASK_DEF=$(get_current_task_def "$CLUSTER" "$SERVICE")
+if [[ -z "$CURRENT_TASK_DEF" ]]; then
+    log_error "Failed to get current task definition for service '${SERVICE}'"
+    exit 1
+fi
 log_info "  Current task def: ${CURRENT_TASK_DEF}"
 
 # Get image for this service

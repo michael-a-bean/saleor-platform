@@ -482,3 +482,123 @@ resource "aws_ecs_task_definition" "migrate" {
     Service = "migrate"
   }
 }
+
+# =============================================================================
+# Saleor Apps - Task Definitions (map-driven)
+# =============================================================================
+
+resource "aws_ecs_task_definition" "apps" {
+  for_each = var.apps_enabled ? var.apps : {}
+
+  family                   = "${local.name_prefix}-${each.key}"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = each.value.cpu
+  memory                   = each.value.memory
+  execution_role_arn       = var.task_execution_role_arn
+  task_role_arn            = var.apps_task_role_arn != "" ? var.apps_task_role_arn : null
+
+  container_definitions = jsonencode([
+    {
+      name  = each.key
+      image = each.value.image
+      portMappings = [
+        {
+          containerPort = each.value.port
+          protocol      = "tcp"
+        }
+      ]
+      essential = true
+      secrets = concat(
+        # Default secrets all apps need
+        [
+          {
+            name      = "SECRET_KEY"
+            valueFrom = "${var.ssm_path_prefix}/apps/SECRET_KEY"
+          }
+        ],
+        # App-specific secrets
+        each.value.secrets
+      )
+      environment = concat(
+        # Base environment for all apps
+        [
+          { name = "NODE_ENV", value = "production" },
+          { name = "PORT", value = tostring(each.value.port) },
+          { name = "BASE_PATH", value = each.value.base_path },
+          { name = "NEXT_PUBLIC_BASE_PATH", value = each.value.base_path },
+          { name = "SALEOR_API_URL", value = "${var.public_api_base_url}/graphql/" },
+          { name = "APP_API_BASE_URL", value = var.public_api_base_url },
+          # APL (App Persistence Layer) - use file-based for simplicity
+          { name = "APL", value = "file" },
+          { name = "APP_LOG_LEVEL", value = "info" }
+        ],
+        # App-specific environment variables
+        [for k, v in each.value.environment : { name = k, value = v }]
+      )
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.services["${each.key}-app"].name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+      healthCheck = {
+        command     = ["CMD-SHELL", "curl -f http://localhost:${each.value.port}${each.value.base_path}/api/health || exit 1"]
+        interval    = 30
+        timeout     = 5
+        retries     = 3
+        startPeriod = 60
+      }
+    }
+  ])
+
+  tags = {
+    Name    = "${local.name_prefix}-${each.key}"
+    Service = each.key
+  }
+}
+
+# =============================================================================
+# Saleor Apps - ECS Services (map-driven)
+# =============================================================================
+
+resource "aws_ecs_service" "apps" {
+  for_each = var.apps_enabled ? var.apps : {}
+
+  name            = each.key
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.apps[each.key].arn
+  desired_count   = var.apps_desired_count
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.ecs_backend_security_group_id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = each.value.target_group_arn
+    container_name   = each.key
+    container_port   = each.value.port
+  }
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
+  deployment_maximum_percent         = 200
+  deployment_minimum_healthy_percent = 100
+
+  tags = {
+    Name    = "${local.name_prefix}-${each.key}"
+    Service = each.key
+  }
+
+  lifecycle {
+    ignore_changes = [task_definition] # Allow CI/CD to update
+  }
+}
