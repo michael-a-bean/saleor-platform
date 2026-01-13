@@ -72,10 +72,11 @@ storefront_cpu           = 256
 storefront_memory        = 512
 
 # Images (pin by digest in production, use tags in staging)
-# Updated 2026-01-12: Aligned to 3.22.x (API 3.22.26, Dashboard 3.22.24)
-# Note: API must be patch version >= Dashboard to avoid AppExtension schema mismatch
+# Updated 2026-01-12: API 3.22.26, Dashboard 3.21.18
+# Note: Dashboard 3.22.9+ uses AppExtension fields (mountName, targetName, settings)
+#       that don't exist in API 3.22.x. Use Dashboard 3.21.x for compatibility.
 saleor_api_image       = "ghcr.io/saleor/saleor:3.22.26"
-saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.22.24"
+saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.21.18"
 
 # GitHub
 github_org    = "michael-a-bean"
