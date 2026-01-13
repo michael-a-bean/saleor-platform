@@ -41,8 +41,9 @@ storefront_cpu           = 512
 storefront_memory        = 1024
 
 # Images - PIN BY DIGEST for production (GPT-5.2 recommendation)
-# Get digest: docker pull ghcr.io/saleor/saleor:3.22 && docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/saleor/saleor:3.22
-saleor_api_image       = "ghcr.io/saleor/saleor:3.22"              # Replace with @sha256:... in production
+# Get digest: docker pull ghcr.io/saleor/saleor:3.22.26 && docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/saleor/saleor:3.22.26
+# Note: API must be patch version >= Dashboard to avoid AppExtension schema mismatch
+saleor_api_image       = "ghcr.io/saleor/saleor:3.22.26"           # Replace with @sha256:... in production
 saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.22.24" # Replace with @sha256:...
 
 # GitHub (update these)
