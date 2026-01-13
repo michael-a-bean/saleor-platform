@@ -258,8 +258,8 @@ if [[ "$DRY_RUN" == "true" ]]; then
         DRY_CONTAINER_NAME="migrate"
         DRY_COMMAND='["python", "manage.py", "migrate", "--noinput"]'
     else
-        DRY_TASK_DEF="saleor-platform-${ENV}-inventory-ops-app"
-        DRY_CONTAINER_NAME="inventory-ops-app"
+        DRY_TASK_DEF="saleor-platform-${ENV}-inventory-ops"
+        DRY_CONTAINER_NAME="inventory-ops"
         DRY_COMMAND='["npx", "prisma", "migrate", "deploy"]'
     fi
     DRY_TASK_DEF="${DRY_TASK_DEF:-$TASK_DEF}"
@@ -298,9 +298,9 @@ if [[ "$MIGRATION_TYPE" == "django" ]]; then
     CONTAINER_NAME="migrate"
     COMMAND='["python", "manage.py", "migrate", "--noinput"]'
 else
-    # Prisma migrations run from inventory-ops-app task
-    TASK_DEF="saleor-platform-${ENV}-inventory-ops-app"
-    CONTAINER_NAME="inventory-ops-app"
+    # Prisma migrations run from inventory-ops task
+    TASK_DEF="saleor-platform-${ENV}-inventory-ops"
+    CONTAINER_NAME="inventory-ops"
     COMMAND='["npx", "prisma", "migrate", "deploy"]'
 fi
 
