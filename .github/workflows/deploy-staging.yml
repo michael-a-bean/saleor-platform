@@ -83,6 +83,8 @@ jobs:
           context: ./saleor-apps
           file: ./saleor-apps/apps/stripe/Dockerfile
           push: true
+          build-args: |
+            BASE_PATH=/apps/stripe
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/saleor-platform/stripe-app:${{ steps.vars.outputs.sha_short }}
             ${{ steps.login-ecr.outputs.registry }}/saleor-platform/stripe-app:staging-latest
@@ -95,6 +97,8 @@ jobs:
           context: ./saleor-apps
           file: ./saleor-apps/apps/inventory-ops/Dockerfile
           push: true
+          build-args: |
+            BASE_PATH=/apps/inventory
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/saleor-platform/inventory-ops-app:${{ steps.vars.outputs.sha_short }}
             ${{ steps.login-ecr.outputs.registry }}/saleor-platform/inventory-ops-app:staging-latest
@@ -107,6 +111,8 @@ jobs:
           context: ./saleor-apps
           file: ./saleor-apps/apps/buylist/Dockerfile
           push: true
+          build-args: |
+            BASE_PATH=/apps/buylist
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/saleor-platform/buylist-app:${{ steps.vars.outputs.sha_short }}
             ${{ steps.login-ecr.outputs.registry }}/saleor-platform/buylist-app:staging-latest
@@ -119,6 +125,8 @@ jobs:
           context: ./saleor-apps
           file: ./saleor-apps/apps/pos/Dockerfile
           push: true
+          build-args: |
+            BASE_PATH=/apps/pos
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/saleor-platform/pos-app:${{ steps.vars.outputs.sha_short }}
             ${{ steps.login-ecr.outputs.registry }}/saleor-platform/pos-app:staging-latest
