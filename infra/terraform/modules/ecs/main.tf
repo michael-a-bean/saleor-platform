@@ -529,6 +529,7 @@ resource "aws_ecs_task_definition" "apps" {
           { name = "NEXT_PUBLIC_BASE_PATH", value = each.value.base_path },
           { name = "SALEOR_API_URL", value = "${var.public_api_base_url}/graphql/" },
           { name = "APP_API_BASE_URL", value = "${var.public_api_base_url}${each.value.base_path}" },
+          { name = "APP_IFRAME_BASE_URL", value = "${var.public_api_base_url}${each.value.base_path}" },
           # APL (App Persistence Layer) - use file-based for simplicity
           { name = "APL", value = "file" },
           { name = "APP_LOG_LEVEL", value = "info" }
