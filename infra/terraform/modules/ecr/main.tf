@@ -24,7 +24,7 @@ resource "aws_ecr_repository" "repos" {
   for_each = local.repositories
 
   name                 = "${var.project_name}/${each.key}"
-  image_tag_mutability = "IMMUTABLE" # GPT-5.2 recommendation for artifact immutability
+  image_tag_mutability = var.image_tag_mutability
 
   image_scanning_configuration {
     scan_on_push = true

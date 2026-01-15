@@ -15,3 +15,14 @@ variable "kms_key_arn" {
   type        = string
   default     = null
 }
+
+variable "image_tag_mutability" {
+  description = "Image tag mutability setting. Use MUTABLE for staging (allows overwriting tags like 'staging-latest'), IMMUTABLE for production."
+  type        = string
+  default     = "MUTABLE"
+
+  validation {
+    condition     = contains(["MUTABLE", "IMMUTABLE"], var.image_tag_mutability)
+    error_message = "image_tag_mutability must be either MUTABLE or IMMUTABLE."
+  }
+}

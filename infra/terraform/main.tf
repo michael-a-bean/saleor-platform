@@ -91,8 +91,9 @@ module "dynamodb" {
 module "ecr" {
   source = "./modules/ecr"
 
-  project_name = var.project_name
-  environment  = var.environment
+  project_name         = var.project_name
+  environment          = var.environment
+  image_tag_mutability = var.ecr_image_tag_mutability
 }
 
 # =============================================================================
