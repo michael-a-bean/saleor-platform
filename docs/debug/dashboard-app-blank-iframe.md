@@ -167,28 +167,42 @@ HTTP/1.1 200 OK
 
 ---
 
-## ROOT CAUSE HYPOTHESIS
+## ROOT CAUSE CONFIRMED
 
-### Primary: Stored `appUrl` Mismatch
+### Primary: `crypto.randomUUID()` Not Available in Non-Secure Context
 
-**Timeline:**
-1. App installed initially with incorrect `appUrl` (before `APP_IFRAME_BASE_URL` was configured)
-2. Installation stored wrong URL in Saleor database
-3. Manifest was later fixed to return correct URL
-4. Dashboard still uses OLD stored URL to construct iframe src
-5. Iframe loads wrong URL → blank page or missing query params
+**Browser console error:**
+```
+Error: Failed to generate action ID. Please ensure you are using https or localhost
+    at S (_app-be34b44491289bc8.js:41:74090)
+    at Object.NotifyReady
+```
 
-### Secondary: App Bridge Origin Check
+**Cause:** The Saleor App SDK uses `crypto.randomUUID()` to generate action IDs for postMessage communication. This API is **only available in secure contexts** (HTTPS or localhost).
 
-If `document.referrer` is empty or origin doesn't match, ALL postMessage events from Dashboard are silently rejected:
+The staging environment uses plain HTTP over a public ALB URL (`http://saleor-platform-staging-alb-*.elb.amazonaws.com`), which is NOT a secure context.
+
+**Code path:**
 ```javascript
-this.refererOrigin = document.referrer ? new URL(document.referrer).origin : void 0;
-// ...
-if (origin !== this.refererOrigin) {
-  debug("Origin from message doesn't match refererOrigin. Function will return now");
-  return; // Messages rejected!
+// @saleor/app-sdk
+function withActionId(action) {
+  try {
+    const actionId = globalThis.crypto.randomUUID(); // FAILS on HTTP!
+    return { ...action, payload: { ...action.payload, actionId } };
+  } catch (e) {
+    throw new Error("Failed to generate action ID. Please ensure you are using https or localhost");
+  }
 }
 ```
+
+**Result:** App crashes during initialization before rendering any UI → blank iframe.
+
+### Secondary Findings (Not Root Cause)
+
+- **Stored `appUrl` mismatch:** Not the issue - URLs were correct
+- **Origin check:** Not the issue - referrer was present
+- **Asset loading:** Not the issue - all bundles load 200 OK
+- **Frame headers:** Not the issue - no blocking headers
 
 ---
 
@@ -206,40 +220,55 @@ if (origin !== this.refererOrigin) {
 
 ---
 
-## PROPOSED FIX
+## FIX IMPLEMENTED
 
-### Option 1: Reinstall Apps (Recommended)
+### Solution: Polyfill `crypto.randomUUID()` for Non-Secure Contexts
 
-The simplest fix is to reinstall all affected apps so the current manifest `appUrl` gets stored:
+Added polyfill to all app `_app.tsx` files that runs before AppBridge initialization:
 
-1. Uninstall existing app via Dashboard → Apps → (app) → Delete
-2. Reinstall app via Dashboard → Apps → Install external app → Enter manifest URL
-
-**Manifest URLs:**
-- Stripe: `http://...elb.amazonaws.com/apps/stripe/api/manifest`
-
-### Option 2: Update Stored appUrl via GraphQL (Advanced)
-
-If app reinstall is not desired, use GraphQL mutation to update stored URL:
-```graphql
-mutation {
-  appUpdate(id: "QXBwOjEyMzQ=", input: {
-    appUrl: "http://...elb.amazonaws.com/apps/stripe"
-  }) {
-    app { id appUrl }
-    errors { message }
-  }
+```typescript
+/**
+ * Polyfill for crypto.randomUUID() in non-secure contexts (HTTP).
+ */
+if (typeof window !== "undefined" && typeof crypto !== "undefined" && !crypto.randomUUID) {
+  crypto.randomUUID = function randomUUID(): `${string}-${string}-${string}-${string}-${string}` {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    // Set UUID version (4) and variant (RFC4122)
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  };
 }
 ```
 
-### Option 3: Database Direct Update (Emergency Only)
+**Files modified:**
+- `saleor-apps/apps/stripe/src/pages/_app.tsx`
+- `saleor-apps/apps/buylist/src/pages/_app.tsx`
+- `saleor-apps/apps/inventory-ops/src/pages/_app.tsx`
+- `saleor-apps/apps/pos/src/pages/_app.tsx`
 
-Update `app` table directly if GraphQL unavailable:
-```sql
-UPDATE app_app
-SET app_url = 'http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/apps/stripe'
-WHERE identifier = 'saleor.app.payment.stripe';
-```
+**Why this works:** `crypto.getRandomValues()` IS available in non-secure contexts, so we use it to generate RFC4122-compliant UUIDs.
+
+### Alternative: Enable HTTPS (Production Solution)
+
+For production, enable HTTPS by:
+1. Set up domain name and Route53 zone
+2. In `staging.tfvars`:
+   ```hcl
+   create_acm_certificate = true
+   use_https_urls = true
+   route53_zone_id = "<zone-id>"
+   ```
+3. Run `terraform apply`
+
+### Deployment Required
+
+After committing the polyfill fix:
+1. Build new Docker images for all apps
+2. Push to ECR
+3. Redeploy ECS services
 
 ---
 
