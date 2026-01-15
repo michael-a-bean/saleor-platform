@@ -385,21 +385,57 @@ POST /apps/stripe/api/register → 400 (expected without auth)
 
 ---
 
-## MANUAL TESTING REQUIRED
+## ROOT CAUSE #2: Build-time .env with Fake AWS Credentials
 
-To complete verification, install the app via Dashboard:
+**Timestamp**: 2026-01-14 23:30 PST
 
-1. Navigate to: `http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/dashboard`
-2. Go to **Apps** → **Install external app**
-3. Enter manifest URL: `http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/apps/stripe/api/manifest`
-4. Click **Install**
+After fixing root cause #1 (DynamoDB table), a new error appeared: `Failed to set APL` with empty error object.
 
-**Expected result**: App installs successfully without "auth data could not be used to fetch app ID" error.
+### Investigation
 
-**Verification in logs**:
-```bash
-aws logs tail /ecs/saleor-platform-staging/stripe-app --since 5m --region us-west-1
-# Should see: "App configuration set up successfully"
+1. Enabled debug logging (`DEBUG=*`, `APP_LOG_LEVEL=debug`)
+2. Actual error revealed: `UnrecognizedClientException: The security token included in the request is invalid`
+
+### Root Cause
+
+The Dockerfile (lines 49-56) creates a `.env` file with placeholder AWS credentials during build:
+```dockerfile
+RUN echo 'AWS_ACCESS_KEY_ID=local' >> /app/apps/stripe/.env && \
+    echo 'AWS_SECRET_ACCESS_KEY=local' >> /app/apps/stripe/.env
+```
+
+This file is copied to the runtime image and takes precedence over ECS task role credentials in the AWS SDK credential provider chain.
+
+### Fix Applied
+
+Added to Dockerfile runner stage:
+```dockerfile
+# Remove build-time .env file that contains placeholder AWS credentials
+# This allows the AWS SDK to use ECS task role credentials at runtime
+RUN rm -f .env
+```
+
+**Commit**: `3b2aef44` in saleor-apps submodule
+
+---
+
+## FINAL VERIFICATION
+
+**Timestamp**: 2026-01-15 07:36 UTC
+
+### App Installation Test: ✅ SUCCESS
+
+```
+app-sdk:DynamoAPL set successful for saleorApiUrl: http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/graphql/
+App configuration set up successfully
+Register complete
+```
+
+### DynamoDB Verification: ✅ SUCCESS
+
+```
+PK: http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/graphql/
+SK: APL
 ```
 
 ---
@@ -410,13 +446,23 @@ aws logs tail /ecs/saleor-platform-staging/stripe-app --since 5m --region us-wes
 - [x] `docs/ops/runbooks/stripe-app-install.md` - Installation runbook
 - [x] `infra/terraform/modules/dynamodb/` - DynamoDB module
 - [x] `infra/terraform/main.tf` - Updated to use DynamoDB module
-- [x] Branch `fix/stripe-app-install-auth` committed
 - [x] Terraform applied and infrastructure verified
 - [x] ECS service redeployed and healthy
-- [ ] Manual app installation test (requires Dashboard access)
+- [x] Dockerfile fix committed (`saleor-apps:3b2aef44`)
+- [x] Manual app installation test - **PASSED**
+
+---
+
+## Summary of Fixes
+
+| Root Cause | Fix | Commit |
+|------------|-----|--------|
+| DynamoDB table not created | Added Terraform DynamoDB module | `fix/stripe-app-install-auth` branch |
+| Build-time .env with fake AWS creds | Added `RUN rm -f .env` to Dockerfile | `saleor-apps:3b2aef44` |
 
 ---
 
 *Investigation completed: 2026-01-14 22:00 PST*
-*Deployment verified: 2026-01-14 21:35 PST*
+*Root cause #2 fixed: 2026-01-15 07:30 UTC*
+*Final verification: 2026-01-15 07:36 UTC*
 *Debug log maintained by Claude Code / Gen*
