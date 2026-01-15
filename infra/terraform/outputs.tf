@@ -163,6 +163,15 @@ output "api_graphql_url" {
 }
 
 # =============================================================================
+# DynamoDB
+# =============================================================================
+
+output "stripe_app_dynamodb_table" {
+  description = "DynamoDB table name for Stripe app"
+  value       = module.dynamodb.stripe_app_table_name
+}
+
+# =============================================================================
 # SSM Parameter Paths (for reference)
 # =============================================================================
 

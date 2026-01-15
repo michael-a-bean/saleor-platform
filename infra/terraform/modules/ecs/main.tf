@@ -105,7 +105,9 @@ resource "aws_ecs_task_definition" "api" {
         { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
         { name = "AWS_S3_REGION_NAME", value = var.aws_region },
         { name = "DASHBOARD_URL", value = "${var.public_dashboard_base_url}/" },
-        { name = "ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL", value = "false" }
+        { name = "ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL", value = "false" },
+        # PUBLIC_URL tells Saleor its own public-facing URL (critical for app installation)
+        { name = "PUBLIC_URL", value = "${var.public_api_base_url}/" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -116,11 +118,11 @@ resource "aws_ecs_task_definition" "api" {
         }
       }
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:8000/health/ || exit 1"]
+        command     = ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health/')\" || exit 1"]
         interval    = 30
-        timeout     = 5
+        timeout     = 10
         retries     = 3
-        startPeriod = 60
+        startPeriod = 120
       }
     }
   ])
@@ -175,7 +177,8 @@ resource "aws_ecs_task_definition" "worker" {
         { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
         { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts },
         { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
-        { name = "AWS_S3_REGION_NAME", value = var.aws_region }
+        { name = "AWS_S3_REGION_NAME", value = var.aws_region },
+        { name = "PUBLIC_URL", value = "${var.public_api_base_url}/" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -530,11 +533,9 @@ resource "aws_ecs_task_definition" "apps" {
           { name = "SALEOR_API_URL", value = "${var.public_api_base_url}/graphql/" },
           { name = "APP_API_BASE_URL", value = "${var.public_api_base_url}${each.value.base_path}" },
           { name = "APP_IFRAME_BASE_URL", value = "${var.public_api_base_url}${each.value.base_path}" },
-          # APL (App Persistence Layer) - use file-based for simplicity
-          { name = "APL", value = "file" },
           { name = "APP_LOG_LEVEL", value = "info" }
         ],
-        # App-specific environment variables
+        # App-specific environment variables (can override APL via environment config)
         [for k, v in each.value.environment : { name = k, value = v }]
       )
       logConfiguration = {
