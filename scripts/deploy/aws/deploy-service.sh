@@ -99,18 +99,25 @@ fi
 # Get current task definition JSON
 TASK_DEF_JSON=$(aws ecs describe-task-definition \
     --task-definition "$CURRENT_TASK_DEF" \
-    --query 'taskDefinition')
+    --query 'taskDefinition' \
+    --output json)
 
 # Update the image in the container definition
+# Remove fields that cannot be included when registering a new task definition
 NEW_TASK_DEF=$(echo "$TASK_DEF_JSON" | jq --arg IMAGE "$IMAGE" '
     .containerDefinitions[0].image = $IMAGE |
-    del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
+    del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .deregisteredAt)
 ')
+
+# Write to temp file for reliable JSON passing to AWS CLI
+TEMP_FILE=$(mktemp)
+trap "rm -f $TEMP_FILE" EXIT
+echo "$NEW_TASK_DEF" > "$TEMP_FILE"
 
 # Register new task definition
 log_info "Registering new task definition..."
-NEW_TASK_DEF_ARN=$(echo "$NEW_TASK_DEF" | aws ecs register-task-definition \
-    --cli-input-json file:///dev/stdin \
+NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+    --cli-input-json "file://${TEMP_FILE}" \
     --query 'taskDefinition.taskDefinitionArn' \
     --output text)
 log_success "New task definition: ${NEW_TASK_DEF_ARN}"
