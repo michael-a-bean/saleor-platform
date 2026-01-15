@@ -242,6 +242,21 @@ variable "storefront_memory" {
 }
 
 # =============================================================================
+# ECR Configuration
+# =============================================================================
+
+variable "ecr_image_tag_mutability" {
+  description = "ECR image tag mutability. MUTABLE allows overwriting tags like 'staging-latest', IMMUTABLE prevents overwrites (recommended for production)."
+  type        = string
+  default     = "MUTABLE"
+
+  validation {
+    condition     = contains(["MUTABLE", "IMMUTABLE"], var.ecr_image_tag_mutability)
+    error_message = "ecr_image_tag_mutability must be either MUTABLE or IMMUTABLE."
+  }
+}
+
+# =============================================================================
 # Image Configuration
 # =============================================================================
 

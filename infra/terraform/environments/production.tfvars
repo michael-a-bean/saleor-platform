@@ -55,6 +55,10 @@ github_branch = "platform/main"
 create_acm_certificate = true
 route53_zone_id        = "" # Set this if using Route53
 
+# ECR
+# IMMUTABLE prevents overwriting tags - use unique SHA-based tags for production artifact integrity
+ecr_image_tag_mutability = "IMMUTABLE"
+
 # Monitoring
 enable_container_insights = true
 log_retention_days        = 90

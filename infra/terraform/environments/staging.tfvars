@@ -90,6 +90,10 @@ github_branch = "platform/main"
 create_acm_certificate = false
 route53_zone_id        = ""
 
+# ECR
+# MUTABLE allows CI/CD to overwrite tags like 'staging-latest' on each deploy
+ecr_image_tag_mutability = "MUTABLE"
+
 # Monitoring
 enable_container_insights = true
 log_retention_days        = 14
