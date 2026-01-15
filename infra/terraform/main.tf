@@ -71,6 +71,20 @@ module "s3" {
 }
 
 # =============================================================================
+# DynamoDB Tables (for Saleor Apps)
+# =============================================================================
+
+module "dynamodb" {
+  source = "./modules/dynamodb"
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  create_stripe_table           = var.apps_enabled
+  enable_point_in_time_recovery = var.environment == "production"
+}
+
+# =============================================================================
 # ECR Repositories
 # =============================================================================
 
@@ -230,7 +244,10 @@ module "ecs" {
         }
       ]
       environment = {
-        STRIPE_WEBHOOK_URL = "${local.public_api_base_url}/apps/stripe/api/webhooks/stripe"
+        STRIPE_WEBHOOK_URL       = "${local.public_api_base_url}/apps/stripe/api/webhooks/stripe"
+        APL                      = "dynamodb"
+        DYNAMODB_MAIN_TABLE_NAME = module.dynamodb.stripe_app_table_name
+        AWS_REGION               = var.aws_region
       }
     }
 
@@ -247,7 +264,9 @@ module "ecs" {
           valueFrom = "/saleor/${var.environment}/apps/inventory-ops/DATABASE_URL"
         }
       ]
-      environment = {}
+      environment = {
+        APL = "file"
+      }
     }
 
     buylist = {
@@ -263,7 +282,9 @@ module "ecs" {
           valueFrom = "/saleor/${var.environment}/apps/inventory-ops/DATABASE_URL"
         }
       ]
-      environment = {}
+      environment = {
+        APL = "file"
+      }
     }
 
     pos = {
@@ -279,7 +300,9 @@ module "ecs" {
           valueFrom = "/saleor/${var.environment}/apps/inventory-ops/DATABASE_URL"
         }
       ]
-      environment = {}
+      environment = {
+        APL = "file"
+      }
     }
   }
 }

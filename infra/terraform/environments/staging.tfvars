@@ -78,6 +78,9 @@ storefront_memory        = 512
 saleor_api_image       = "ghcr.io/saleor/saleor:3.22.26"
 saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.21.18"
 
+# Saleor Apps image tags
+stripe_app_image_tag = "dynamodb-fix-v2"
+
 # GitHub
 github_org    = "michael-a-bean"
 github_repo   = "saleor-platform"
