@@ -336,15 +336,87 @@ curl -s "http://<ALB_URL>/apps/stripe/api/manifest" | jq '.id, .tokenTargetUrl'
 
 ---
 
+## DEPLOYMENT VERIFICATION
+
+**Timestamp**: 2026-01-14 21:35 PST
+
+### Terraform Apply
+```bash
+$ terraform apply -var-file=environments/staging.tfvars
+# DynamoDB table already existed (created manually during earlier investigation)
+# Imported into state: terraform import 'module.dynamodb.aws_dynamodb_table.stripe_app[0]' saleor-platform-staging-stripe-app
+# Apply completed successfully
+```
+
+### DynamoDB Table Status
+```
+Name: saleor-platform-staging-stripe-app
+Status: ACTIVE
+ItemCount: 0
+KeySchema: [PK (HASH), SK (RANGE)]
+```
+
+### ECS Service Status
+```
+Service: stripe
+Status: ACTIVE
+RunningCount: 1
+DesiredCount: 1
+```
+
+### Endpoint Verification
+```
+GET /apps/stripe/api/manifest → 200 OK
+  - ID: saleor.app.payment.stripe
+  - Version: 2.3.8
+  - tokenTargetUrl: http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/apps/stripe/api/register
+  - appUrl: http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/apps/stripe
+  - Webhooks: 6 configured
+
+POST /apps/stripe/api/register → 400 (expected without auth)
+```
+
+### App Logs
+```
+✓ Next.js 15.2.6
+✓ Ready in 6.2s
+(No DynamoDB errors)
+```
+
+---
+
+## MANUAL TESTING REQUIRED
+
+To complete verification, install the app via Dashboard:
+
+1. Navigate to: `http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/dashboard`
+2. Go to **Apps** → **Install external app**
+3. Enter manifest URL: `http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/apps/stripe/api/manifest`
+4. Click **Install**
+
+**Expected result**: App installs successfully without "auth data could not be used to fetch app ID" error.
+
+**Verification in logs**:
+```bash
+aws logs tail /ecs/saleor-platform-staging/stripe-app --since 5m --region us-west-1
+# Should see: "App configuration set up successfully"
+```
+
+---
+
 ## DELIVERABLES
 
 - [x] `docs/debug/stripe-app-install-debug.md` - This investigation log
 - [x] `docs/ops/runbooks/stripe-app-install.md` - Installation runbook
 - [x] `infra/terraform/modules/dynamodb/` - DynamoDB module
 - [x] `infra/terraform/main.tf` - Updated to use DynamoDB module
-- [x] Branch `fix/stripe-app-install-auth` ready for PR
+- [x] Branch `fix/stripe-app-install-auth` committed
+- [x] Terraform applied and infrastructure verified
+- [x] ECS service redeployed and healthy
+- [ ] Manual app installation test (requires Dashboard access)
 
 ---
 
 *Investigation completed: 2026-01-14 22:00 PST*
+*Deployment verified: 2026-01-14 21:35 PST*
 *Debug log maintained by Claude Code / Gen*
