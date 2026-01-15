@@ -131,10 +131,19 @@ data "aws_iam_policy_document" "github_actions_ecs" {
     actions = [
       "ecs:UpdateService",
       "ecs:DescribeServices",
-      "ecs:ListTasks",
-      "ecs:DescribeTasks"
+      "ecs:ListTasks"
     ]
     resources = [local.ecs_service_prefix]
+  }
+
+  # Separate statement for task operations - tasks have different ARN pattern than services
+  statement {
+    sid    = "ECSTasks"
+    effect = "Allow"
+    actions = [
+      "ecs:DescribeTasks"
+    ]
+    resources = ["arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/${var.ecs_cluster_name}/*"]
   }
 
   statement {
