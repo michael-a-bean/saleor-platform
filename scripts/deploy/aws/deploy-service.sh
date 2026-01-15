@@ -42,16 +42,18 @@ ECR_REGISTRY="$(get_ecr_registry "$ACCOUNT_ID" "$REGION")"
 CLUSTER="$(get_cluster_name "$ENV")"
 
 # Map service names to image sources
+# For ECR images, use the SHA tag passed in
+# For upstream images (api, worker, dashboard, meilisearch), use "KEEP" to preserve current image
 declare -A IMAGE_MAP=(
-    ["api"]="ghcr.io/saleor/saleor:3.22"
-    ["worker"]="ghcr.io/saleor/saleor:3.22"
-    ["dashboard"]="ghcr.io/saleor/saleor-dashboard:3.22.0"
+    ["api"]="KEEP"
+    ["worker"]="KEEP"
+    ["dashboard"]="KEEP"
     ["storefront"]="${ECR_REGISTRY}/saleor-platform/storefront:${SHA}"
-    ["stripe-app"]="${ECR_REGISTRY}/saleor-platform/stripe-app:${SHA}"
-    ["inventory-ops-app"]="${ECR_REGISTRY}/saleor-platform/inventory-ops-app:${SHA}"
-    ["buylist-app"]="${ECR_REGISTRY}/saleor-platform/buylist-app:${SHA}"
-    ["pos-app"]="${ECR_REGISTRY}/saleor-platform/pos-app:${SHA}"
-    ["meilisearch"]="getmeili/meilisearch:v1.6"
+    ["stripe"]="${ECR_REGISTRY}/saleor-platform/stripe-app:${SHA}"
+    ["inventory-ops"]="${ECR_REGISTRY}/saleor-platform/inventory-ops-app:${SHA}"
+    ["buylist"]="${ECR_REGISTRY}/saleor-platform/buylist-app:${SHA}"
+    ["pos"]="${ECR_REGISTRY}/saleor-platform/pos-app:${SHA}"
+    ["meilisearch"]="KEEP"
 )
 
 # =============================================================================
@@ -84,17 +86,6 @@ if [[ -z "$IMAGE" ]]; then
     log_error "Unknown service: ${SERVICE}"
     exit 1
 fi
-log_info "  Image: ${IMAGE}"
-
-# For custom images, verify they exist in ECR
-if [[ "$IMAGE" == *"${ECR_REGISTRY}"* ]]; then
-    REPO_NAME="saleor-platform/${SERVICE}"
-    if ! image_exists_in_ecr "$REPO_NAME" "$SHA"; then
-        log_error "Image not found in ECR: ${IMAGE}"
-        exit 1
-    fi
-    log_success "Image verified in ECR"
-fi
 
 # Get current task definition JSON
 TASK_DEF_JSON=$(aws ecs describe-task-definition \
@@ -102,12 +93,43 @@ TASK_DEF_JSON=$(aws ecs describe-task-definition \
     --query 'taskDefinition' \
     --output json)
 
-# Update the image in the container definition
-# Remove fields that cannot be included when registering a new task definition
-NEW_TASK_DEF=$(echo "$TASK_DEF_JSON" | jq --arg IMAGE "$IMAGE" '
-    .containerDefinitions[0].image = $IMAGE |
-    del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .deregisteredAt)
-')
+# Handle image update
+if [[ "$IMAGE" == "KEEP" ]]; then
+    # Keep existing image from task definition
+    IMAGE=$(echo "$TASK_DEF_JSON" | jq -r '.containerDefinitions[0].image')
+    log_info "  Image: ${IMAGE} (unchanged)"
+
+    # Remove fields that cannot be included when registering a new task definition
+    NEW_TASK_DEF=$(echo "$TASK_DEF_JSON" | jq '
+        del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .deregisteredAt)
+    ')
+else
+    log_info "  Image: ${IMAGE}"
+
+    # For custom images, verify they exist in ECR
+    if [[ "$IMAGE" == *"${ECR_REGISTRY}"* ]]; then
+        # Extract repo name from service (handle mapping differences)
+        case "$SERVICE" in
+            stripe) REPO_NAME="saleor-platform/stripe-app" ;;
+            inventory-ops) REPO_NAME="saleor-platform/inventory-ops-app" ;;
+            buylist) REPO_NAME="saleor-platform/buylist-app" ;;
+            pos) REPO_NAME="saleor-platform/pos-app" ;;
+            *) REPO_NAME="saleor-platform/${SERVICE}" ;;
+        esac
+        if ! image_exists_in_ecr "$REPO_NAME" "$SHA"; then
+            log_error "Image not found in ECR: ${IMAGE}"
+            exit 1
+        fi
+        log_success "Image verified in ECR"
+    fi
+
+    # Update the image in the container definition
+    # Remove fields that cannot be included when registering a new task definition
+    NEW_TASK_DEF=$(echo "$TASK_DEF_JSON" | jq --arg IMAGE "$IMAGE" '
+        .containerDefinitions[0].image = $IMAGE |
+        del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .deregisteredAt)
+    ')
+fi
 
 # Write to temp file for reliable JSON passing to AWS CLI
 TEMP_FILE=$(mktemp)
