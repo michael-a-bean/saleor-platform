@@ -465,4 +465,67 @@ SK: APL
 *Investigation completed: 2026-01-14 22:00 PST*
 *Root cause #2 fixed: 2026-01-15 07:30 UTC*
 *Final verification: 2026-01-15 07:36 UTC*
+*Root cause #3 fixed: 2026-01-15 01:30 PST*
 *Debug log maintained by Claude Code / Gen*
+
+---
+
+## ROOT CAUSE #3: ALB Missing /.well-known/* Route
+
+**Timestamp**: 2026-01-15 01:30 PST
+
+### Problem
+
+After successful app installation, subsequent re-installations failed with `INVALID_MANIFEST_FORMAT` error.
+
+### Investigation
+
+DynamoDB scan revealed corrupted APL entry:
+```yaml
+jwks:
+  S: '<!DOCTYPE html>...404: This page could not be found...'
+```
+
+The `jwks` field contained an HTML 404 page from the storefront instead of JWKS JSON data.
+
+### Root Cause
+
+The ALB HTTP listener rule for the API only routed:
+- `/graphql/*`
+- `/health/*`
+- `/media/*`
+
+But Saleor's JWKS endpoint is at `/.well-known/jwks.json`, which wasn't matched and fell through to the default storefront rule.
+
+When the Stripe app tried to fetch JWKS during registration, it received the storefront's 404 page instead.
+
+### Fix Applied
+
+Added `/.well-known/*` to the API routing rule in `modules/alb/main.tf`:
+
+```hcl
+condition {
+  path_pattern {
+    # Includes /.well-known/* for JWKS endpoint (required for Saleor app auth)
+    values = ["/graphql/*", "/health/*", "/media/*", "/.well-known/*"]
+  }
+}
+```
+
+### Verification
+
+```bash
+# JWKS endpoint now returns correct JSON
+$ curl -s "http://<ALB>//.well-known/jwks.json" | head -1
+{"keys": [{"kty": "RSA", "key_ops": ["verify"], "n": "...", ...}]}
+
+# Cleared corrupted DynamoDB entry
+$ aws dynamodb delete-item --table-name saleor-platform-staging-stripe-app \
+    --key '{"PK": {"S": "<saleor-api-url>"}, "SK": {"S": "APL"}}'
+```
+
+### Recovery Steps
+
+1. Delete existing Stripe app from Saleor Dashboard (Apps → Stripe → Delete)
+2. Re-install Stripe app using manifest URL
+3. Verify successful registration in app logs

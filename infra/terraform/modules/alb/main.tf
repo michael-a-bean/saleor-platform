@@ -568,7 +568,8 @@ resource "aws_lb_listener_rule" "api_http" {
 
   condition {
     path_pattern {
-      values = ["/graphql/*", "/health/*", "/media/*"]
+      # Includes /.well-known/* for JWKS endpoint (required for Saleor app auth)
+      values = ["/graphql/*", "/health/*", "/media/*", "/.well-known/*"]
     }
   }
 }
