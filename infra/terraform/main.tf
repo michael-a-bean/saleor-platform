@@ -266,7 +266,8 @@ module "ecs" {
         }
       ]
       environment = {
-        APL = "file"
+        APL       = "redis"
+        REDIS_URL = module.elasticache.cache_url
       }
     }
 
@@ -284,7 +285,8 @@ module "ecs" {
         }
       ]
       environment = {
-        APL = "file"
+        APL       = "redis"
+        REDIS_URL = module.elasticache.cache_url
       }
     }
 
@@ -302,7 +304,8 @@ module "ecs" {
         }
       ]
       environment = {
-        APL = "file"
+        APL       = "redis"
+        REDIS_URL = module.elasticache.cache_url
       }
     }
   }
