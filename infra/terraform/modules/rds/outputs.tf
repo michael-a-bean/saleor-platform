@@ -47,3 +47,19 @@ output "inventory_database_url" {
   value       = length(aws_db_instance.inventory) > 0 ? "postgresql://${var.master_username}:PASSWORD@${aws_db_instance.inventory[0].endpoint}/inventory_ops" : "postgresql://${var.master_username}:PASSWORD@${aws_db_instance.main.endpoint}/inventory_ops"
   sensitive   = true
 }
+
+# RDS Proxy outputs (if enabled)
+output "rds_proxy_endpoint" {
+  description = "Endpoint of the RDS Proxy (use instead of direct RDS endpoint for connection pooling)"
+  value       = length(aws_db_proxy.main) > 0 ? aws_db_proxy.main[0].endpoint : null
+}
+
+output "rds_proxy_arn" {
+  description = "ARN of the RDS Proxy"
+  value       = length(aws_db_proxy.main) > 0 ? aws_db_proxy.main[0].arn : null
+}
+
+output "connection_endpoint" {
+  description = "Recommended connection endpoint (RDS Proxy if enabled, otherwise direct RDS)"
+  value       = length(aws_db_proxy.main) > 0 ? aws_db_proxy.main[0].endpoint : aws_db_instance.main.endpoint
+}

@@ -116,3 +116,29 @@ variable "inventory_password" {
   sensitive   = true
   default     = ""
 }
+
+# =============================================================================
+# Connection Configuration
+# =============================================================================
+
+variable "max_connections" {
+  description = "Maximum number of database connections"
+  type        = number
+  default     = 400
+}
+
+# =============================================================================
+# RDS Proxy Configuration
+# =============================================================================
+
+variable "enable_rds_proxy" {
+  description = "Enable RDS Proxy for connection pooling"
+  type        = bool
+  default     = false
+}
+
+variable "db_credentials_secret_arn" {
+  description = "ARN of Secrets Manager secret containing DB credentials (required if enable_rds_proxy=true)"
+  type        = string
+  default     = ""
+}
