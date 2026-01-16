@@ -6,6 +6,9 @@ export const metadata = {
 	title: "Checkout · Saleor Storefront example",
 };
 
+// Required for searchParams access - prevents DYNAMIC_SERVER_USAGE build errors
+export const dynamic = "force-dynamic";
+
 export default async function CheckoutPage(props: {
 	searchParams: Promise<{ checkout?: string; order?: string }>;
 }) {
