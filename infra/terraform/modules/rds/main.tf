@@ -150,6 +150,62 @@ resource "aws_db_instance" "main" {
 }
 
 # =============================================================================
+# Read Replica (P4-3: For reporting and indexing workloads)
+# =============================================================================
+
+resource "aws_db_instance" "read_replica" {
+  count = var.enable_read_replica ? 1 : 0
+
+  identifier = "${local.name_prefix}-saleor-replica"
+
+  # Replicate from main instance
+  replicate_source_db = aws_db_instance.main.identifier
+
+  # Engine (inherited from source, but must specify class)
+  instance_class = var.read_replica_instance_class
+
+  # Storage (inherited from source)
+  storage_type      = "gp3"
+  storage_encrypted = true
+  kms_key_id        = var.kms_key_arn
+
+  # Network
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  publicly_accessible    = false
+  port                   = 5432
+
+  # No Multi-AZ for read replica (cost optimization)
+  multi_az = false
+
+  # No backup for replica (backed up via primary)
+  backup_retention_period = 0
+  skip_final_snapshot     = true
+
+  # Protection
+  deletion_protection = var.deletion_protection
+
+  # Monitoring
+  performance_insights_enabled          = var.enable_performance_insights
+  performance_insights_retention_period = var.enable_performance_insights ? 7 : null
+  monitoring_interval                   = var.enable_enhanced_monitoring ? 60 : 0
+  monitoring_role_arn                   = var.enable_enhanced_monitoring ? aws_iam_role.rds_monitoring[0].arn : null
+
+  # Updates
+  auto_minor_version_upgrade = true
+  apply_immediately          = false
+
+  tags = {
+    Name     = "${local.name_prefix}-saleor-replica"
+    Database = "saleor"
+    Role     = "read-replica"
+  }
+
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+
+# =============================================================================
 # Inventory Ops Database (separate instance if configured)
 # =============================================================================
 

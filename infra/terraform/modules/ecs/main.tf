@@ -40,7 +40,7 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 
 resource "aws_cloudwatch_log_group" "services" {
   for_each = toset([
-    "api", "worker", "storefront", "dashboard",
+    "api", "worker", "beat", "storefront", "dashboard",
     "stripe-app", "inventory-ops-app", "buylist-app", "pos-app",
     "meilisearch", "migrate"
   ])
@@ -150,7 +150,7 @@ resource "aws_ecs_task_definition" "worker" {
       image = var.saleor_api_image
       command = [
         "celery", "-A", "saleor", "--app=saleor.celeryconf:app",
-        "worker", "--loglevel=info", "-B", # -B only for first worker
+        "worker", "--loglevel=info",
         "--concurrency=2"
       ]
       essential = true
@@ -197,6 +197,64 @@ resource "aws_ecs_task_definition" "worker" {
   }
 }
 
+# =============================================================================
+# Celery Beat Task Definition (P4-2: Separate scheduler for reliability)
+# =============================================================================
+
+resource "aws_ecs_task_definition" "beat" {
+  family                   = "${local.name_prefix}-beat"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = 256
+  memory                   = 512
+  execution_role_arn       = var.task_execution_role_arn
+  task_role_arn            = var.worker_task_role_arn
+
+  container_definitions = jsonencode([
+    {
+      name  = "beat"
+      image = var.saleor_api_image
+      command = [
+        "celery", "-A", "saleor", "--app=saleor.celeryconf:app",
+        "beat", "--loglevel=info",
+        "--scheduler=django_celery_beat.schedulers:DatabaseScheduler"
+      ]
+      essential = true
+      secrets = [
+        {
+          name      = "SECRET_KEY"
+          valueFrom = "${var.ssm_path_prefix}/api/SECRET_KEY"
+        },
+        {
+          name      = "DATABASE_URL"
+          valueFrom = "${var.ssm_path_prefix}/api/DATABASE_URL"
+        },
+        {
+          name      = "CELERY_BROKER_URL"
+          valueFrom = "${var.ssm_path_prefix}/api/CELERY_BROKER_URL"
+        }
+      ]
+      environment = [
+        { name = "DEBUG", value = "false" },
+        { name = "ALLOWED_HOSTS", value = var.allowed_hosts }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.services["beat"].name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+    }
+  ])
+
+  tags = {
+    Name    = "${local.name_prefix}-beat"
+    Service = "beat"
+  }
+}
+
 # Storefront Task Definition
 resource "aws_ecs_task_definition" "storefront" {
   family                   = "${local.name_prefix}-storefront"
@@ -225,7 +283,9 @@ resource "aws_ecs_task_definition" "storefront" {
         { name = "SALEOR_API_URL", value = "${var.public_api_base_url}/graphql/" },
         { name = "NEXT_PUBLIC_STOREFRONT_URL", value = var.public_storefront_base_url },
         { name = "NEXT_PUBLIC_DEFAULT_CHANNEL", value = "webstore" },
-        { name = "MEILISEARCH_URL", value = var.meilisearch_url }
+        { name = "MEILISEARCH_URL", value = var.meilisearch_url },
+        # P4-1: Enable Next.js image optimization in production
+        { name = "NEXT_IMAGE_UNOPTIMIZED", value = "false" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -353,6 +413,35 @@ resource "aws_ecs_service" "worker" {
   tags = {
     Name    = "${local.name_prefix}-worker"
     Service = "worker"
+  }
+
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
+}
+
+# Celery Beat Service (P4-2: Dedicated scheduler, always desired_count = 1)
+resource "aws_ecs_service" "beat" {
+  name            = "beat"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.beat.arn
+  desired_count   = 1 # Must be exactly 1 to avoid duplicate task scheduling
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.ecs_backend_security_group_id]
+    assign_public_ip = false
+  }
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
+  tags = {
+    Name    = "${local.name_prefix}-beat"
+    Service = "beat"
   }
 
   lifecycle {

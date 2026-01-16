@@ -63,3 +63,20 @@ output "connection_endpoint" {
   description = "Recommended connection endpoint (RDS Proxy if enabled, otherwise direct RDS)"
   value       = length(aws_db_proxy.main) > 0 ? aws_db_proxy.main[0].endpoint : aws_db_instance.main.endpoint
 }
+
+# Read Replica outputs (P4-3)
+output "read_replica_endpoint" {
+  description = "Endpoint of the read replica (for reporting/indexing workloads)"
+  value       = length(aws_db_instance.read_replica) > 0 ? aws_db_instance.read_replica[0].endpoint : null
+}
+
+output "read_replica_address" {
+  description = "Address of the read replica"
+  value       = length(aws_db_instance.read_replica) > 0 ? aws_db_instance.read_replica[0].address : null
+}
+
+output "read_replica_database_url" {
+  description = "PostgreSQL connection URL for read replica (read-only queries)"
+  value       = length(aws_db_instance.read_replica) > 0 ? "postgresql://${var.master_username}:PASSWORD@${aws_db_instance.read_replica[0].endpoint}/saleor" : null
+  sensitive   = true
+}

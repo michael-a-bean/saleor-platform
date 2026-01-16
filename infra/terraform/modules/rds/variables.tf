@@ -142,3 +142,19 @@ variable "db_credentials_secret_arn" {
   type        = string
   default     = ""
 }
+
+# =============================================================================
+# Read Replica Configuration (P4-3)
+# =============================================================================
+
+variable "enable_read_replica" {
+  description = "Create a read replica for reporting and indexing workloads"
+  type        = bool
+  default     = false
+}
+
+variable "read_replica_instance_class" {
+  description = "Instance class for read replica (can be smaller than primary)"
+  type        = string
+  default     = "db.t3.medium"
+}
