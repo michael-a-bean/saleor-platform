@@ -233,3 +233,37 @@ variable "apps_desired_count" {
   type        = number
   default     = 1
 }
+
+# =============================================================================
+# Auto-Scaling Configuration
+# =============================================================================
+
+variable "enable_autoscaling" {
+  description = "Enable auto-scaling for ECS services"
+  type        = bool
+  default     = false
+}
+
+variable "api_min_capacity" {
+  description = "Minimum number of API tasks"
+  type        = number
+  default     = 2
+}
+
+variable "api_max_capacity" {
+  description = "Maximum number of API tasks"
+  type        = number
+  default     = 10
+}
+
+variable "storefront_min_capacity" {
+  description = "Minimum number of Storefront tasks"
+  type        = number
+  default     = 2
+}
+
+variable "storefront_max_capacity" {
+  description = "Maximum number of Storefront tasks"
+  type        = number
+  default     = 10
+}
