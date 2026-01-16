@@ -209,17 +209,37 @@ test_trpc() {
   fi
 }
 
-# Test static asset (logo)
+# Test static asset (logo) - parses manifest for logo URL
 test_logo() {
   local app_name="$1"
   local base_path="$2"
-  local url="${ALB_BASE_URL}${base_path}/logo.png"
+  local manifest_url="${ALB_BASE_URL}${base_path}/api/manifest"
 
+  # First, fetch the manifest to get the logo URL
+  local manifest_body
+  manifest_body=$(curl -s --max-time "$TIMEOUT" "$manifest_url" 2>/dev/null || echo "CURL_FAILED")
+
+  if [[ "$manifest_body" == "CURL_FAILED" ]]; then
+    log_fail "Logo check failed - could not fetch manifest: $manifest_url"
+    return
+  fi
+
+  # Extract logo URL from manifest using jq
+  # Try brand.logo.default first, then fall back to logo field
+  local logo_url
+  logo_url=$(echo "$manifest_body" | jq -r '.brand.logo.default // .logo // empty' 2>/dev/null)
+
+  if [[ -z "$logo_url" || "$logo_url" == "null" ]]; then
+    log_warn "Manifest does not declare a logo URL - skipping logo check"
+    return
+  fi
+
+  # Request the logo URL
   local response
-  response=$(curl -s -o /dev/null -w "%{http_code}\n%{content_type}" --max-time "$TIMEOUT" "$url" 2>/dev/null || echo "CURL_FAILED")
+  response=$(curl -s -o /dev/null -w "%{http_code}\n%{content_type}" --max-time "$TIMEOUT" "$logo_url" 2>/dev/null || echo "CURL_FAILED")
 
   if [[ "$response" == "CURL_FAILED" ]]; then
-    log_fail "Logo check failed - connection error: $url"
+    log_fail "Logo check failed - connection error: $logo_url"
     return
   fi
 
@@ -228,7 +248,7 @@ test_logo() {
   content_type=$(echo "$response" | tail -n 1)
 
   if [[ "$status" != "200" ]]; then
-    log_fail "Logo check returned status $status (expected 200): $url"
+    log_fail "Logo check returned status $status (expected 200): $logo_url"
     return
   fi
 
@@ -237,7 +257,7 @@ test_logo() {
     return
   fi
 
-  log_pass "Logo asset OK: $url"
+  log_pass "Logo asset OK: $logo_url"
 }
 
 # Main
