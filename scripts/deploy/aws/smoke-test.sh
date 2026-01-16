@@ -54,11 +54,17 @@ test_endpoint() {
     local name="$1"
     local url="$2"
     local expected_code="${3:-200}"
+    local follow_redirects="${4:-false}"
 
     log_info "Testing ${name}..."
 
+    local curl_opts="-s -o /dev/null -w %{http_code} --max-time $TIMEOUT"
+    if [[ "$follow_redirects" == "true" ]]; then
+        curl_opts="$curl_opts -L"
+    fi
+
     local http_code
-    http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$TIMEOUT" "$url" || echo "000")
+    http_code=$(curl $curl_opts "$url" || echo "000")
 
     if [[ "$http_code" == "$expected_code" ]]; then
         log_success "${name}: HTTP ${http_code}"
@@ -118,7 +124,8 @@ fi
 
 # Storefront Health Check
 if [[ -n "$STOREFRONT_URL" ]]; then
-    test_endpoint "Storefront Homepage" "${STOREFRONT_URL}/"
+    # Follow redirects for homepage (Next.js often redirects to channel/locale)
+    test_endpoint "Storefront Homepage" "${STOREFRONT_URL}/" 200 true
     test_endpoint "Storefront Health" "${STOREFRONT_URL}/api/health"
 else
     log_warn "STOREFRONT_URL not set, skipping storefront tests"
