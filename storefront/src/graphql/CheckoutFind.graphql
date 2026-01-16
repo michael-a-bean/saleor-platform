@@ -38,6 +38,7 @@ query CheckoutFind($id: ID!) {
 				}
 				name
 				id
+				quantityAvailable
 			}
 		}
 		totalPrice {

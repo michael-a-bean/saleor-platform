@@ -2,6 +2,7 @@ import Image from "next/image";
 import { CheckoutLink } from "./CheckoutLink";
 import { DeleteLineButton } from "./DeleteLineButton";
 import { QuantityEditor } from "./QuantityEditor";
+import { StockWarning, calculateStockIssues } from "./StockWarning";
 import * as Checkout from "@/lib/checkout";
 import { formatMoney, getHrefForVariant } from "@/lib/utils";
 import { LinkWithChannel } from "@/ui/atoms/LinkWithChannel";
@@ -33,10 +34,17 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 		);
 	}
 
+	// Calculate stock issues
+	const stockIssues = calculateStockIssues(checkout.lines);
+	const hasStockIssues = stockIssues.length > 0;
+
 	return (
 		<section className="mx-auto max-w-7xl p-8">
 			<h1 className="mt-8 text-3xl font-bold text-neutral-900">Your Shopping Cart</h1>
 			<form className="mt-12">
+				{/* Stock warning banner */}
+				<StockWarning issues={stockIssues} />
+
 				<ul
 					data-testid="CartProductList"
 					role="list"
@@ -110,9 +118,14 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 					<div className="mt-10 text-center">
 						<CheckoutLink
 							checkoutId={checkoutId}
-							disabled={!checkout.lines.length}
+							disabled={!checkout.lines.length || hasStockIssues}
 							className="w-full sm:w-1/3"
 						/>
+						{hasStockIssues && (
+							<p className="mt-2 text-sm text-amber-600">
+								Resolve stock issues above before checking out
+							</p>
+						)}
 					</div>
 				</div>
 			</form>
