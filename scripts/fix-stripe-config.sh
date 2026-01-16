@@ -13,8 +13,19 @@
 
 set -e
 
-# Configuration
-SECRET_KEY="677a28c7a3f6f9b615a3dbe4657d0cf816080e482a432892f0b4c5f07dce0b54"
+# Configuration - STRIPE_APP_SECRET_KEY must be provided via environment
+# (matches .env.example convention; falls back to SECRET_KEY for container use)
+SECRET_KEY="${STRIPE_APP_SECRET_KEY:-$SECRET_KEY}"
+if [[ -z "$SECRET_KEY" ]]; then
+    echo "ERROR: STRIPE_APP_SECRET_KEY environment variable is required"
+    echo "Generate one with: openssl rand -hex 32"
+    exit 1
+fi
+
+if [[ ! "$SECRET_KEY" =~ ^[a-fA-F0-9]{64}$ ]]; then
+    echo "ERROR: STRIPE_APP_SECRET_KEY must be a 64-character hex string (256 bits)"
+    exit 1
+fi
 TABLE_NAME="stripe-main-table"
 NETWORK="saleor-platform_saleor-backend-tier"
 ENDPOINT="http://dynamodb-local:8000"

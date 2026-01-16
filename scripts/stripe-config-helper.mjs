@@ -11,8 +11,20 @@
 import crypto from "node:crypto";
 import { DynamoDBClient, PutItemCommand, DeleteItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
 
-// Configuration from environment (set in docker-compose.yml)
-const SECRET_KEY = process.env.SECRET_KEY || "677a28c7a3f6f9b615a3dbe4657d0cf816080e482a432892f0b4c5f07dce0b54";
+// Configuration - SECRET_KEY must be provided via environment (set in docker-compose.yml)
+// Inside containers, docker-compose maps STRIPE_APP_SECRET_KEY → SECRET_KEY
+const SECRET_KEY = process.env.SECRET_KEY;
+if (!SECRET_KEY) {
+  console.error('ERROR: SECRET_KEY environment variable is required');
+  console.error('(Set STRIPE_APP_SECRET_KEY in .env - docker-compose maps it to SECRET_KEY)');
+  console.error('Generate one with: openssl rand -hex 32');
+  process.exit(1);
+}
+
+if (!/^[a-f0-9]{64}$/i.test(SECRET_KEY)) {
+  console.error('ERROR: SECRET_KEY must be a 64-character hex string (256 bits)');
+  process.exit(1);
+}
 const DYNAMODB_ENDPOINT = process.env.AWS_ENDPOINT_URL || "http://dynamodb-local:8000";
 const TABLE_NAME = process.env.DYNAMODB_MAIN_TABLE_NAME || "stripe-main-table";
 
