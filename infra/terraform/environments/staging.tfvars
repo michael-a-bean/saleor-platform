@@ -4,8 +4,10 @@
 environment = "staging"
 aws_region  = "us-west-1"
 
-# Domain (placeholder - custom domain not yet configured)
-domain_name = "staging.shuffleandcut.com"
+# Domain (placeholder - not actively used when public_*_base_url overrides are set)
+# This value is only used for host-based ALB routing when a certificate is configured.
+# Since staging uses ALB DNS directly with path-based routing, this is effectively ignored.
+domain_name = "staging.saleor-platform.internal"
 
 # =============================================================================
 # Public URL Configuration (TWO-PHASE DEPLOYMENT)
