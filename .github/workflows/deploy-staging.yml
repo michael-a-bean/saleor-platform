@@ -338,13 +338,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run smoke tests
+      - name: Run core smoke tests
         run: |
           ./scripts/deploy/aws/smoke-test.sh staging
         env:
           STAGING_API_URL: ${{ vars.STAGING_API_URL }}
           STAGING_STOREFRONT_URL: ${{ vars.STAGING_STOREFRONT_URL }}
           STAGING_DASHBOARD_URL: ${{ vars.STAGING_DASHBOARD_URL }}
+
+      - name: Run apps smoke tests
+        run: |
+          ./scripts/smoke/apps-smoke.sh ${{ vars.STAGING_API_URL }}
 
       - name: Report deployment success
         if: success()
@@ -355,3 +359,9 @@ jobs:
           echo "- **API**: ${{ vars.STAGING_API_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Storefront**: ${{ vars.STAGING_STOREFRONT_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Dashboard**: ${{ vars.STAGING_DASHBOARD_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Apps Verified" >> $GITHUB_STEP_SUMMARY
+          echo "- Stripe: ${{ vars.STAGING_API_URL }}/apps/stripe" >> $GITHUB_STEP_SUMMARY
+          echo "- Inventory: ${{ vars.STAGING_API_URL }}/apps/inventory" >> $GITHUB_STEP_SUMMARY
+          echo "- Buylist: ${{ vars.STAGING_API_URL }}/apps/buylist" >> $GITHUB_STEP_SUMMARY
+          echo "- POS: ${{ vars.STAGING_API_URL }}/apps/pos" >> $GITHUB_STEP_SUMMARY
