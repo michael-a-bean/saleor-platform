@@ -35,7 +35,7 @@ function buildCSP(): string {
     "form-action 'self'",
     "object-src 'none'",
     "base-uri 'self'",
-    process.env.NODE_ENV === 'production' ? "upgrade-insecure-requests" : "",
+    process.env.NODE_ENV === 'production' && process.env.ENABLE_HTTPS !== 'false' ? "upgrade-insecure-requests" : "",
   ].filter(Boolean).join('; ');
 }
 

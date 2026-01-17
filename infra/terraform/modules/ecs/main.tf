@@ -285,7 +285,9 @@ resource "aws_ecs_task_definition" "storefront" {
         { name = "NEXT_PUBLIC_DEFAULT_CHANNEL", value = "webstore" },
         { name = "MEILISEARCH_URL", value = var.meilisearch_url },
         # P4-1: Enable Next.js image optimization in production
-        { name = "NEXT_IMAGE_UNOPTIMIZED", value = "false" }
+        { name = "NEXT_IMAGE_UNOPTIMIZED", value = "false" },
+        # Disable upgrade-insecure-requests CSP for HTTP-only environments
+        { name = "ENABLE_HTTPS", value = var.enable_https ? "true" : "false" }
       ]
       logConfiguration = {
         logDriver = "awslogs"

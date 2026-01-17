@@ -341,6 +341,12 @@ variable "log_retention_days" {
   default     = 30
 }
 
+variable "enable_https" {
+  description = "Enable HTTPS upgrade in storefront CSP. Set to false for HTTP-only environments."
+  type        = bool
+  default     = true
+}
+
 # =============================================================================
 # GitHub Actions OIDC
 # =============================================================================
