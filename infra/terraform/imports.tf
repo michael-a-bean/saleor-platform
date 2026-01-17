@@ -49,10 +49,27 @@ import {
   id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener/app/saleor-platform-staging-alb/544ea1780304c8eb/9381df049fadaacd"
 }
 
-# SKIPPED: Target groups and listener rules
-# These exist in AWS but importing causes forced replacement due to attribute mismatches.
-# They will be managed out-of-band for now. ECS services reference them directly.
-# TODO: Reconcile target group configuration and import properly
+# SKIPPED: Target Groups
+# These exist in vpc-03bec79de659bddf7 but Terraform manages vpc-0b0360f5c0c874c59.
+# Importing would force replacement and cause downtime.
+# Managed out-of-band until VPC migration maintenance window.
+#
+# Target groups in AWS (for reference):
+# - saleor-platform-staging-api
+# - sp-staging-storefront
+# - sp-staging-dashboard
+# - saleor-platform-staging-stripe
+# - saleor-platform-staging-inv-ops
+# - saleor-platform-staging-buylist
+# - saleor-platform-staging-pos
+
+# =============================================================================
+# S3
+# =============================================================================
+import {
+  to = module.s3.aws_s3_bucket.media
+  id = "saleor-platform-media-staging-546464732019"
+}
 
 # =============================================================================
 # IAM Roles
