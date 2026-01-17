@@ -27,3 +27,4 @@ saleor-mcp/
 scripts/mtg_sealed_import/wpn_images/
 # Local review reports (generated)
 docs/ai-reviews/
+.secrets
