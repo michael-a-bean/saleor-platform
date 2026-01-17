@@ -68,6 +68,7 @@ async function fetchFromCollection(
 					first: limit,
 				},
 				revalidate: 300, // Cache for 5 minutes
+				withAuth: false, // Public collections don't require auth
 			});
 
 			const products = data.collection?.products?.edges.map(({ node }) => node) ?? [];
@@ -106,6 +107,7 @@ async function fetchRecentlyModified(
 				},
 			},
 			revalidate: 300, // Cache for 5 minutes
+			withAuth: false, // Public product listing doesn't require auth
 		});
 
 		return data.products?.edges.map(({ node }) => node) ?? [];
