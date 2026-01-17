@@ -35,6 +35,9 @@ domain_name = "staging.saleor-platform.internal"
 #
 use_https_urls = false
 
+# Disable HTTPS upgrade in storefront CSP since ALB is HTTP-only
+enable_https = false
+
 # PHASE 2 ACTIVATED: ALB DNS URLs configured (2026-01-11)
 public_api_base_url        = "http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com"
 public_storefront_base_url = "http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com"

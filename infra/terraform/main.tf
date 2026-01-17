@@ -218,6 +218,7 @@ module "ecs" {
 
   enable_container_insights = var.enable_container_insights
   log_retention_days        = var.log_retention_days
+  enable_https              = var.enable_https
 
   # ==========================================================================
   # Saleor Apps Configuration

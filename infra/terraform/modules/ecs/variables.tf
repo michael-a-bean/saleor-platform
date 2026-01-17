@@ -267,3 +267,9 @@ variable "storefront_max_capacity" {
   type        = number
   default     = 10
 }
+
+variable "enable_https" {
+  description = "Enable HTTPS upgrade in storefront CSP. Set to false for HTTP-only environments like staging without SSL."
+  type        = bool
+  default     = true
+}
