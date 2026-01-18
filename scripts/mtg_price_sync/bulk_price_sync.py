@@ -7,12 +7,17 @@ It supports the new finish-aware variant structure:
 - Foil (F): uses prices.usd_foil
 - Etched (E): uses prices.usd_etched
 
-Prices are adjusted by condition multipliers:
-- NM: 1.0
-- LP: 0.9
-- MP: 0.75
-- HP: 0.5
-- DMG: 0.25
+Prices are adjusted by condition multipliers. Two-tier system available:
+
+Legacy (default):
+- NM: 1.0, LP: 0.9, MP: 0.75, HP: 0.5, DMG: 0.25
+
+Two-tier (set USE_TWO_TIER_MULTIPLIERS=true):
+- Bulk (<$2):    NM: 1.0, LP: 0.85, MP: 0.6, HP: 0.3, DMG: 0.1
+- Singles (>=$2): NM: 1.0, LP: 0.92, MP: 0.8, HP: 0.55, DMG: 0.3
+
+The two-tier system applies steeper discounts to bulk cards (condition matters less)
+and gentler discounts to valuable singles (condition matters more).
 
 Prerequisites:
 - Scryfall bulk data file (all-cards.json or default-cards.json)
@@ -42,14 +47,63 @@ import requests
 SALEOR_API_URL = os.getenv("SALEOR_API_URL", "http://localhost:8000/graphql/")
 SALEOR_TOKEN = os.getenv("SALEOR_TOKEN", "")
 
-# Condition multipliers (must match inventory-ops/price-sync)
-CONDITION_MULTIPLIERS = {
+# Legacy condition multipliers (single tier)
+CONDITION_MULTIPLIERS_LEGACY = {
     "NM": 1.0,
     "LP": 0.9,
     "MP": 0.75,
     "HP": 0.5,
     "DMG": 0.25,
 }
+
+# Two-tier condition multipliers (Council recommendation)
+# Bulk cards (<$2) have steeper discounts - condition matters less for cheap cards
+CONDITION_MULTIPLIERS_BULK = {
+    "NM": 1.0,
+    "LP": 0.85,
+    "MP": 0.6,
+    "HP": 0.3,
+    "DMG": 0.1,
+}
+
+# Singles (>=$2) have gentler discounts - condition matters more for valuable cards
+CONDITION_MULTIPLIERS_SINGLES = {
+    "NM": 1.0,
+    "LP": 0.92,
+    "MP": 0.8,
+    "HP": 0.55,
+    "DMG": 0.3,
+}
+
+# Price threshold for bulk vs singles tier
+BULK_THRESHOLD = Decimal("2.00")
+
+# Feature flag for gradual rollout (set USE_TWO_TIER_MULTIPLIERS=true to enable)
+USE_TWO_TIER_MULTIPLIERS = os.getenv("USE_TWO_TIER_MULTIPLIERS", "false").lower() == "true"
+
+
+def get_condition_multiplier(base_price: Decimal, condition: str) -> Decimal:
+    """
+    Get condition multiplier based on card value tier.
+
+    Two-tier system (when enabled):
+    - Bulk cards (<$2): Steeper discounts (LP=0.85, MP=0.6, HP=0.3, DMG=0.1)
+    - Singles (>=$2): Gentler discounts (LP=0.92, MP=0.8, HP=0.55, DMG=0.3)
+
+    Rationale: Condition matters less for cheap bulk cards but significantly
+    affects value for singles.
+    """
+    if not USE_TWO_TIER_MULTIPLIERS:
+        # Legacy behavior - single tier
+        return Decimal(str(CONDITION_MULTIPLIERS_LEGACY.get(condition, 1.0)))
+
+    # Two-tier system
+    if base_price < BULK_THRESHOLD:
+        multipliers = CONDITION_MULTIPLIERS_BULK
+    else:
+        multipliers = CONDITION_MULTIPLIERS_SINGLES
+
+    return Decimal(str(multipliers.get(condition, 1.0)))
 
 # Finish to price key mapping
 FINISH_PRICE_KEYS = {
@@ -239,7 +293,13 @@ def get_saleor_variants(channel_slug: str = "default-channel", limit: int = 0, p
 
 
 def calculate_price(card: dict, finish: str, condition: str) -> Optional[Decimal]:
-    """Calculate the price for a specific finish and condition."""
+    """
+    Calculate the price for a specific finish and condition.
+
+    Uses two-tier condition multipliers when USE_TWO_TIER_MULTIPLIERS=true:
+    - Bulk cards (<$2): Steeper discounts for lower conditions
+    - Singles (>=$2): Gentler discounts to preserve value
+    """
     price_key = FINISH_PRICE_KEYS.get(finish)
     if not price_key:
         return None
@@ -255,7 +315,8 @@ def calculate_price(card: dict, finish: str, condition: str) -> Optional[Decimal
     except:
         return None
 
-    multiplier = Decimal(str(CONDITION_MULTIPLIERS.get(condition, 1.0)))
+    # Use two-tier multiplier logic (feature-flagged)
+    multiplier = get_condition_multiplier(base_price, condition)
     final_price = base_price * multiplier
 
     # Round to 4 decimal places (matching schema)

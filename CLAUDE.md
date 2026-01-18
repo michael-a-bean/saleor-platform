@@ -67,6 +67,7 @@ This file stays intentionally lean. Detailed procedures live elsewhere and shoul
 ### Architecture & Rules
 - `docs/reference/architecture.md` — Full platform architecture
 - `docs/reference/git-philosophy.md` — Detailed git workflow guide
+- `docs/reference/sync-contracts.md` — Data sync contracts (Saleor/Meilisearch/inventory-ops)
 - `.claude/rules/` — Critical gotchas (database pricing, storefront builds)
 
 ### Legacy Material

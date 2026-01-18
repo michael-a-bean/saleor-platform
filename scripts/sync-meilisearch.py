@@ -39,6 +39,7 @@ import sys
 import time
 import base64
 import os
+from datetime import datetime
 from typing import Optional
 
 # Admin credentials - MUST be set via environment variables
@@ -167,6 +168,7 @@ def fetch_products(token: str, channel: str, after: str = None) -> dict:
                     id
                     name
                     slug
+                    updatedAt
                     thumbnail { url }
                     media { url alt }
                     attributes {
@@ -209,6 +211,11 @@ def transform_product(product: dict) -> dict:
     mana_cost = get_attribute_value(attrs, "mtg-mana-cost") or ""
     type_line = get_attribute_value(attrs, "mtg-type-line") or ""
     oracle_text = get_attribute_value(attrs, "mtg-oracle-text") or ""
+    # NEW: Council recommendations - additional filterable attributes
+    mana_value_raw = get_attribute_value(attrs, "mtg-mana-value")
+    mana_value = int(float(mana_value_raw)) if mana_value_raw else 0
+    color_identity = get_attribute_value(attrs, "mtg-color-identity") or ""
+    keywords = get_attribute_value(attrs, "mtg-keywords") or ""
 
     # Process variants
     variants = []
@@ -282,8 +289,15 @@ def transform_product(product: dict) -> dict:
         "conditions_available": list(conditions_available),
         "finishes_available": list(finishes_available),
         "variants": variants,
+        # NEW: Council recommendations - additional filterable/searchable fields
+        "mana_value": mana_value,  # CMC for deckbuilding queries like "3-drops"
+        "color_identity": [c.strip() for c in color_identity.split(",") if c.strip()] if color_identity else [],
+        "keywords": [k.strip() for k in keywords.split(",") if k.strip()] if keywords else [],
         # Combined searchable text for better matching
         "searchable": f"{name} {set_name} {set_code} {type_line}".lower(),
+        # Delta sync tracking (Phase 2: Council recommendations)
+        "last_indexed_at": datetime.utcnow().isoformat() + "Z",
+        "saleor_updated_at": product.get("updatedAt"),
     }
 
 
@@ -329,15 +343,18 @@ def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
     # This applies all settings atomically and returns a single task to wait on
     print("Configuring index settings...")
     settings = {
+        # Searchable attributes ordered by relevance (name > oracle_text > set_name)
+        # Council recommendation: proper ranking for MTG card discovery
         "searchableAttributes": [
-            "name",
+            "name",           # HIGHEST priority - exact card name matches
             "name_parts",
             "name_prefixes",  # For abbreviation matching (verd → verdant)
-            "searchable",
-            "set_name",
-            "set_code",
+            "oracle_text",    # MEDIUM priority - rules text search
+            "keywords",       # NEW: Flying, Trample, etc.
             "type_line",
-            "oracle_text",
+            "set_name",       # LOWER priority
+            "set_code",
+            "searchable",
         ],
         "filterableAttributes": [
             # These must match what the storefront filter components use
@@ -350,6 +367,10 @@ def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
             "colors",
             "type_line",      # For creature/instant/sorcery filtering
             "min_price",      # For price range filtering
+            # NEW: Council recommendations
+            "mana_value",     # CMC for "show me all 3-drops"
+            "color_identity", # Commander players need this
+            "keywords",       # Flying, Trample, etc.
         ],
         "sortableAttributes": [
             "name",
