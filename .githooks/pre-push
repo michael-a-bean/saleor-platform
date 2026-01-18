@@ -1,0 +1,80 @@
+#!/bin/bash
+# =============================================================================
+# Git Pre-Push Hook
+# =============================================================================
+#
+# Validates environment isolation before pushing to remote.
+# Prevents accidental pushes of local configurations to staging/production.
+#
+# Installation:
+#   make setup-hooks
+#   # or manually:
+#   git config core.hooksPath .githooks
+#
+# Bypass (use sparingly):
+#   git push --no-verify
+#
+# =============================================================================
+
+set -e
+
+# Get the current branch
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+
+# =============================================================================
+# Branch Protection
+# =============================================================================
+
+# Block direct pushes to protected branches
+if [ "$BRANCH" = "main" ]; then
+    echo "=========================================="
+    echo "ERROR: Direct push to 'main' is prohibited"
+    echo "=========================================="
+    echo ""
+    echo "The 'main' branch mirrors upstream saleor/saleor-platform."
+    echo "Use 'platform/main' for your changes."
+    echo ""
+    echo "To switch branches:"
+    echo "  git checkout platform/main"
+    echo "  git cherry-pick <your-commit>"
+    echo ""
+    exit 1
+fi
+
+if [ "$BRANCH" = "master" ]; then
+    echo "ERROR: Direct push to 'master' is prohibited"
+    exit 1
+fi
+
+# =============================================================================
+# Environment Validation
+# =============================================================================
+
+# Run environment validation script if it exists
+SCRIPT_PATH="./scripts/validate-environment.sh"
+
+if [ -x "$SCRIPT_PATH" ]; then
+    echo "Running environment validation..."
+    if ! "$SCRIPT_PATH" pre-push; then
+        echo ""
+        echo "=========================================="
+        echo "Pre-push validation FAILED"
+        echo "=========================================="
+        echo ""
+        echo "Fix the issues above before pushing."
+        echo "Or bypass with: git push --no-verify (not recommended)"
+        echo ""
+        exit 1
+    fi
+else
+    echo "[WARN] validate-environment.sh not found or not executable"
+    echo "       Run 'chmod +x scripts/validate-environment.sh' to enable"
+fi
+
+# =============================================================================
+# Success
+# =============================================================================
+
+echo ""
+echo "[OK] Pre-push validation passed"
+exit 0

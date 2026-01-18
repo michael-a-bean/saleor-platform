@@ -44,6 +44,17 @@ jobs:
           submodules: recursive
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
+      - name: Validate environment configuration
+        run: |
+          # Run pre-deploy validation to catch localhost contamination
+          SALEOR_ENVIRONMENT=staging ./scripts/validate-environment.sh pre-deploy || {
+            echo "::error::Environment validation failed. Check for localhost URLs or other issues."
+            exit 1
+          }
+        env:
+          # Skip database checks in CI (no direct DB access)
+          SKIP_DB_CHECKS: "true"
+
       - name: Set variables
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
@@ -68,6 +79,7 @@ jobs:
           context: ./storefront
           push: true
           build-args: |
+            NEXT_PUBLIC_BUILD_ENV=staging
             NEXT_PUBLIC_SALEOR_API_URL=${{ vars.STAGING_API_URL }}/graphql/
             NEXT_PUBLIC_STOREFRONT_URL=${{ vars.STAGING_STOREFRONT_URL }}
             NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
