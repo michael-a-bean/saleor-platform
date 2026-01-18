@@ -1,9 +1,9 @@
 # MTG Inventory System: Council Recommendations Implementation Plan
 
 **Created:** 2026-01-18
-**Status:** PAUSED - Phases 1-4 COMPLETE, Phase 5 requires dev environment
+**Status:** IN PROGRESS - Phases 1-4 COMPLETE, Phase 5 script created, CI/CD updated
 **Constraint:** MUST NOT BREAK STAGING ENVIRONMENT
-**Last Updated:** 2026-01-18 11:00 PST
+**Last Updated:** 2026-01-18 (afternoon) - CI/CD workflow updated with BUILD_ENV
 
 ---
 
@@ -13,7 +13,8 @@
 
 1. Read this plan: `.claude/plans/mtg-inventory-council-implementation.md`
 2. Review sync contracts: `docs/reference/sync-contracts.md`
-3. **Next step:** Set up dev environment, then execute Phase 5 (Bulk Mutations)
+3. Review local/staging workflow: `docs/reference/local-staging-workflow.md`
+4. **Next step:** Test `import_graphql.py` with dry-run, then live test
 
 **Key files modified in Phases 1-4:**
 - `scripts/sync-meilisearch.py` - Meilisearch sync with new fields
@@ -22,13 +23,23 @@
 - `scripts/mtg_price_sync/bulk_price_sync.py` - Two-tier multipliers
 - `docs/reference/sync-contracts.md` - NEW: Sync documentation
 
+**Key files created in Phase 5:**
+- `scripts/mtg_scryfall_import/import_graphql.py` - NEW: GraphQL-based import
+- `scripts/validate-environment.sh` - NEW: Environment isolation validation
+- `scripts/db-validation.sh` - NEW: Database validation
+- `docs/reference/local-staging-workflow.md` - NEW: Workflow documentation
+
 **Feature flags to be aware of:**
 - `USE_TWO_TIER_MULTIPLIERS=true` - Enable two-tier condition pricing
+- `SALEOR_ENVIRONMENT=local|staging|production` - Environment identification
 
-**Phase 5 requires:**
-- Working Django dev environment
-- Ability to test Saleor GraphQL mutations
-- End-to-end import testing
+**Dev environment is now configured:**
+- ✅ Local/staging isolation validated
+- ✅ Git hooks installed (`make setup-hooks`)
+- ✅ Validation scripts in place (`make validate-env`)
+- ✅ GraphQL import script created
+- ✅ CI/CD workflow updated with `NEXT_PUBLIC_BUILD_ENV=staging`
+- ✅ CI validation step runs before builds
 
 ---
 
@@ -40,7 +51,9 @@
 | Phase 2: Delta Sync | ✅ COMPLETE | 2026-01-18 | Scripts created, feature-flagged |
 | Phase 3: Sync Contracts | ✅ COMPLETE | 2026-01-18 | Documentation at docs/reference/sync-contracts.md |
 | Phase 4: Two-Tier Multipliers | ✅ COMPLETE | 2026-01-18 | Feature-flagged (USE_TWO_TIER_MULTIPLIERS) |
-| Phase 5: Bulk Mutations | ⏸️ PAUSED | - | Requires proper dev environment setup |
+| Phase 5: Bulk Mutations | 🔄 IN PROGRESS | 2026-01-18 | Script created, needs testing |
+| Dev Environment Isolation | ✅ COMPLETE | 2026-01-18 | Council-driven implementation |
+| CI/CD Workflow | ✅ COMPLETE | 2026-01-18 | BUILD_ENV=staging in deploy-staging.yml |
 
 ---
 

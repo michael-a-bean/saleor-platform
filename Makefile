@@ -222,3 +222,61 @@ validate-quick: docker-check lint typecheck
 	@echo "Quick validation passed (tests and migrations skipped)"
 	@echo "Run 'make validate' for full validation before committing"
 	@echo ""
+
+# =============================================================================
+# Environment Isolation (CRITICAL)
+# =============================================================================
+# These targets prevent accidental cross-environment contamination.
+# See docs/reference/local-staging-workflow.md for workflow documentation.
+
+.PHONY: validate-env validate-env-strict validate-env-full env-guard-local setup-hooks
+
+# Quick environment validation (for pre-push)
+validate-env:
+	@./scripts/validate-environment.sh pre-push
+
+# Strict environment validation (for deployments)
+validate-env-strict:
+	@./scripts/validate-environment.sh pre-deploy --strict
+
+# Full environment validation including database checks
+validate-env-full:
+	@./scripts/validate-environment.sh full --strict
+
+# Guard target - ensures we're in local environment
+env-guard-local:
+	@if [ "$${SALEOR_ENVIRONMENT:-local}" != "local" ]; then \
+		echo "ERROR: This operation requires SALEOR_ENVIRONMENT=local"; \
+		echo "Current: $${SALEOR_ENVIRONMENT:-not set}"; \
+		exit 1; \
+	fi
+	@echo "  [OK] Environment guard passed (local)"
+
+# Database reset (local only)
+db-reset: env-guard-local
+	@echo "Resetting local database..."
+	docker compose down -v db
+	docker compose up -d db
+	@sleep 5
+	docker compose run --rm api python manage.py migrate
+	@echo "  [OK] Database reset complete"
+
+# Setup git hooks
+setup-hooks:
+	@echo "Setting up git hooks..."
+	@mkdir -p .githooks
+	@git config core.hooksPath .githooks
+	@chmod +x .githooks/* 2>/dev/null || true
+	@echo "  [OK] Git hooks configured (path: .githooks/)"
+
+# =============================================================================
+# Deployment Targets (require environment validation)
+# =============================================================================
+
+.PHONY: deploy-staging
+
+# Deploy to staging (validates environment first)
+deploy-staging: validate-env-strict
+	@echo "Deploying to staging..."
+	@echo "TODO: Add actual deployment commands"
+	@echo "Example: cd infra/terraform && terraform workspace select staging && terraform apply"
