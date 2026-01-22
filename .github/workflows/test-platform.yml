@@ -76,7 +76,7 @@ jobs:
       - name: Generate GraphQL types
         run: pnpm generate
         env:
-          GITHUB_ACTION: generate-schema-from-file
+          USE_SCHEMA_FILE: "true"
 
       - name: Type check
         run: pnpm exec tsc --noEmit
