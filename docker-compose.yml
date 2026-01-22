@@ -128,9 +128,9 @@ services:
       - HOSTNAME=0.0.0.0
       - PORT=3000
       - NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/
-      - SALEOR_API_URL=http://localhost:8000/graphql/
-      # SALEOR_API_URL must match NEXT_PUBLIC_SALEOR_API_URL for JWT issuer check
-      # The extra_hosts config allows localhost to reach the host machine
+      # SALEOR_API_URL uses Docker internal hostname to match JWT issuer (iss claim)
+      # The JWT is issued with iss=http://api:8000/graphql/ so server-side requests must use same URL
+      - SALEOR_API_URL=http://api:8000/graphql/
       - NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
       - NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
       - MEILISEARCH_URL=http://meilisearch:7700
