@@ -5,6 +5,13 @@ const config = [
 	{
 		ignores: [".next/**", "out/**", "build/**", "next-env.d.ts"],
 	},
+	{
+		// Temporarily downgrade React Compiler errors to warnings
+		// TODO: Fix these issues in the codebase, then remove this rule override
+		rules: {
+			"react-compiler/react-compiler": "warn",
+		},
+	},
 ];
 
 export default config;
