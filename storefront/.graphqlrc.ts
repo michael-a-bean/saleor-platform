@@ -3,9 +3,8 @@ import type { CodegenConfig } from "@graphql-codegen/cli";
 
 // Check for CI schema-from-file mode BEFORE loadEnvConfig runs
 // This ensures the env var check isn't affected by @next/env processing
-const useSchemaFile =
-	process.env.GITHUB_ACTION === "generate-schema-from-file" ||
-	process.env.USE_SCHEMA_FILE === "true";
+// Note: GITHUB_ACTION is reserved by GitHub Actions, so use USE_SCHEMA_FILE instead
+const useSchemaFile = process.env.USE_SCHEMA_FILE === "true";
 
 loadEnvConfig(process.cwd());
 
