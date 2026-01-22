@@ -552,9 +552,9 @@ resource "aws_sqs_queue" "meilisearch_sync" {
   count = var.meilisearch_enabled ? 1 : 0
 
   name                       = "${local.name_prefix}-meilisearch-sync"
-  visibility_timeout_seconds = 300 # 5 minutes
+  visibility_timeout_seconds = 300   # 5 minutes
   message_retention_seconds  = 86400 # 1 day
-  receive_wait_time_seconds  = 20 # Long polling
+  receive_wait_time_seconds  = 20    # Long polling
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.meilisearch_sync_dlq[0].arn
@@ -773,8 +773,8 @@ resource "aws_iam_role_policy" "eventbridge_ecs" {
         }
       },
       {
-        Effect   = "Allow"
-        Action   = "iam:PassRole"
+        Effect = "Allow"
+        Action = "iam:PassRole"
         Resource = [
           module.iam.ecs_task_execution_role_arn,
           aws_iam_role.meilisearch_sync_worker[0].arn
