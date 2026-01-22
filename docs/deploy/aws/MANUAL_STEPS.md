@@ -198,7 +198,7 @@ terraform apply staging.tfplan
 | RDS Endpoint | `saleor-platform-staging-saleor.ct8eqa82m5c9.us-west-1.rds.amazonaws.com:5432` |
 | Redis Endpoint | `saleor-platform-staging-cache.kybrvw.ng.0001.usw1.cache.amazonaws.com` |
 | ECS Cluster | `saleor-platform-staging` |
-| VPC ID | `vpc-03bec79de659bddf7` |
+| VPC ID | `vpc-0b0360f5c0c874c59` |
 | ECS Task Subnets | `subnet-0049e63c14fbb3825,subnet-0f12843b826424978` |
 | ECS Task Security Group | `sg-0c35fbd209ae520f7` |
 

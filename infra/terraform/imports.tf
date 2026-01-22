@@ -252,18 +252,16 @@ import {
 # =============================================================================
 # Meilisearch
 # =============================================================================
-# NOTE: Meilisearch is managed MANUALLY (not via Terraform) due to VPC mismatch.
+# NOTE: Meilisearch is now FULLY MANAGED by Terraform via module.meilisearch
 #
-# Terraform manages VPC: vpc-0b0360f5c0c874c59
-# Actual deployment VPC: vpc-03bec79de659bddf7
+# Resolved 2026-01-22: VPC mismatch fixed, manual deployment removed.
+# All resources now in Terraform-managed VPC: vpc-0b0360f5c0c874c59
 #
-# Manual resources in vpc-03bec79de659bddf7:
-# - Service Discovery Namespace: ns-dud7q2v2ezogs6cg (saleor-platform-staging.local)
-# - Service Discovery Service: srv-hxm4k7fipdop7zjc (meilisearch)
+# Terraform-managed resources:
+# - EFS File System: fs-08f7c555c0bd96376 (persistent storage)
+# - EFS Mount Targets: 2 (one per AZ)
+# - ECS Task Definition: saleor-platform-staging-meilisearch
 # - ECS Service: meilisearch in saleor-platform-staging cluster
-# - Task Definition: saleor-platform-staging-meilisearch
-# - CloudWatch Log Group: /ecs/saleor-platform-staging/meilisearch (managed by terraform)
-#
-# Security Group Rules (applied manually to sg-0c35fbd209ae520f7):
-# - Port 7700 self-reference (backend to backend for Meilisearch)
-# - Port 7700 from sg-0b59f22a42e887613 (frontend to backend for storefront search)
+# - Service Discovery Service: srv-xzf7plnegd6nuhst (meilisearch.saleor-platform-staging.local)
+# - Secrets Manager: saleor/staging/meilisearch/master-key
+# - CloudWatch Log Group: /ecs/saleor-platform-staging/meilisearch

@@ -99,6 +99,10 @@ route53_zone_id        = ""
 # MUTABLE allows CI/CD to overwrite tags like 'staging-latest' on each deploy
 ecr_image_tag_mutability = "MUTABLE"
 
+# Meilisearch (EFS-backed, Service Discovery via Terraform module)
+meilisearch_enabled = true
+# meilisearch_master_key = "" # Leave empty to auto-generate
+
 # Monitoring
 enable_container_insights = true
 log_retention_days        = 14
