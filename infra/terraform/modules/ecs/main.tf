@@ -335,7 +335,10 @@ resource "aws_ecs_task_definition" "dashboard" {
       ]
       essential = true
       environment = [
-        { name = "API_URL", value = "${var.public_api_base_url}/graphql/" }
+        { name = "API_URL", value = "${var.public_api_base_url}/graphql/" },
+        # Disable Apps Marketplace (Explore) feature - not available for self-hosted Saleor
+        # Setting to "disabled" prevents fallback to API_URL
+        { name = "APPS_MARKETPLACE_API_URL", value = "disabled" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -763,3 +766,20 @@ resource "aws_appautoscaling_policy" "storefront_cpu" {
     scale_out_cooldown = 60
   }
 }
+
+# =============================================================================
+# Meilisearch Service Discovery and ECS Service
+# =============================================================================
+# NOTE: Meilisearch is now managed via the dedicated meilisearch module.
+# See: infra/terraform/modules/meilisearch/
+#
+# The meilisearch module creates:
+# - EFS file system for persistent data
+# - ECS task definition and service
+# - Service Discovery service (uses namespace from root module)
+#
+# The CloudWatch log group for Meilisearch IS managed by Terraform via the
+# services log group loop above.
+#
+# Security group rules for port 7700 are managed in the ALB module's
+# ecs_backend security group.

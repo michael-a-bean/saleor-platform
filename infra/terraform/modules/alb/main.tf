@@ -98,6 +98,24 @@ resource "aws_security_group" "ecs_backend" {
     security_groups = [aws_security_group.ecs_frontend.id]
   }
 
+  # Meilisearch traffic from backend tier (internal services)
+  ingress {
+    description = "Meilisearch from backend"
+    from_port   = 7700
+    to_port     = 7700
+    protocol    = "tcp"
+    self        = true
+  }
+
+  # Meilisearch traffic from frontend (storefront search)
+  ingress {
+    description     = "Meilisearch from frontend"
+    from_port       = 7700
+    to_port         = 7700
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs_frontend.id]
+  }
+
   egress {
     description = "Outbound to anywhere"
     from_port   = 0

@@ -248,3 +248,22 @@ import {
   to = module.ecs.aws_ecs_service.apps["pos"]
   id = "saleor-platform-staging/pos"
 }
+
+# =============================================================================
+# Meilisearch
+# =============================================================================
+# NOTE: Meilisearch is managed MANUALLY (not via Terraform) due to VPC mismatch.
+#
+# Terraform manages VPC: vpc-0b0360f5c0c874c59
+# Actual deployment VPC: vpc-03bec79de659bddf7
+#
+# Manual resources in vpc-03bec79de659bddf7:
+# - Service Discovery Namespace: ns-dud7q2v2ezogs6cg (saleor-platform-staging.local)
+# - Service Discovery Service: srv-hxm4k7fipdop7zjc (meilisearch)
+# - ECS Service: meilisearch in saleor-platform-staging cluster
+# - Task Definition: saleor-platform-staging-meilisearch
+# - CloudWatch Log Group: /ecs/saleor-platform-staging/meilisearch (managed by terraform)
+#
+# Security Group Rules (applied manually to sg-0c35fbd209ae520f7):
+# - Port 7700 self-reference (backend to backend for Meilisearch)
+# - Port 7700 from sg-0b59f22a42e887613 (frontend to backend for storefront search)
