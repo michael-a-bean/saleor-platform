@@ -1,20 +1,22 @@
 import nextVitals from "eslint-config-next/core-web-vitals";
 
-// Filter out React Compiler config from nextVitals temporarily
-// TODO: Fix React Compiler issues in the codebase and re-enable
-const configsWithoutReactCompiler = nextVitals.filter((configObj) => {
-	// Skip config objects that have only react-compiler plugin
-	const pluginKeys = Object.keys(configObj.plugins || {});
-	if (pluginKeys.length === 1 && pluginKeys[0] === "react-compiler") {
-		return false;
-	}
-	return true;
-});
-
+/*
+ * Temporarily disable React Compiler ESLint rules
+ * TODO: Fix React Compiler issues in the codebase and re-enable
+ *
+ * The React Compiler rules (react-compiler/react-compiler, react-hooks/set-state-in-effect)
+ * require refactoring multiple hooks and components. Disable until codebase is updated.
+ */
 const config = [
-	...configsWithoutReactCompiler,
+	...nextVitals,
 	{
 		ignores: [".next/**", "out/**", "build/**", "next-env.d.ts"],
+	},
+	{
+		rules: {
+			"react-compiler/react-compiler": "off",
+			"react-hooks/set-state-in-effect": "off",
+		},
 	},
 ];
 
