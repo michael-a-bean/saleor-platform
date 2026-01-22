@@ -131,6 +131,12 @@ jobs:
       # - Implicit any types in reduce callbacks
       # - Test file type assertions
 
+      - name: Generate Prisma client for inventory-ops
+        working-directory: ./saleor-apps/apps/inventory-ops
+        run: pnpm prisma generate
+        env:
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+
       - name: Run tests
         run: pnpm test:ci
 
