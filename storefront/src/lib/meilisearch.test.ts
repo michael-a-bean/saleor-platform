@@ -168,7 +168,12 @@ describe("meilisearch", () => {
 		});
 
 		it("combines multiple filters with AND", () => {
-			const filters = {
+			const filters: {
+				inStockOnly: boolean;
+				setCode: string;
+				rarity: string | string[];
+				priceRange: { max: number };
+			} = {
 				inStockOnly: true,
 				setCode: "NEO",
 				rarity: "mythic",
@@ -183,7 +188,8 @@ describe("meilisearch", () => {
 				parts.push(`set_code = "${filters.setCode.toUpperCase()}"`);
 			}
 			if (filters.rarity) {
-				const rarities: string[] = Array.isArray(filters.rarity) ? filters.rarity : [filters.rarity];
+				const rarityValue = filters.rarity;
+				const rarities: string[] = Array.isArray(rarityValue) ? rarityValue : [rarityValue];
 				const rarityFilters = rarities.map((r) => `rarity = "${r.toLowerCase()}"`);
 				parts.push(`(${rarityFilters.join(" OR ")})`);
 			}
