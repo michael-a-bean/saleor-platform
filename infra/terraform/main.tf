@@ -204,7 +204,7 @@ module "ecs" {
   ssm_path_prefix   = "/saleor/${var.environment}"
   media_bucket_name = module.s3.bucket_name
   allowed_hosts     = "api.${var.domain_name},localhost,${module.alb.alb_dns_name}"
-  meilisearch_url   = "http://meilisearch.${local.name_prefix}.local:7700"
+  meilisearch_url   = var.meilisearch_enabled ? module.meilisearch[0].service_url : "http://meilisearch.${local.name_prefix}.local:7700"
 
   api_desired_count        = var.api_desired_count
   api_cpu                  = var.api_cpu
@@ -433,5 +433,530 @@ resource "aws_route53_record" "apps" {
     name                   = module.alb.alb_dns_name
     zone_id                = module.alb.alb_zone_id
     evaluate_target_health = true
+  }
+}
+
+# =============================================================================
+# Service Discovery Namespace (for internal service DNS)
+# =============================================================================
+
+resource "aws_service_discovery_private_dns_namespace" "main" {
+  name        = "${local.name_prefix}.local"
+  description = "Private DNS namespace for ${local.name_prefix} services"
+  vpc         = local.vpc_id
+
+  tags = {
+    Name        = "${local.name_prefix}.local"
+    Environment = var.environment
+  }
+}
+
+# =============================================================================
+# Meilisearch
+# =============================================================================
+
+# Master key stored in Secrets Manager (Council recommendation: better rotation & audit)
+# Path matches IAM policy pattern: saleor/${environment}/*
+resource "aws_secretsmanager_secret" "meilisearch_master_key" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  name        = "saleor/${var.environment}/meilisearch/master-key"
+  description = "Meilisearch master key for API authentication"
+
+  tags = {
+    Name    = "${local.name_prefix}-meilisearch-master-key"
+    Service = "meilisearch"
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "meilisearch_master_key" {
+  count = var.meilisearch_enabled && var.meilisearch_master_key != "" ? 1 : 0
+
+  secret_id     = aws_secretsmanager_secret.meilisearch_master_key[0].id
+  secret_string = var.meilisearch_master_key
+}
+
+# Generate a random master key if not provided
+resource "random_password" "meilisearch_master_key" {
+  count = var.meilisearch_enabled && var.meilisearch_master_key == "" ? 1 : 0
+
+  length  = 32
+  special = false
+}
+
+resource "aws_secretsmanager_secret_version" "meilisearch_master_key_generated" {
+  count = var.meilisearch_enabled && var.meilisearch_master_key == "" ? 1 : 0
+
+  secret_id     = aws_secretsmanager_secret.meilisearch_master_key[0].id
+  secret_string = random_password.meilisearch_master_key[0].result
+}
+
+module "meilisearch" {
+  source = "./modules/meilisearch"
+  count  = var.meilisearch_enabled ? 1 : 0
+
+  project_name = var.project_name
+  environment  = var.environment
+  aws_region   = var.aws_region
+
+  vpc_id             = local.vpc_id
+  private_subnet_ids = local.private_subnet_ids
+
+  cluster_id         = module.ecs.cluster_id
+  execution_role_arn = module.iam.ecs_task_execution_role_arn
+  task_role_arn      = module.iam.ecs_api_task_role_arn
+
+  backend_security_group_id      = module.alb.ecs_backend_security_group_id
+  service_discovery_namespace_id = aws_service_discovery_private_dns_namespace.main.id
+  log_group_name                 = module.ecs.log_group_names["meilisearch"]
+
+  master_key_secret_arn = aws_secretsmanager_secret.meilisearch_master_key[0].arn
+  meilisearch_image     = var.meilisearch_image
+
+  # Sizing: staging = 512 CPU / 1GB, production = 1024 CPU / 4GB (Council recommendation)
+  cpu    = var.environment == "production" ? 1024 : 512
+  memory = var.environment == "production" ? 4096 : 1024
+}
+
+# =============================================================================
+# Meilisearch Sync Infrastructure (Phase 2: SNS → SQS → Worker)
+# =============================================================================
+
+# SNS Topic for Product Events
+resource "aws_sns_topic" "product_events" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  name = "${local.name_prefix}-product-events"
+
+  tags = {
+    Name    = "${local.name_prefix}-product-events"
+    Service = "meilisearch-sync"
+  }
+}
+
+# SQS Dead Letter Queue for failed sync messages
+resource "aws_sqs_queue" "meilisearch_sync_dlq" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  name                      = "${local.name_prefix}-meilisearch-sync-dlq"
+  message_retention_seconds = 1209600 # 14 days
+
+  tags = {
+    Name    = "${local.name_prefix}-meilisearch-sync-dlq"
+    Service = "meilisearch-sync"
+  }
+}
+
+# SQS Queue for Meilisearch Sync
+resource "aws_sqs_queue" "meilisearch_sync" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  name                       = "${local.name_prefix}-meilisearch-sync"
+  visibility_timeout_seconds = 300 # 5 minutes
+  message_retention_seconds  = 86400 # 1 day
+  receive_wait_time_seconds  = 20 # Long polling
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.meilisearch_sync_dlq[0].arn
+    maxReceiveCount     = 3
+  })
+
+  tags = {
+    Name    = "${local.name_prefix}-meilisearch-sync"
+    Service = "meilisearch-sync"
+  }
+}
+
+# SQS Queue Policy - Allow SNS to send messages
+resource "aws_sqs_queue_policy" "meilisearch_sync" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  queue_url = aws_sqs_queue.meilisearch_sync[0].id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { Service = "sns.amazonaws.com" }
+        Action    = "sqs:SendMessage"
+        Resource  = aws_sqs_queue.meilisearch_sync[0].arn
+        Condition = {
+          ArnEquals = {
+            "aws:SourceArn" = aws_sns_topic.product_events[0].arn
+          }
+        }
+      }
+    ]
+  })
+}
+
+# SNS → SQS Subscription
+resource "aws_sns_topic_subscription" "meilisearch_sync" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  topic_arn = aws_sns_topic.product_events[0].arn
+  protocol  = "sqs"
+  endpoint  = aws_sqs_queue.meilisearch_sync[0].arn
+}
+
+# IAM Role for Meilisearch Sync Worker
+resource "aws_iam_role" "meilisearch_sync_worker" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  name = "${local.name_prefix}-meilisearch-sync-worker"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name    = "${local.name_prefix}-meilisearch-sync-worker"
+    Service = "meilisearch-sync"
+  }
+}
+
+resource "aws_iam_role_policy" "meilisearch_sync_worker" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  name = "meilisearch-sync-permissions"
+  role = aws_iam_role.meilisearch_sync_worker[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:ChangeMessageVisibility"
+        ]
+        Resource = aws_sqs_queue.meilisearch_sync[0].arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = aws_secretsmanager_secret.meilisearch_master_key[0].arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# CloudWatch Log Group for Sync Worker
+resource "aws_cloudwatch_log_group" "meilisearch_sync_worker" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  name              = "/ecs/${local.name_prefix}/meilisearch-sync-worker"
+  retention_in_days = var.log_retention_days
+
+  tags = {
+    Name    = "${local.name_prefix}-meilisearch-sync-worker"
+    Service = "meilisearch-sync"
+  }
+}
+
+# Meilisearch Sync Worker Task Definition
+resource "aws_ecs_task_definition" "meilisearch_sync_worker" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  family                   = "${local.name_prefix}-meilisearch-sync-worker"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = 256
+  memory                   = 512
+  execution_role_arn       = module.iam.ecs_task_execution_role_arn
+  task_role_arn            = aws_iam_role.meilisearch_sync_worker[0].arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "sync-worker"
+      image     = "${module.ecr.repository_urls["price-sync-worker"]}:latest"
+      essential = true
+
+      environment = [
+        { name = "MEILISEARCH_URL", value = module.meilisearch[0].service_url },
+        { name = "SQS_QUEUE_URL", value = aws_sqs_queue.meilisearch_sync[0].url },
+        { name = "SALEOR_API_URL", value = local.public_api_base_url },
+        { name = "BATCH_SIZE", value = "25" }
+      ]
+
+      secrets = [
+        {
+          name      = "MEILISEARCH_API_KEY"
+          valueFrom = aws_secretsmanager_secret.meilisearch_master_key[0].arn
+        }
+      ]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.meilisearch_sync_worker[0].name
+          awslogs-region        = var.aws_region
+          awslogs-stream-prefix = "worker"
+        }
+      }
+    }
+  ])
+
+  tags = {
+    Name    = "${local.name_prefix}-meilisearch-sync-worker"
+    Service = "meilisearch-sync"
+  }
+}
+
+# =============================================================================
+# Meilisearch Scheduled Tasks (Phase 3: Catchup & Reconciliation)
+# =============================================================================
+
+# IAM Role for EventBridge to run ECS tasks
+resource "aws_iam_role" "eventbridge_ecs" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  name = "${local.name_prefix}-eventbridge-ecs"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "events.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name    = "${local.name_prefix}-eventbridge-ecs"
+    Service = "meilisearch-sync"
+  }
+}
+
+resource "aws_iam_role_policy" "eventbridge_ecs" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  name = "ecs-run-task"
+  role = aws_iam_role.eventbridge_ecs[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "ecs:RunTask"
+        Resource = aws_ecs_task_definition.meilisearch_sync_worker[0].arn
+        Condition = {
+          ArnLike = {
+            "ecs:cluster" = module.ecs.cluster_arn
+          }
+        }
+      },
+      {
+        Effect   = "Allow"
+        Action   = "iam:PassRole"
+        Resource = [
+          module.iam.ecs_task_execution_role_arn,
+          aws_iam_role.meilisearch_sync_worker[0].arn
+        ]
+      }
+    ]
+  })
+}
+
+# 15-minute catchup sync (Council recommendation: MTG price sensitivity)
+resource "aws_cloudwatch_event_rule" "meilisearch_catchup" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  name                = "${local.name_prefix}-meilisearch-catchup"
+  description         = "Meilisearch 15-minute catchup sync for missed events"
+  schedule_expression = "rate(15 minutes)"
+
+  tags = {
+    Name    = "${local.name_prefix}-meilisearch-catchup"
+    Service = "meilisearch-sync"
+  }
+}
+
+resource "aws_cloudwatch_event_target" "meilisearch_catchup" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  rule      = aws_cloudwatch_event_rule.meilisearch_catchup[0].name
+  target_id = "meilisearch-catchup"
+  arn       = module.ecs.cluster_arn
+  role_arn  = aws_iam_role.eventbridge_ecs[0].arn
+
+  ecs_target {
+    task_definition_arn = aws_ecs_task_definition.meilisearch_sync_worker[0].arn
+    task_count          = 1
+    launch_type         = "FARGATE"
+    platform_version    = "1.4.0"
+
+    network_configuration {
+      subnets          = local.private_subnet_ids
+      security_groups  = [module.alb.ecs_backend_security_group_id]
+      assign_public_ip = false
+    }
+  }
+
+  input = jsonencode({
+    containerOverrides = [{
+      name = "sync-worker"
+      environment = [
+        { name = "SYNC_MODE", value = "delta" },
+        { name = "DELTA_MINUTES", value = "20" }
+      ]
+    }]
+  })
+}
+
+# Daily full reconciliation (6 AM UTC)
+resource "aws_cloudwatch_event_rule" "meilisearch_reconcile" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  name                = "${local.name_prefix}-meilisearch-reconcile"
+  description         = "Meilisearch daily full reconciliation"
+  schedule_expression = "cron(0 6 * * ? *)"
+
+  tags = {
+    Name    = "${local.name_prefix}-meilisearch-reconcile"
+    Service = "meilisearch-sync"
+  }
+}
+
+resource "aws_cloudwatch_event_target" "meilisearch_reconcile" {
+  count = var.meilisearch_enabled ? 1 : 0
+
+  rule      = aws_cloudwatch_event_rule.meilisearch_reconcile[0].name
+  target_id = "meilisearch-reconcile"
+  arn       = module.ecs.cluster_arn
+  role_arn  = aws_iam_role.eventbridge_ecs[0].arn
+
+  ecs_target {
+    task_definition_arn = aws_ecs_task_definition.meilisearch_sync_worker[0].arn
+    task_count          = 1
+    launch_type         = "FARGATE"
+    platform_version    = "1.4.0"
+
+    network_configuration {
+      subnets          = local.private_subnet_ids
+      security_groups  = [module.alb.ecs_backend_security_group_id]
+      assign_public_ip = false
+    }
+  }
+
+  input = jsonencode({
+    containerOverrides = [{
+      name = "sync-worker"
+      environment = [
+        { name = "SYNC_MODE", value = "full" }
+      ]
+    }]
+  })
+}
+
+# =============================================================================
+# Meilisearch Monitoring & Alerts (Phase 4)
+# =============================================================================
+
+# DLQ depth alarm - alert when sync messages fail repeatedly
+resource "aws_cloudwatch_metric_alarm" "meilisearch_dlq_depth" {
+  count = var.meilisearch_enabled && var.alert_sns_topic_arn != "" ? 1 : 0
+
+  alarm_name          = "${local.name_prefix}-meilisearch-dlq-depth"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 10
+  alarm_description   = "Meilisearch sync DLQ has messages - sync failures occurring"
+
+  dimensions = {
+    QueueName = aws_sqs_queue.meilisearch_sync_dlq[0].name
+  }
+
+  alarm_actions = [var.alert_sns_topic_arn]
+  ok_actions    = [var.alert_sns_topic_arn]
+
+  tags = {
+    Name    = "${local.name_prefix}-meilisearch-dlq-depth"
+    Service = "meilisearch-sync"
+  }
+}
+
+# Queue backlog alarm - alert when sync is falling behind
+resource "aws_cloudwatch_metric_alarm" "meilisearch_queue_backlog" {
+  count = var.meilisearch_enabled && var.alert_sns_topic_arn != "" ? 1 : 0
+
+  alarm_name          = "${local.name_prefix}-meilisearch-queue-backlog"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 3
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 1000
+  alarm_description   = "Meilisearch sync queue backlog > 1000 messages"
+
+  dimensions = {
+    QueueName = aws_sqs_queue.meilisearch_sync[0].name
+  }
+
+  alarm_actions = [var.alert_sns_topic_arn]
+  ok_actions    = [var.alert_sns_topic_arn]
+
+  tags = {
+    Name    = "${local.name_prefix}-meilisearch-queue-backlog"
+    Service = "meilisearch-sync"
+  }
+}
+
+# Meilisearch service health - alert when no tasks running
+resource "aws_cloudwatch_metric_alarm" "meilisearch_unhealthy" {
+  count = var.meilisearch_enabled && var.alert_sns_topic_arn != "" ? 1 : 0
+
+  alarm_name          = "${local.name_prefix}-meilisearch-unhealthy"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "RunningTaskCount"
+  namespace           = "ECS/ContainerInsights"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 1
+  alarm_description   = "Meilisearch service has no running tasks"
+
+  dimensions = {
+    ClusterName = module.ecs.cluster_name
+    ServiceName = "meilisearch"
+  }
+
+  alarm_actions = [var.alert_sns_topic_arn]
+  ok_actions    = [var.alert_sns_topic_arn]
+
+  tags = {
+    Name    = "${local.name_prefix}-meilisearch-unhealthy"
+    Service = "meilisearch-sync"
   }
 }

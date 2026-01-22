@@ -457,3 +457,32 @@ resource "aws_iam_role_policy" "apps_task" {
   role   = aws_iam_role.ecs_apps_task.id
   policy = data.aws_iam_policy_document.apps_task_policy.json
 }
+
+# =============================================================================
+# EFS Permissions for Meilisearch (added to API task role)
+# =============================================================================
+# Required for EFS access point with IAM authentication
+
+data "aws_iam_policy_document" "efs_access" {
+  statement {
+    sid    = "EFSAccess"
+    effect = "Allow"
+    actions = [
+      "elasticfilesystem:ClientMount",
+      "elasticfilesystem:ClientWrite",
+      "elasticfilesystem:ClientRootAccess"
+    ]
+    resources = ["*"]
+    condition {
+      test     = "Bool"
+      variable = "elasticfilesystem:AccessedViaMountTarget"
+      values   = ["true"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "api_task_efs" {
+  name   = "efs-access"
+  role   = aws_iam_role.ecs_api_task.id
+  policy = data.aws_iam_policy_document.efs_access.json
+}

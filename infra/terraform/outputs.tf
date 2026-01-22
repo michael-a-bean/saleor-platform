@@ -179,3 +179,51 @@ output "ssm_parameter_prefix" {
   description = "SSM parameter path prefix"
   value       = "/saleor/${var.environment}"
 }
+
+# =============================================================================
+# Meilisearch
+# =============================================================================
+
+output "meilisearch_url" {
+  description = "Meilisearch internal service URL"
+  value       = var.meilisearch_enabled ? module.meilisearch[0].service_url : null
+}
+
+output "meilisearch_efs_id" {
+  description = "Meilisearch EFS file system ID"
+  value       = var.meilisearch_enabled ? module.meilisearch[0].efs_file_system_id : null
+}
+
+output "service_discovery_namespace" {
+  description = "Service Discovery private DNS namespace"
+  value       = aws_service_discovery_private_dns_namespace.main.name
+}
+
+output "service_discovery_namespace_id" {
+  description = "Service Discovery private DNS namespace ID"
+  value       = aws_service_discovery_private_dns_namespace.main.id
+}
+
+# =============================================================================
+# Meilisearch Sync Infrastructure
+# =============================================================================
+
+output "meilisearch_sync_sqs_url" {
+  description = "Meilisearch sync SQS queue URL"
+  value       = var.meilisearch_enabled ? aws_sqs_queue.meilisearch_sync[0].url : null
+}
+
+output "meilisearch_sync_dlq_url" {
+  description = "Meilisearch sync dead-letter queue URL"
+  value       = var.meilisearch_enabled ? aws_sqs_queue.meilisearch_sync_dlq[0].url : null
+}
+
+output "product_events_sns_arn" {
+  description = "SNS topic ARN for product events"
+  value       = var.meilisearch_enabled ? aws_sns_topic.product_events[0].arn : null
+}
+
+output "meilisearch_sync_worker_task_arn" {
+  description = "Meilisearch sync worker ECS task definition ARN"
+  value       = var.meilisearch_enabled ? aws_ecs_task_definition.meilisearch_sync_worker[0].arn : null
+}

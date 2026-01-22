@@ -367,3 +367,30 @@ variable "github_branch" {
   type        = string
   default     = "platform/main"
 }
+
+# =============================================================================
+# Meilisearch Configuration
+# =============================================================================
+
+variable "meilisearch_enabled" {
+  description = "Enable Meilisearch deployment via Terraform (EFS-backed, Service Discovery)"
+  type        = bool
+  default     = true
+}
+
+variable "meilisearch_master_key" {
+  description = "Meilisearch master key for API authentication. If empty, a random key will be generated."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+# =============================================================================
+# Monitoring & Alerting
+# =============================================================================
+
+variable "alert_sns_topic_arn" {
+  description = "SNS topic ARN for CloudWatch alarms. If empty, alarms will be created without actions."
+  type        = string
+  default     = ""
+}
