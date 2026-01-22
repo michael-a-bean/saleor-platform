@@ -72,7 +72,7 @@ export default async function SuppliesCategoryPage(props: {
 						<h1 className="text-2xl font-bold text-neutral-900">{categoryName}</h1>
 						<p className="mt-2 text-lg font-medium text-emerald-600">Coming Soon</p>
 						<p className="mx-auto mt-4 max-w-md text-neutral-600">
-							We're working on adding products to this category. Check back soon!
+							We&apos;re working on adding products to this category. Check back soon!
 						</p>
 						<Link
 							href={`/${params.channel}/supplies`}
