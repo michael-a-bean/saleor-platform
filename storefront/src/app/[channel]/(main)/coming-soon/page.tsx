@@ -22,7 +22,7 @@ export default function ComingSoonPage() {
 
 				{/* Description */}
 				<p className="mx-auto mt-4 max-w-md text-lg text-neutral-600">
-					We're working on something exciting! This section will be available soon.
+					We&apos;re working on something exciting! This section will be available soon.
 					Check back later for updates.
 				</p>
 

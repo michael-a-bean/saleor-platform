@@ -33,6 +33,7 @@ export default function GlobalError({
               >
                 Try again
               </button>
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- global-error.tsx is outside normal routing context, Link cannot be used */}
               <a
                 href="/"
                 className="rounded-md border border-neutral-300 bg-white px-6 py-3 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
