@@ -150,10 +150,14 @@ jobs:
       - name: Validate Prisma schema
         working-directory: ./saleor-apps/apps/inventory-ops
         run: pnpm prisma validate
+        env:
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
       - name: Check Prisma schema format
         working-directory: ./saleor-apps/apps/inventory-ops
         run: pnpm prisma format --check || echo "Schema formatting differs (non-blocking)"
+        env:
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
   # =============================================================================
   # SECURITY SCANNING
