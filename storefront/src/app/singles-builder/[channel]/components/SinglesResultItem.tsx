@@ -326,10 +326,10 @@ export function SinglesResultItem({ product, onQuickAdd, onUpdateQuantity, onRem
 			<div className="flex gap-3 px-3 py-2">
 				{/* Thumbnail */}
 				<div className="relative h-14 w-10 flex-shrink-0 overflow-hidden rounded bg-gray-100">
-					{product.thumbnail?.url ? (
+					{(product.media?.[0]?.url || product.thumbnail?.url) ? (
 						<Image
-							src={product.thumbnail.url}
-							alt={product.thumbnail.alt || product.name}
+							src={product.media?.[0]?.url || product.thumbnail?.url || ""}
+							alt={product.media?.[0]?.alt || product.thumbnail?.alt || product.name}
 							fill
 							className="object-contain"
 							sizes="40px"

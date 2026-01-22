@@ -38,6 +38,10 @@ fragment SinglesBuilderCartLine on CheckoutLine {
 				url
 				alt
 			}
+			media {
+				url
+				alt
+			}
 			attributes {
 				attribute {
 					slug
