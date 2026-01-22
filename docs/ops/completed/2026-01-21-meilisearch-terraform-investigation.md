@@ -2,17 +2,46 @@
 
 **Date:** 2026-01-21
 **Investigators:** 4 parallel expert agents (INFRA-TF, MEILI-SVC, NET-CONN, INT-VALID)
-**Status:** COMPLETE
+**Status:** ✅ RESOLVED (2026-01-22)
 
 ---
 
-## Executive Summary
+## Resolution Summary
 
-1. **Meilisearch is NOT managed by Terraform** - manually deployed in a different VPC, creating infrastructure drift and recovery risk
-2. **Production deployment does not exist** - search functionality will be unavailable in production
-3. **VPC mismatch** - Terraform manages `vpc-0b0360f5c0c874c59`, actual deployment in `vpc-03bec79de659bddf7`
-4. **No authentication configured** - MEILI_MASTER_KEY not set anywhere (relies on network isolation only)
-5. **No index sync automation** - manual scripts only, no scheduled workers or webhooks
+**Completed:** 2026-01-22
+
+All issues identified in this investigation have been resolved:
+
+| Issue | Resolution |
+|-------|------------|
+| Meilisearch not in Terraform | ✅ Meilisearch module created at `infra/terraform/modules/meilisearch/` |
+| VPC mismatch | ✅ Redeployed in Terraform-managed VPC (`vpc-0b0360f5c0c874c59`) |
+| No authentication | ✅ MEILI_MASTER_KEY stored in Secrets Manager |
+| Production not deployed | ✅ Ready via `meilisearch_enabled=true` in tfvars |
+| No index sync automation | ✅ SNS/SQS sync infrastructure + EventBridge scheduled tasks |
+
+**Current Infrastructure:**
+- ECS Service: Running (1/1 tasks) in correct subnets
+- EFS Storage: `fs-08f7c555c0bd96376` (persistent data)
+- Service Discovery: `meilisearch.saleor-platform-staging.local:7700`
+- Secrets Manager: `saleor/staging/meilisearch/master-key`
+- Indexes: 2 active (~1000 products each)
+
+---
+
+## Original Investigation (Historical)
+
+The following findings were accurate at the time of investigation but have since been resolved.
+
+---
+
+## Executive Summary (2026-01-21)
+
+1. ~~**Meilisearch is NOT managed by Terraform**~~ → Now managed by Terraform module
+2. ~~**Production deployment does not exist**~~ → Ready for production deployment
+3. ~~**VPC mismatch**~~ → Redeployed in correct VPC
+4. ~~**No authentication configured**~~ → MEILI_MASTER_KEY configured
+5. ~~**No index sync automation**~~ → SNS/SQS/EventBridge automation deployed
 
 ---
 
