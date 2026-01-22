@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { Summary, SummarySkeleton } from "@/checkout/sections/Summary";
 import { OrderInfo } from "@/checkout/sections/OrderInfo";
 import { useOrder } from "@/checkout/hooks/useOrder";
@@ -17,12 +18,12 @@ export const OrderConfirmation = () => {
 						Thank you for placing your order. We&apos;ve received it and we will contact you as soon as your
 						package is shipped. A confirmation email has been sent to {order.userEmail}.
 					</p>
-					<a
+					<Link
 						href="/"
 						className="mt-4 inline-block rounded-md bg-neutral-900 px-6 py-3 text-base font-medium text-white hover:bg-neutral-800"
 					>
 						Continue Shopping
-					</a>
+					</Link>
 				</header>
 				<OrderInfo />
 			</div>
