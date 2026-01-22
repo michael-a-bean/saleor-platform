@@ -1,13 +1,15 @@
 import { loadEnvConfig } from "@next/env";
 import type { CodegenConfig } from "@graphql-codegen/cli";
 
+// Check for CI schema-from-file mode BEFORE loadEnvConfig runs
+// This ensures the env var check isn't affected by @next/env processing
+const useSchemaFile =
+	process.env.GITHUB_ACTION === "generate-schema-from-file" ||
+	process.env.USE_SCHEMA_FILE === "true";
+
 loadEnvConfig(process.cwd());
 
-let schemaUrl = process.env.NEXT_PUBLIC_SALEOR_API_URL;
-
-if (process.env.GITHUB_ACTION === "generate-schema-from-file") {
-	schemaUrl = "schema.graphql";
-}
+let schemaUrl = useSchemaFile ? "schema.graphql" : process.env.NEXT_PUBLIC_SALEOR_API_URL;
 
 if (!schemaUrl) {
 	console.error(
