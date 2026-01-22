@@ -33,3 +33,7 @@ docs/ai-reviews/
 all-cards.json
 all-cards-*.json
 data/
+
+# Sync logs
+*.sync.log
+meilisearch-sync.log
