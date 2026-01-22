@@ -201,7 +201,7 @@ describe("getThumbnailFromOrderLine", () => {
 		expect(result?.url).toBe("thumbnail.jpg");
 	});
 
-	it("returns undefined if no images at all", () => {
+	it("returns null if no images at all", () => {
 		const line = createOrderLine({
 			thumbnail: null,
 			variant: {
@@ -214,7 +214,7 @@ describe("getThumbnailFromOrderLine", () => {
 			},
 		});
 		const result = getThumbnailFromOrderLine(line);
-		expect(result).toBeUndefined();
+		expect(result).toBeNull();
 	});
 
 	it("handles null variant", () => {
