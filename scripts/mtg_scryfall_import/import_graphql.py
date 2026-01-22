@@ -584,6 +584,7 @@ def transform_card_to_product(
         "channelListings": [{
             "channelId": setup.channel_id,
             "isPublished": True,
+            "visibleInListings": True,
             "isAvailableForPurchase": True,
         }],
     }
