@@ -48,7 +48,7 @@ RUN corepack enable
 # Run codegen to generate GraphQL types
 # If schema.graphql exists, use it; otherwise requires API to be running with --network=host
 RUN if [ -f schema.graphql ]; then \
-      GITHUB_ACTION=generate-schema-from-file pnpm run generate; \
+      USE_SCHEMA_FILE=true pnpm run generate; \
     else \
       pnpm run generate; \
     fi

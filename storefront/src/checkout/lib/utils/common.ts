@@ -2,7 +2,7 @@ import { string } from "yup";
 
 export const getById =
 	<TId extends string = string>(idToCompare: TId | undefined) =>
-	(obj: { id: TId }) =>
+	(obj: { id: string }) =>
 		obj.id === idToCompare;
 
 export const getByUnmatchingId =

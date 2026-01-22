@@ -183,7 +183,7 @@ describe("meilisearch", () => {
 				parts.push(`set_code = "${filters.setCode.toUpperCase()}"`);
 			}
 			if (filters.rarity) {
-				const rarities = Array.isArray(filters.rarity) ? filters.rarity : [filters.rarity];
+				const rarities: string[] = Array.isArray(filters.rarity) ? filters.rarity : [filters.rarity];
 				const rarityFilters = rarities.map((r) => `rarity = "${r.toLowerCase()}"`);
 				parts.push(`(${rarityFilters.join(" OR ")})`);
 			}

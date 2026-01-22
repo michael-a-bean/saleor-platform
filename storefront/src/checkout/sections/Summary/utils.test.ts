@@ -2,55 +2,54 @@ import { describe, it, expect } from "vitest";
 import { isCheckoutLine, getThumbnailFromLine, getThumbnailFromOrderLine, getSummaryLineProps } from "./utils";
 import { type CheckoutLineFragment, type OrderLineFragment } from "@/checkout/graphql";
 
-// Mock data helpers
+// Mock data helpers - use Record<string, unknown> for overrides to allow test-specific extra properties
 const createMockMedia = (type: "IMAGE" | "VIDEO", url: string) => ({
 	type,
 	url,
 	alt: "test",
 });
 
-const createCheckoutLine = (overrides: Partial<CheckoutLineFragment> = {}): CheckoutLineFragment => ({
-	__typename: "CheckoutLine",
-	id: "line-1",
-	quantity: 1,
-	totalPrice: { gross: { amount: 10, currency: "USD" }, net: { amount: 10, currency: "USD" } },
-	unitPrice: { gross: { amount: 10, currency: "USD" }, net: { amount: 10, currency: "USD" } },
-	undiscountedUnitPrice: { amount: 10, currency: "USD" },
-	variant: {
-		id: "variant-1",
-		name: "Default",
-		translation: null,
-		product: {
-			id: "product-1",
-			name: "Test Product",
+const createCheckoutLine = (overrides: Record<string, unknown> = {}): CheckoutLineFragment =>
+	({
+		__typename: "CheckoutLine",
+		id: "line-1",
+		quantity: 1,
+		totalPrice: { gross: { amount: 10, currency: "USD" } },
+		unitPrice: { gross: { amount: 10, currency: "USD" } },
+		undiscountedUnitPrice: { amount: 10, currency: "USD" },
+		variant: {
+			id: "variant-1",
+			name: "Default",
 			translation: null,
+			attributes: [],
+			product: {
+				name: "Test Product",
+				translation: null,
+				media: [],
+			},
 			media: [],
 		},
-		media: [],
-	},
-	...overrides,
-});
+		...overrides,
+	}) as CheckoutLineFragment;
 
-const createOrderLine = (overrides: Partial<OrderLineFragment> = {}): OrderLineFragment => ({
-	__typename: "OrderLine",
-	id: "line-1",
-	quantity: 1,
-	productName: "Test Product",
-	variantName: "Default",
-	totalPrice: { gross: { amount: 10, currency: "USD" }, net: { amount: 10, currency: "USD" } },
-	unitPrice: { gross: { amount: 10, currency: "USD" }, net: { amount: 10, currency: "USD" } },
-	undiscountedUnitPrice: { gross: { amount: 10, currency: "USD" }, net: { amount: 10, currency: "USD" } },
-	thumbnail: null,
-	variant: {
-		id: "variant-1",
-		product: {
-			id: "product-1",
+const createOrderLine = (overrides: Record<string, unknown> = {}): OrderLineFragment =>
+	({
+		__typename: "OrderLine",
+		id: "line-1",
+		quantity: 1,
+		totalPrice: { gross: { amount: 10, currency: "USD" } },
+		unitPrice: { gross: { amount: 10, currency: "USD" } },
+		undiscountedUnitPrice: { gross: { amount: 10, currency: "USD" } },
+		variant: {
+			name: "Default",
+			attributes: [],
+			product: {
+				media: [],
+			},
 			media: [],
 		},
-		media: [],
-	},
-	...overrides,
-});
+		...overrides,
+	}) as OrderLineFragment;
 
 describe("isCheckoutLine", () => {
 	it("returns true for CheckoutLine", () => {

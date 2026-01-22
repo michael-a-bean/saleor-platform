@@ -351,6 +351,7 @@ describe("urlFilters", () => {
 			const filters: MTGFilterState = {
 				rarity: ["mtg-rarity-rare", "mtg-rarity-mythic"],
 				colorIdentity: ["mtg-color-u"],
+				finish: [],
 				manaValue: { min: 3, max: 5 },
 				price: { min: 10, max: 100 },
 				typeLine: "Creature",
@@ -391,6 +392,7 @@ describe("urlFilters", () => {
 			const original: MTGFilterState = {
 				rarity: ["mtg-rarity-rare", "mtg-rarity-mythic"],
 				colorIdentity: ["mtg-color-w", "mtg-color-u", "mtg-color-b"],
+				finish: [],
 				manaValue: { min: 2, max: 6 },
 				price: { min: 5.5, max: 50 },
 				typeLine: "Legendary Creature",
@@ -500,6 +502,7 @@ describe("urlFilters", () => {
 			const filters: MTGFilterState = {
 				rarity: ["mtg-rarity-rare"],
 				colorIdentity: ["mtg-color-u", "mtg-color-b"],
+				finish: [],
 				manaValue: { min: 3, max: 5 },
 				price: { min: 10 },
 				typeLine: "Creature",
@@ -522,6 +525,7 @@ describe("urlFilters", () => {
 			const filters: MTGFilterState = {
 				rarity: [],
 				colorIdentity: [],
+				finish: [],
 				manaValue: {},
 				price: {},
 				typeLine: "",
