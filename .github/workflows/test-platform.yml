@@ -123,12 +123,14 @@ jobs:
           # Upstream apps (avatax, cms, klaviyo, etc.) have pre-existing lint issues
           pnpm turbo run lint --filter=saleor-app-inventory-ops --filter=saleor-app-buylist --filter=saleor-app-pos
 
+      - name: Generate Prisma client for inventory-ops
+        working-directory: ./saleor-apps/apps/inventory-ops
+        run: pnpm prisma generate
+        env:
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+
       - name: Type check inventory-ops
-        run: |
-          # Only type check inventory-ops
-          # Buylist and POS have Prisma type generation issues (symlinked schemas)
-          # that need CI prisma generate step to be added separately
-          pnpm turbo run check-types --filter=saleor-app-inventory-ops
+        run: pnpm turbo run check-types --filter=saleor-app-inventory-ops
 
       - name: Run tests
         run: pnpm test:ci
