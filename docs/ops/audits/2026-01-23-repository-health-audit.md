@@ -401,7 +401,7 @@ Refactor form hooks to eliminate type suppressions (estimated 20 hours).
 
 ### ISSUE-016: API Documentation Incomplete (Documentation)
 
-**Status:** Open
+**Status:** Resolved (2026-01-23)
 **Severity:** MEDIUM
 **Location:** `docs/`
 
@@ -411,11 +411,12 @@ Missing documentation:
 - Webhook payload specifications beyond sync-contracts.md
 - API versioning policy
 
-**Remediation:**
-Create `docs/api/` directory with:
-- `graphql-reference.md`
-- `webhooks.md`
-- `versioning-policy.md`
+**Resolution:**
+Created `docs/api/` directory with:
+- `README.md` - Index linking to all API docs
+- `graphql-reference.md` - Query/mutation patterns, error codes, examples
+- `webhooks.md` - Event types, payloads, registration patterns
+- `versioning-policy.md` - Version pinning, deprecation handling, migration planning
 
 ---
 
