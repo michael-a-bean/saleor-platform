@@ -271,7 +271,7 @@ pnpm add -D @testing-library/react @testing-library/jest-dom
 
 ### ISSUE-009: Architecture Docs 28 Days Stale (Documentation)
 
-**Status:** Open
+**Status:** Resolved (2026-01-23)
 **Severity:** MEDIUM
 **File:** `docs/reference/architecture.md`
 
@@ -281,10 +281,12 @@ Architecture documentation last updated Dec 26, 2025. Does not reflect:
 - ADR-001 costing layer improvements
 - Staging deployment changes
 
-**Remediation:**
-1. Update Section 4 (Meilisearch) with Terraform configuration
-2. Add reference to ADR-001 in inventory-ops section
-3. Update deployment topology diagram
+**Resolution:**
+Updated `docs/reference/architecture.md` with:
+1. New "Meilisearch Infrastructure" section covering local dev and Terraform deployment
+2. Reference to ADR-001 in Inventory Ops App section
+3. Added Meilisearch to service details table and technology stack
+4. Updated "Last updated" date to January 2026
 
 ---
 
