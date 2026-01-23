@@ -31,7 +31,7 @@ services:
       - RSA_PRIVATE_KEY=${RSA_PRIVATE_KEY:-}
 
   dashboard:
-    image: ghcr.io/saleor/saleor-dashboard:latest
+    image: ghcr.io/saleor/saleor-dashboard:3.22
     ports:
       - 9000:80
     restart: unless-stopped
@@ -84,7 +84,7 @@ services:
       - saleor-media:/app/media
 
   jaeger:
-    image: jaegertracing/jaeger
+    image: jaegertracing/jaeger:2.14.0
     ports:
       - "16686:16686"
       - "4317:4317"

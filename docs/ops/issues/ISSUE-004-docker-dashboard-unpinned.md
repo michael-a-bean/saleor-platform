@@ -63,7 +63,7 @@ While editing, also pin Jaeger version:
 image: jaegertracing/jaeger
 
 # After:
-image: jaegertracing/jaeger:1.54
+image: jaegertracing/jaeger:2.14.0
 ```
 
 ### Step 4: Pull New Images
@@ -100,8 +100,8 @@ open http://localhost:9000
 
 ## Definition of Done
 
-- [ ] Dashboard image pinned to specific version
-- [ ] Jaeger image pinned to specific version
-- [ ] docker-compose.yml committed
-- [ ] Services restart successfully
-- [ ] Dashboard accessible at localhost:9000
+- [x] Dashboard image pinned to specific version (3.22)
+- [x] Jaeger image pinned to specific version (2.14.0)
+- [x] docker-compose.yml committed
+- [x] Services restart successfully
+- [x] Dashboard accessible at localhost:9000
