@@ -81,6 +81,7 @@ A Docker Compose orchestration layer running the complete Saleor stack, configur
 | dynamodb-local | `amazon/dynamodb-local` | 8001 | Stripe config storage |
 | inventory-ops-app | `saleor-platform-inventory-ops-app` | 3002 | Inventory management |
 | inventory-ops-db | `postgres:15-alpine` | 5433 | Inventory Ops database |
+| meilisearch | `getmeili/meilisearch:v1.6` | 7700 | Product search engine |
 
 ### Data Flow
 
@@ -105,6 +106,52 @@ A Docker Compose orchestration layer running the complete Saleor stack, configur
 | UI | React | 19 |
 | Styling | TailwindCSS | - |
 | Tracing | OpenTelemetry/Jaeger | - |
+| Search | Meilisearch | 1.6 |
+
+---
+
+## Meilisearch Infrastructure
+
+### Local Development
+
+In local development, Meilisearch runs as a Docker container without authentication:
+
+```yaml
+# docker-compose.yml
+meilisearch:
+  image: getmeili/meilisearch:v1.6
+  ports:
+    - "7700:7700"
+  environment:
+    MEILI_ENV: development
+```
+
+### Staging/Production (Terraform)
+
+For AWS deployment, Meilisearch is managed via Terraform with:
+
+- **ECS Fargate** service with EFS-backed persistent storage
+- **Service Discovery** for internal DNS resolution (`meilisearch.{project}-{env}.local`)
+- **Secrets Manager** for `MEILI_MASTER_KEY` rotation and audit
+- **Event-driven sync** via SNS/SQS for real-time product updates
+- **Scheduled tasks** for 15-minute delta sync and daily full reconciliation
+
+```
+infra/terraform/
+├── modules/meilisearch/     # EFS + ECS + Service Discovery
+│   ├── main.tf
+│   ├── variables.tf
+│   └── outputs.tf
+└── main.tf                  # SNS/SQS sync infrastructure
+```
+
+Configuration highlights (from Council decision 2026-01-21):
+- EFS for Fargate-compatible persistent storage with automatic backups
+- Staging: 512 CPU / 1GB memory
+- Production: 1024 CPU / 4GB memory
+- CloudWatch alarms for DLQ depth, queue backlog, and service health
+
+See `infra/terraform/modules/meilisearch/main.tf` for full implementation.
 
 ---
 
@@ -349,6 +396,8 @@ docker run --rm --network saleor-platform_saleor-backend-tier \
 
 Custom Saleor app for inventory management with purchase orders, goods receipts, and cost tracking using Weighted Average Cost (WAC).
 
+> **Architecture Decision:** See [ADR-001: Inventory-Ops as Costing Layer](../decisions/ADR-001-inventory-ops-costing-layer.md) for the architectural rationale behind this design, including the decision to maintain a separate database and the WAC costing method selection.
+
 ### Architecture
 
 ```
@@ -451,4 +500,4 @@ DEFAULT_CURRENCY=USD
 
 ---
 
-*Last updated: December 2024*
+*Last updated: January 2026*
