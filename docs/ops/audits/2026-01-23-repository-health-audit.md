@@ -292,49 +292,32 @@ Updated `docs/reference/architecture.md` with:
 
 ### ISSUE-010: 3 Stale Remote Branches (Git)
 
-**Status:** Open
+**Status:** Resolved (2026-01-23)
 **Severity:** LOW
 **Location:** Remote branches
 
 **Problem:**
-Three branches have not been updated in 8-11 days:
+Three branches have not been updated in 8-11 days.
 
-| Branch | Last Commit | Age |
-|--------|-------------|-----|
-| `origin/diagnose/staging-deploy-blockers-20260115` | Jan 15 | 8 days |
-| `origin/fix/dashboard-app-iframe-blank` | Jan 15 | 9 days |
-| `origin/infra/staging-ecs-apps` | Jan 13 | 11 days |
-
-**Remediation:**
-```bash
-# Review if work is complete, then delete:
-git push origin --delete diagnose/staging-deploy-blockers-20260115
-git push origin --delete fix/dashboard-app-iframe-blank
-git push origin --delete infra/staging-ecs-apps
-```
+**Resolution:**
+Deleted all 3 stale remote branches:
+- `diagnose/staging-deploy-blockers-20260115`
+- `fix/dashboard-app-iframe-blank`
+- `infra/staging-ecs-apps`
 
 ---
 
 ### ISSUE-011: No Release Tags (Git)
 
-**Status:** Open
+**Status:** Resolved (2026-01-23)
 **Severity:** MEDIUM
 **Location:** Repository-wide
 
 **Problem:**
-265 commits on platform/main without any semantic version tags. Makes it difficult to:
-- Track releases
-- Rollback to specific versions
-- Communicate milestones
+265 commits on platform/main without any semantic version tags.
 
-**Remediation:**
-```bash
-# Tag current stable state:
-git tag -a v1.0.0 -m "Initial stable release - ADR-001 complete"
-git push origin v1.0.0
-
-# Consider tagging previous milestones retroactively
-```
+**Resolution:**
+Created `v1.0.0` release tag marking ADR-001 completion milestone.
 
 ---
 
