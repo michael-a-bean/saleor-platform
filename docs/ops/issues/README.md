@@ -52,7 +52,7 @@ Start a new session and reference the specific issue file to tackle it independe
 | ISSUE-014 | Tech Debt | 909 deprecated GraphQL usages |
 | ISSUE-015 | Code Quality | TypeScript @ts-ignore in form hooks |
 | ISSUE-016 | Documentation | API documentation incomplete |
-| ISSUE-017 | Infrastructure | Meilisearch auth disabled (dev-only) |
+| ISSUE-017 | Infrastructure | ~~Meilisearch auth disabled (dev-only)~~ Resolved (2026-01-23) - Production pattern documented |
 
 ---
 

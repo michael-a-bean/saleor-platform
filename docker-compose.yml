@@ -308,8 +308,16 @@ services:
     environment:
       - MEILI_ENV=development
       - MEILI_NO_ANALYTICS=true
-      # In production, set a master key:
-      # - MEILI_MASTER_KEY=your-secure-key-here
+      # ============================================
+      # PRODUCTION CONFIGURATION
+      # ============================================
+      # For production deployments, set:
+      # - MEILI_ENV=production
+      # - MEILI_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
+      #
+      # Generate key: openssl rand -base64 32
+      # Store in .env: MEILISEARCH_MASTER_KEY=<generated-key>
+      # ============================================
 
   # Price Sync CLI - for manual sync commands
   price-sync:

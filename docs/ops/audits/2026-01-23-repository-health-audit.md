@@ -421,24 +421,19 @@ Create `docs/api/` directory with:
 
 ### ISSUE-017: Meilisearch Auth Disabled for Dev (Infrastructure)
 
-**Status:** Open
+**Status:** Resolved (2026-01-23)
 **Severity:** MEDIUM (dev-only)
 **File:** `docker-compose.yml`
 
 **Problem:**
 Meilisearch runs without authentication in development.
 
-**Current:**
-```yaml
-MEILI_ENV=development
-# MEILI_MASTER_KEY not set
-```
-
-**Remediation (for production):**
-```yaml
-MEILI_ENV=production
-MEILI_MASTER_KEY=${MEILISEARCH_MASTER_KEY}
-```
+**Resolution:**
+Added comprehensive production configuration documentation in docker-compose.yml:
+- Clear PRODUCTION CONFIGURATION block with environment variable pattern
+- Key generation command (`openssl rand -base64 32`)
+- Instructions for storing key in `.env` file
+- Reference to `${MEILISEARCH_MASTER_KEY}` variable pattern
 
 ---
 
