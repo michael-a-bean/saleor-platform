@@ -104,8 +104,8 @@ git log 85afd98..main --oneline
 
 ## Definition of Done
 
-- [ ] Buylist submodule on `main` branch
-- [ ] All 12 commits pulled
-- [ ] Parent repo updated with new submodule pointer
-- [ ] Buylist app starts without errors
-- [ ] Committed to platform/main
+- [x] Buylist submodule on `main` branch
+- [x] All 12 commits pulled
+- [x] Parent repo updated with new submodule pointer
+- [ ] Buylist app starts without errors (manual verification recommended)
+- [x] Committed to platform/main

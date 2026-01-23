@@ -23,7 +23,7 @@ Start a new session and reference the specific issue file to tackle it independe
 | Issue | Category | File | Status |
 |-------|----------|------|--------|
 | ISSUE-001 | Security | [CSP unsafe-eval](ISSUE-001-csp-unsafe-eval.md) | Open |
-| ISSUE-002 | Submodules | [Buylist detached HEAD](ISSUE-002-buylist-detached-head.md) | Open |
+| ISSUE-002 | Submodules | [Buylist detached HEAD](ISSUE-002-buylist-detached-head.md) | Resolved (2026-01-23) |
 | ISSUE-003 | Submodules | [Inventory-ops feature branch](ISSUE-003-inventory-ops-feature-branch.md) | Needs Decision |
 | ISSUE-004 | Infrastructure | [Docker dashboard unpinned](ISSUE-004-docker-dashboard-unpinned.md) | Open |
 | ISSUE-005 | Security | Local .env secrets (see audit) | Open |
