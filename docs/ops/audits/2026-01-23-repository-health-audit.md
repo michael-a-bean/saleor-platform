@@ -197,20 +197,15 @@ aws secretsmanager create-secret --name saleor/production/SECRET_KEY --secret-st
 
 ### ISSUE-006: Jaeger Image Version Unspecified (Infrastructure)
 
-**Status:** Open
+**Status:** Resolved (2026-01-23)
 **Severity:** MEDIUM
 **File:** `docker-compose.yml`
 
 **Problem:**
 Jaeger tracing service has no version specified, implicitly using `:latest`.
 
-**Remediation:**
-```yaml
-# Current:
-image: jaegertracing/jaeger
-# Fixed:
-image: jaegertracing/jaeger:1.54
-```
+**Resolution:**
+Pinned to `jaegertracing/jaeger:2.14.0` in commit `9980542`.
 
 ---
 
