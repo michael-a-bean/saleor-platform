@@ -24,7 +24,7 @@ Start a new session and reference the specific issue file to tackle it independe
 |-------|----------|------|--------|
 | ISSUE-001 | Security | [CSP unsafe-eval](ISSUE-001-csp-unsafe-eval.md) | Resolved (2026-01-23) |
 | ISSUE-002 | Submodules | [Buylist detached HEAD](ISSUE-002-buylist-detached-head.md) | Resolved (2026-01-23) |
-| ISSUE-003 | Submodules | [Inventory-ops feature branch](ISSUE-003-inventory-ops-feature-branch.md) | Needs Decision |
+| ISSUE-003 | Submodules | [Inventory-ops feature branch](ISSUE-003-inventory-ops-feature-branch.md) | Resolved (2026-01-23) |
 | ISSUE-004 | Infrastructure | [Docker dashboard unpinned](ISSUE-004-docker-dashboard-unpinned.md) | Resolved (2026-01-23) |
 | ISSUE-005 | Security | [Local .env secrets](ISSUE-005-env-secrets-production-readiness.md) | Resolved (2026-01-23) |
 

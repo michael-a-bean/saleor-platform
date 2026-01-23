@@ -89,39 +89,20 @@ git submodule status --recursive | grep buylist
 
 ### ISSUE-003: Inventory-ops on Feature Branch (Submodules)
 
-**Status:** Open - Needs Decision
+**Status:** Resolved (2026-01-23)
 **Severity:** MEDIUM
 **Location:** `saleor-apps/apps/inventory-ops`
 
 **Problem:**
-Inventory-ops is on `feature/adr-001-implementation` branch instead of `main`.
+Inventory-ops was on `feature/adr-001-implementation` branch instead of `main`.
 
-**Current State:**
-```
-Commit: 50b66293251c43be327d0ddf1ac0075c670dc68b
-Branch: feature/adr-001-implementation
-Last Commit: "fix(cron): enhance scheduled reconciliation per ADR-001"
-```
+**Resolution:**
+Merged `feature/adr-001-implementation` into `main`:
+- Circuit breaker pattern for external API calls
+- Enhanced scheduled reconciliation
+- Cron job improvements
 
-**Context:**
-- ADR-001 implementation work was recently completed
-- This may be intentional if feature branch is still being validated
-- Feature branch contains circuit breaker, reconciliation, and cron improvements
-
-**Decision Required:**
-- [ ] Is ADR-001 implementation complete and ready to merge to main?
-- [ ] Are there any blockers to merging this feature branch?
-
-**Remediation (after decision to merge):**
-```bash
-cd saleor-apps/apps/inventory-ops
-git checkout main
-git merge feature/adr-001-implementation
-git push origin main
-cd ../../..
-git add saleor-apps
-git commit -m "chore(submodule): update inventory-ops after ADR-001 merge"
-```
+Submodule pointers updated in both saleor-apps and saleor-platform.
 
 ---
 
