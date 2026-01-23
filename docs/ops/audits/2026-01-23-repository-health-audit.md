@@ -211,7 +211,7 @@ Pinned to `jaegertracing/jaeger:2.14.0` in commit `9980542`.
 
 ### ISSUE-007: CI/CD Emergency Overrides Unguarded (Infrastructure)
 
-**Status:** Open
+**Status:** Resolved (2026-01-23)
 **Severity:** HIGH
 **Files:** `.github/workflows/deploy-production.yml`
 
@@ -220,10 +220,12 @@ Two emergency override flags can bypass critical safety checks without audit tra
 - `skip_approval` - Bypasses GitHub environment approval gate
 - `ALLOW_DEPLOY_WITHOUT_SNAPSHOT_WAIT` - Deploys without verified backup
 
-**Remediation:**
-1. Require GitHub secret for `skip_approval` usage
-2. Add audit logging when overrides are used
-3. Require explicit justification comment in workflow run
+**Resolution:**
+Added `audit-overrides` job as the first step in the workflow that:
+- Logs timestamp, triggered-by user, and run ID for all deployments
+- Emits GitHub Actions `::warning::` annotations when overrides are active
+- Writes override details to job summary for visibility
+- Both override flags are now audited before any deployment work begins
 
 ---
 

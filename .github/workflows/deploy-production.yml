@@ -31,9 +31,75 @@ env:
 
 jobs:
   # ==========================================================================
+  # Audit Emergency Overrides
+  # ==========================================================================
+  audit-overrides:
+    name: Audit Emergency Overrides
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Log emergency override usage
+        run: |
+          OVERRIDE_USED=false
+
+          echo "=========================================="
+          echo "EMERGENCY OVERRIDE AUDIT LOG"
+          echo "=========================================="
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Run ID: ${{ github.run_id }}"
+          echo "Run URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "=========================================="
+
+          # Check skip_approval override
+          if [[ "${{ inputs.skip_approval }}" == "true" ]]; then
+            OVERRIDE_USED=true
+            echo ""
+            echo "::warning title=EMERGENCY OVERRIDE::skip_approval=true - Bypassing GitHub environment approval gate"
+            echo "EMERGENCY OVERRIDE DETECTED: skip_approval"
+            echo "  - Override: skip_approval"
+            echo "  - Effect: Bypasses GitHub environment approval gate"
+            echo "  - Triggered by: ${{ github.actor }}"
+            echo "  - Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo ""
+          fi
+
+          # Check ALLOW_DEPLOY_WITHOUT_SNAPSHOT_WAIT override
+          if [[ "${{ vars.ALLOW_DEPLOY_WITHOUT_SNAPSHOT_WAIT }}" == "true" ]]; then
+            OVERRIDE_USED=true
+            echo ""
+            echo "::warning title=EMERGENCY OVERRIDE::ALLOW_DEPLOY_WITHOUT_SNAPSHOT_WAIT=true - Deploying without verified backup"
+            echo "EMERGENCY OVERRIDE DETECTED: ALLOW_DEPLOY_WITHOUT_SNAPSHOT_WAIT"
+            echo "  - Override: ALLOW_DEPLOY_WITHOUT_SNAPSHOT_WAIT"
+            echo "  - Effect: Allows deployment without verified RDS snapshot"
+            echo "  - Triggered by: ${{ github.actor }}"
+            echo "  - Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo ""
+          fi
+
+          if [[ "$OVERRIDE_USED" == "true" ]]; then
+            echo "::warning::One or more emergency overrides are active. Review deployment carefully."
+            echo ""
+            echo "## EMERGENCY OVERRIDE ACTIVE" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| **Triggered by** | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Timestamp** | $(date -u +%Y-%m-%dT%H:%M:%SZ) |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Run ID** | ${{ github.run_id }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| **skip_approval** | ${{ inputs.skip_approval }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| **ALLOW_DEPLOY_WITHOUT_SNAPSHOT_WAIT** | ${{ vars.ALLOW_DEPLOY_WITHOUT_SNAPSHOT_WAIT || 'false' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "This deployment bypassed one or more safety checks." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No emergency overrides active. Proceeding with standard deployment."
+          fi
+
+  # ==========================================================================
   # Verify Staging Deployment
   # ==========================================================================
   verify-staging:
+    needs: audit-overrides
     name: Verify Staging Deployment
     runs-on: ubuntu-latest
     outputs:

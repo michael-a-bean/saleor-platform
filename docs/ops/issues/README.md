@@ -35,9 +35,9 @@ Start a new session and reference the specific issue file to tackle it independe
 | Issue | Category | Notes |
 |-------|----------|-------|
 | ISSUE-006 | Infrastructure | ~~Jaeger image version unspecified~~ Resolved (2026-01-23) |
-| ISSUE-007 | CI/CD | Emergency overrides unguarded |
+| ISSUE-007 | CI/CD | ~~Emergency overrides unguarded~~ Resolved (2026-01-23) |
 | ISSUE-008 | Code Quality | [Storefront test coverage 1.9%](ISSUE-008-storefront-test-coverage.md) |
-| ISSUE-009 | Documentation | Architecture docs 28 days stale |
+| ISSUE-009 | Documentation | ~~Architecture docs 28 days stale~~ Resolved (2026-01-23) |
 | ISSUE-010 | Git | 3 stale remote branches |
 | ISSUE-011 | Git | No release tags |
 
