@@ -25,7 +25,7 @@ const TRUSTED_IMAGE_DOMAINS = [
 function buildCSP(): string {
   return [
     "default-src 'self'",
-    `script-src 'self' ${TRUSTED_SCRIPT_DOMAINS.join(' ')} 'unsafe-inline' 'unsafe-eval'`,
+    `script-src 'self' ${TRUSTED_SCRIPT_DOMAINS.join(' ')} 'unsafe-inline'`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     `img-src 'self' data: blob: ${TRUSTED_IMAGE_DOMAINS.join(' ')}`,
     "font-src 'self' https://fonts.gstatic.com data:",
