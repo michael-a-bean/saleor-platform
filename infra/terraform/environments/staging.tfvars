@@ -38,10 +38,10 @@ use_https_urls = false
 # Disable HTTPS upgrade in storefront CSP since ALB is HTTP-only
 enable_https = false
 
-# PHASE 2 ACTIVATED: ALB DNS URLs configured (2026-01-11)
-public_api_base_url        = "http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com"
-public_storefront_base_url = "http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com"
-public_dashboard_base_url  = "http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com/dashboard"
+# PHASE 2 ACTIVATED: ALB DNS URLs configured (2026-01-22 - VPC migration)
+public_api_base_url        = "http://saleor-platform-staging-alb-1516106871.us-west-1.elb.amazonaws.com"
+public_storefront_base_url = "http://saleor-platform-staging-alb-1516106871.us-west-1.elb.amazonaws.com"
+public_dashboard_base_url  = "http://saleor-platform-staging-alb-1516106871.us-west-1.elb.amazonaws.com/dashboard"
 
 # VPC (create new for staging)
 create_vpc         = true
