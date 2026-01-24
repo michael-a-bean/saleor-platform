@@ -1,14 +1,12 @@
-import { FormikProvider, Form } from "formik";
+import { FormikProvider, Form, type FormikContextType } from "formik";
 import { type PropsWithChildren } from "react";
 import { type FormDataBase, type UseFormReturn } from "@/checkout/hooks/useForm";
 
 /**
  * Form provider that wraps Formik's FormikProvider with our custom form type.
  *
- * Type Safety Note:
- * The @ts-expect-error is needed because UseFormReturn has enhanced types
- * (stricter setFieldValue, validateForm) that don't match FormikContextType exactly.
- * The runtime behavior is correct; FormikProvider accepts our form object.
+ * UseFormReturn has stricter types than FormikContextType (e.g., field-specific setFieldValue),
+ * but at runtime the form object is fully compatible with FormikProvider.
  */
 export const FormProvider = <TData extends FormDataBase>({
 	form,
@@ -16,8 +14,7 @@ export const FormProvider = <TData extends FormDataBase>({
 }: PropsWithChildren<{
 	form: UseFormReturn<TData>;
 }>) => (
-	// @ts-expect-error - UseFormReturn extends FormikContextType with stricter types (see JSDoc)
-	<FormikProvider value={form}>
+	<FormikProvider value={form as unknown as FormikContextType<TData>}>
 		<Form action="post" noValidate={true} onSubmit={form.handleSubmit}>
 			{children}
 		</Form>

@@ -47,10 +47,10 @@ Start a new session and reference the specific issue file to tackle it independe
 
 | Issue | Category | Notes |
 |-------|----------|-------|
-| ISSUE-012 | Tech Debt | POS app has 80+ TODOs |
-| ISSUE-013 | Code Quality | React Compiler disabled |
-| ISSUE-014 | Tech Debt | 909 deprecated GraphQL usages |
-| ISSUE-015 | Code Quality | TypeScript @ts-ignore in form hooks |
+| ISSUE-012 | Tech Debt | ~~POS app has 80+ TODOs~~ Partial fix (2026-01-23) - Quick wins fixed, 14 TODOs remain |
+| ISSUE-013 | Code Quality | React Compiler disabled - Blocked by Formik (~46-66 hrs) |
+| ISSUE-014 | Tech Debt | 909 deprecated GraphQL usages - Saleor 4.0 migration planning |
+| ISSUE-015 | Code Quality | ~~TypeScript @ts-ignore in form hooks~~ Resolved (2026-01-23) |
 | ISSUE-016 | Documentation | ~~API documentation incomplete~~ Resolved (2026-01-23) |
 | ISSUE-017 | Infrastructure | ~~Meilisearch auth disabled (dev-only)~~ Resolved (2026-01-23) - Production pattern documented |
 

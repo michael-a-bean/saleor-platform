@@ -105,6 +105,10 @@ export function useCheckoutUpdateStateChange(scope: undefined): {
 	setCheckoutUpdateState: () => void;
 };
 
+export function useCheckoutUpdateStateChange(scope: CheckoutUpdateStateScope | undefined): {
+	setCheckoutUpdateState: (status?: CheckoutUpdateStateStatus) => void;
+};
+
 export function useCheckoutUpdateStateChange(scope?: CheckoutUpdateStateScope) {
 	return useCheckoutUpdateStateStore(({ actions: { setUpdateState } }) => ({
 		setCheckoutUpdateState: scope ? setUpdateState(scope) : () => {},
