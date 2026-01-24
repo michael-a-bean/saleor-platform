@@ -67,9 +67,6 @@ export const useSubmit = <
 	extractCustomErrors,
 	hideAlerts = false,
 }: UseSubmitProps<TData, TMutationFn, TErrorCodes>): SimpleSubmitFn<TData, TErrorCodes> => {
-	// Note: scope is optional in UseSubmitProps but useCheckoutUpdateStateChange expects it.
-	// When scope is undefined, the hook still works but returns a no-op setter.
-	// @ts-expect-error - scope can be undefined, hook handles this gracefully at runtime
 	const { setCheckoutUpdateState } = useCheckoutUpdateStateChange(scope);
 	const { showErrors } = useAlerts();
 	const { checkout } = useCheckout();
