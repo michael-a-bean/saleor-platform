@@ -37,17 +37,17 @@ import {
 }
 
 # =============================================================================
-# ALB
+# ALB - REMOVED: Recreated during VPC migration 2026-01-22
 # =============================================================================
-import {
-  to = module.alb.aws_lb.main
-  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:loadbalancer/app/saleor-platform-staging-alb/544ea1780304c8eb"
-}
-
-import {
-  to = module.alb.aws_lb_listener.http
-  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener/app/saleor-platform-staging-alb/544ea1780304c8eb/9381df049fadaacd"
-}
+# import {
+#   to = module.alb.aws_lb.main
+#   id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:loadbalancer/app/saleor-platform-staging-alb/544ea1780304c8eb"
+# }
+#
+# import {
+#   to = module.alb.aws_lb_listener.http
+#   id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener/app/saleor-platform-staging-alb/544ea1780304c8eb/9381df049fadaacd"
+# }
 
 # SKIPPED: Target Groups
 # These exist in vpc-03bec79de659bddf7 but Terraform manages vpc-0b0360f5c0c874c59.
@@ -110,40 +110,40 @@ import {
 }
 
 # =============================================================================
-# RDS
+# RDS - REMOVED: Recreated during VPC migration 2026-01-22
 # =============================================================================
-import {
-  to = module.rds.aws_db_instance.main
-  id = "saleor-platform-staging-saleor"
-}
-
-import {
-  to = module.rds.aws_db_subnet_group.main
-  id = "saleor-platform-staging-db-subnet"
-}
-
-import {
-  to = module.rds.aws_db_parameter_group.main
-  id = "saleor-platform-staging-pg15"
-}
+# import {
+#   to = module.rds.aws_db_instance.main
+#   id = "saleor-platform-staging-saleor"
+# }
+#
+# import {
+#   to = module.rds.aws_db_subnet_group.main
+#   id = "saleor-platform-staging-db-subnet"
+# }
+#
+# import {
+#   to = module.rds.aws_db_parameter_group.main
+#   id = "saleor-platform-staging-pg15"
+# }
 
 # =============================================================================
-# ElastiCache
+# ElastiCache - REMOVED: Recreated during VPC migration 2026-01-22
 # =============================================================================
-import {
-  to = module.elasticache.aws_elasticache_replication_group.cache
-  id = "saleor-platform-staging-cache"
-}
-
-import {
-  to = module.elasticache.aws_elasticache_subnet_group.main
-  id = "saleor-platform-staging-redis"
-}
-
-import {
-  to = module.elasticache.aws_elasticache_parameter_group.cache
-  id = "saleor-platform-staging-cache"
-}
+# import {
+#   to = module.elasticache.aws_elasticache_replication_group.cache
+#   id = "saleor-platform-staging-cache"
+# }
+#
+# import {
+#   to = module.elasticache.aws_elasticache_subnet_group.main
+#   id = "saleor-platform-staging-redis"
+# }
+#
+# import {
+#   to = module.elasticache.aws_elasticache_parameter_group.cache
+#   id = "saleor-platform-staging-cache"
+# }
 
 # =============================================================================
 # DynamoDB
