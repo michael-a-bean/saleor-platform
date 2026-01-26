@@ -26,6 +26,15 @@ import json
 
 SALEOR_API = os.environ.get("SALEOR_API_URL", "http://localhost:8000/graphql/")
 MEILISEARCH_URL = os.environ.get("MEILISEARCH_URL", "http://localhost:7700")
+MEILISEARCH_API_KEY = os.environ.get("MEILISEARCH_API_KEY")  # None is valid for local dev
+
+
+def get_meilisearch_headers() -> dict:
+    """Get headers for Meilisearch requests, including auth if API key is set."""
+    headers = {"Content-Type": "application/json"}
+    if MEILISEARCH_API_KEY:
+        headers["Authorization"] = f"Bearer {MEILISEARCH_API_KEY}"
+    return headers
 
 
 def get_saleor_count(channel: str) -> int:
@@ -54,7 +63,7 @@ def get_saleor_count(channel: str) -> int:
 def get_meilisearch_count(index_name: str) -> int:
     """Get document count from Meilisearch."""
     try:
-        response = requests.get(f"{MEILISEARCH_URL}/indexes/{index_name}/stats", timeout=10)
+        response = requests.get(f"{MEILISEARCH_URL}/indexes/{index_name}/stats", headers=get_meilisearch_headers(), timeout=10)
         if response.status_code == 200:
             return response.json().get("numberOfDocuments", 0)
         elif response.status_code == 404:
@@ -134,6 +143,7 @@ def get_meilisearch_ids(index_name: str) -> set:
                 "offset": offset,
                 "attributesToRetrieve": ["original_id"]
             },
+            headers=get_meilisearch_headers(),
             timeout=30
         )
         if response.status_code != 200:

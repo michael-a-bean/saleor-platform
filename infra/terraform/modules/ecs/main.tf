@@ -293,6 +293,13 @@ resource "aws_ecs_task_definition" "storefront" {
         # Disable upgrade-insecure-requests CSP for HTTP-only environments
         { name = "ENABLE_HTTPS", value = var.enable_https ? "true" : "false" }
       ]
+      # Meilisearch API key secret (for staging/production auth)
+      secrets = var.meilisearch_api_key_secret_arn != "" ? [
+        {
+          name      = "MEILISEARCH_API_KEY"
+          valueFrom = var.meilisearch_api_key_secret_arn
+        }
+      ] : []
       logConfiguration = {
         logDriver = "awslogs"
         options = {
