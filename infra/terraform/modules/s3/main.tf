@@ -41,14 +41,16 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "media" {
   }
 }
 
-# Block public access
+# Public access settings
+# Note: Public read is enabled for product images and thumbnails
+# Block ACLs but allow bucket policies for public read
 resource "aws_s3_bucket_public_access_block" "media" {
   bucket = aws_s3_bucket.media.id
 
   block_public_acls       = true
-  block_public_policy     = true
+  block_public_policy     = false  # Allow public bucket policies
   ignore_public_acls      = true
-  restrict_public_buckets = true
+  restrict_public_buckets = false  # Allow public access via bucket policy
 }
 
 # Lifecycle rules
@@ -109,9 +111,12 @@ resource "aws_s3_bucket_cors_configuration" "media" {
   }
 }
 
-# Bucket policy for ECS task access
+# Bucket policy for ECS task access and public read for media
 resource "aws_s3_bucket_policy" "media" {
   bucket = aws_s3_bucket.media.id
+
+  # Wait for public access block to be updated
+  depends_on = [aws_s3_bucket_public_access_block.media]
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -130,6 +135,16 @@ resource "aws_s3_bucket_policy" "media" {
             "aws:SecureTransport" = "false"
           }
         }
+      },
+      {
+        Sid       = "PublicReadForMedia"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource = [
+          "${aws_s3_bucket.media.arn}/products/*",
+          "${aws_s3_bucket.media.arn}/thumbnails/*"
+        ]
       }
     ]
   })
