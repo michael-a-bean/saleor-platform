@@ -1,7 +1,7 @@
 # Investigation: Staging Image Display Issues
 
 **Date:** 2026-01-25
-**Status:** Root cause identified, solution pending
+**Status:** ✅ RESOLVED (2026-01-26)
 **Priority:** High
 
 ---
@@ -9,6 +9,26 @@
 ## Executive Summary
 
 Images display correctly in local Docker environment but fail to load in staging (AWS ECS). Root cause identified: ProductMedia records exist with `external_url` references to Scryfall, but no actual image files were uploaded to S3. Saleor's `/thumbnail/` endpoint returns 404 because it cannot serve external URLs.
+
+### Resolution Summary (2026-01-26)
+
+**All issues have been resolved:**
+
+1. **Added `AWS_MEDIA_BUCKET_NAME` env var** to ECS task definitions (API, Worker, Migrate)
+2. **Cleaned up 92,609 broken ProductMedia records** using `cleanup_broken_media.py`
+3. **Backfilled 92,549 images** (~10GB) to S3 using `backfill_product_media.py`
+4. **Enabled public read access** on S3 bucket for products/* and thumbnails/*
+5. **Thumbnail endpoint now returns valid images**
+
+```bash
+# Before: 404
+curl -I "http://staging-alb.../thumbnail/.../256/"
+# HTTP/1.1 404 Not Found
+
+# After: 302 redirect to S3, then 200 OK
+curl -sL "http://staging-alb.../thumbnail/.../256/" -o test.jpg
+# JPEG image data, 184x256 pixels
+```
 
 ---
 
@@ -210,11 +230,14 @@ Consolidate all Scryfall-related functionality into a dedicated Saleor App.
 
 ### Modified
 ```
-storefront/src/middleware.ts  # Added missing Scryfall CSP domains
+storefront/src/middleware.ts          # Added missing Scryfall CSP domains
+infra/terraform/modules/ecs/main.tf   # Added AWS_MEDIA_BUCKET_NAME env var
+infra/terraform/modules/s3/main.tf    # Enabled public read for products/thumbnails
 ```
 
 ### Created
 ```
+scripts/cleanup_broken_media.py                       # Delete broken ProductMedia records
 docs/ops/investigations/staging-images-2026-01-25.md  # This document
 ```
 
@@ -222,48 +245,34 @@ docs/ops/investigations/staging-images-2026-01-25.md  # This document
 
 ## Next Steps (Priority Order)
 
-### Immediate (This Week)
+### Completed ✅
 
-1. **[ ] Deploy CSP fix to staging**
-   - Commit the middleware.ts change
-   - Rebuild and deploy storefront
+1. **[x] Deploy CSP fix to staging** - Added Scryfall domains to middleware.ts
+2. **[x] Create staging App token** - Created app with MANAGE_PRODUCTS permission
+3. **[x] Add AWS_MEDIA_BUCKET_NAME** - Added to ECS task definitions
+4. **[x] Run cleanup script** - Deleted 92,609 broken ProductMedia records
+5. **[x] Run backfill against staging** - 92,549 images uploaded to S3 (~10GB)
+6. **[x] Enable S3 public read** - products/* and thumbnails/* publicly readable
+7. **[x] Verify images display** - Thumbnail endpoint returns valid JPEG images
 
-2. **[ ] Create staging App token**
-   - Dashboard → Configuration → Apps
-   - Permissions: `MANAGE_PRODUCTS`
-   - Save token securely
+### Remaining (Future)
 
-3. **[ ] Test backfill script**
-   ```bash
-   # Test locally first
-   python scripts/backfill_product_media.py --channel webstore --limit 10 --dry-run
-   ```
-
-4. **[ ] Run backfill against staging**
-   - Start with --limit 100
-   - Monitor S3 bucket for files
-   - Verify images display
-
-### Short-term (Next Sprint)
-
-5. **[ ] Verify product parity**
+8. **[ ] Verify product parity**
    - Compare product counts: local vs staging
    - Identify attribute differences
    - Run import if needed
 
-6. **[ ] Document backfill runbook**
+9. **[ ] Document backfill runbook**
    - Add to `docs/ops/runbooks/`
 
-### Long-term (Future Sprints)
+10. **[ ] Design Scryfall App** (Long-term)
+    - Architecture document
+    - Module breakdown
+    - Migration plan from scripts
 
-7. **[ ] Design Scryfall App**
-   - Architecture document
-   - Module breakdown
-   - Migration plan from scripts
-
-8. **[ ] Implement image caching layer**
-   - CloudFront or Cloudflare
-   - Reduces Scryfall dependency
+11. **[ ] Implement image caching layer** (Long-term)
+    - CloudFront or Cloudflare
+    - Reduces Scryfall dependency
 
 ---
 
@@ -303,6 +312,8 @@ curl -I "http://saleor-platform-staging-alb-...../thumbnail/UHJvZHVjdE1lZGlhOjM=
 
 ## Session Context for Resume
 
+### Session 1 (2026-01-25)
+
 **What was accomplished:**
 - Full root cause analysis of staging image issue
 - Council debate with 4 agents (3 rounds)
@@ -310,10 +321,25 @@ curl -I "http://saleor-platform-staging-alb-...../thumbnail/UHJvZHVjdE1lZGlhOjM=
 - CSP fix applied (not deployed)
 - This documentation created
 
-**What remains:**
-- Deploy CSP fix
-- Run backfill_product_media.py against staging
-- Verify images display
-- Consider Scryfall App for long-term
+### Session 2 (2026-01-26) - RESOLUTION
 
-**Key insight:** The issue is NOT about Scryfall access or CSP - it's that Saleor's ProductMedia records have `external_url` set but no actual files in S3. The `/thumbnail/` endpoint can't proxy external URLs.
+**What was accomplished:**
+- ✅ Applied Terraform changes: Added `AWS_MEDIA_BUCKET_NAME` to ECS tasks
+- ✅ Force redeployed API and Worker ECS services
+- ✅ Ran `cleanup_broken_media.py` - deleted 92,609 broken ProductMedia records
+- ✅ Ran `backfill_product_media.py` - uploaded 92,549 images to S3 (~10GB total)
+- ✅ Updated S3 bucket policy for public read access on products/* and thumbnails/*
+- ✅ Verified thumbnail endpoint returns valid JPEG images
+
+**Backfill Results:**
+- Total processed: 92,609 products
+- Success: 92,549 (99.94%)
+- Failed: 60 (mostly ConnectTimeout errors)
+- S3 bucket now contains ~10GB of product images
+
+**Key insight:** The issue had multiple layers:
+1. Missing `AWS_MEDIA_BUCKET_NAME` env var (files written to container, not S3)
+2. Broken ProductMedia records with `external_url` but no uploaded files
+3. S3 bucket blocking all public access (thumbnails redirected to 403)
+
+All three issues were fixed in this session.
