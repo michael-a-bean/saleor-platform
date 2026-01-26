@@ -17,8 +17,13 @@ const TRUSTED_CONNECT_DOMAINS = [
 ];
 
 const TRUSTED_IMAGE_DOMAINS = [
+  // Scryfall card images - main CDN and all subdomains (c1, c2, etc.)
   "https://cards.scryfall.io",
+  "https://c1.scryfall.com",
   "https://c2.scryfall.com",
+  // Scryfall SVGs - set icons and mana symbols
+  "https://svgs.scryfall.io",
+  // Saleor API for uploaded media
   process.env.NEXT_PUBLIC_SALEOR_API_URL?.replace('/graphql/', '') || "http://localhost:8000",
 ];
 
