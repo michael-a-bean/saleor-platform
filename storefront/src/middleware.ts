@@ -23,8 +23,13 @@ const TRUSTED_IMAGE_DOMAINS = [
   "https://c2.scryfall.com",
   // Scryfall SVGs - set icons and mana symbols
   "https://svgs.scryfall.io",
-  // Saleor API for uploaded media
+  // Saleor API for uploaded media (thumbnail endpoint)
   process.env.NEXT_PUBLIC_SALEOR_API_URL?.replace('/graphql/', '') || "http://localhost:8000",
+  // AWS S3 media bucket for product images
+  "https://saleor-platform-media-staging-546464732019.s3.amazonaws.com",
+  // Support any S3 region format
+  "https://*.s3.amazonaws.com",
+  "https://*.s3.*.amazonaws.com",
 ];
 
 function buildCSP(): string {
