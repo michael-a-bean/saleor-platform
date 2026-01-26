@@ -8,6 +8,20 @@ import { logger } from "@/lib/logger";
 const log = logger.scope("meilisearch");
 
 const MEILISEARCH_URL = process.env.MEILISEARCH_URL || "http://localhost:7700";
+const MEILISEARCH_API_KEY = process.env.MEILISEARCH_API_KEY;
+
+/**
+ * Get headers for Meilisearch requests, including auth if API key is set.
+ */
+function getMeilisearchHeaders(): Record<string, string> {
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+	};
+	if (MEILISEARCH_API_KEY) {
+		headers["Authorization"] = `Bearer ${MEILISEARCH_API_KEY}`;
+	}
+	return headers;
+}
 
 /**
  * Get the Meilisearch index name for a channel.
@@ -184,9 +198,7 @@ export async function searchProducts(
 	try {
 		const response = await fetch(`${MEILISEARCH_URL}/indexes/${indexName}/search`, {
 			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
+			headers: getMeilisearchHeaders(),
 			body: JSON.stringify(searchParams),
 			// Don't cache search results
 			cache: "no-store",
@@ -222,6 +234,7 @@ export async function searchProducts(
 export async function isMeilisearchHealthy(): Promise<boolean> {
 	try {
 		const response = await fetch(`${MEILISEARCH_URL}/health`, {
+			headers: getMeilisearchHeaders(),
 			cache: "no-store",
 		});
 		return response.ok;
@@ -237,6 +250,7 @@ export async function getIndexStats(channel: string): Promise<{ numberOfDocument
 	const indexName = getIndexName(channel);
 	try {
 		const response = await fetch(`${MEILISEARCH_URL}/indexes/${indexName}/stats`, {
+			headers: getMeilisearchHeaders(),
 			cache: "no-store",
 		});
 		if (!response.ok) return null;

@@ -63,7 +63,16 @@ def decode_saleor_id(graphql_id: str) -> str:
         return graphql_id.replace('=', '').replace('+', '-').replace('/', '_')
 
 SALEOR_API = "http://localhost:8000/graphql/"
-MEILISEARCH_URL = "http://localhost:7700"
+MEILISEARCH_URL = os.environ.get("MEILISEARCH_URL", "http://localhost:7700")
+MEILISEARCH_API_KEY = os.environ.get("MEILISEARCH_API_KEY")  # None is valid for local dev
+
+
+def get_meilisearch_headers() -> dict:
+    """Get headers for Meilisearch requests, including auth if API key is set."""
+    headers = {"Content-Type": "application/json"}
+    if MEILISEARCH_API_KEY:
+        headers["Authorization"] = f"Bearer {MEILISEARCH_API_KEY}"
+    return headers
 
 def get_index_name(channel: str) -> str:
     """Get index name for a channel."""
@@ -305,7 +314,7 @@ def wait_for_task(task_uid: int, timeout: int = 60) -> bool:
     """Wait for a Meilisearch task to complete."""
     start = time.time()
     while time.time() - start < timeout:
-        response = requests.get(f"{MEILISEARCH_URL}/tasks/{task_uid}")
+        response = requests.get(f"{MEILISEARCH_URL}/tasks/{task_uid}", headers=get_meilisearch_headers())
         if response.status_code == 200:
             status = response.json().get("status")
             if status == "succeeded":
@@ -324,7 +333,7 @@ def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
     if full_reindex:
         # Delete existing index
         print(f"Deleting existing index '{index_name}'...")
-        response = requests.delete(f"{MEILISEARCH_URL}/indexes/{index_name}")
+        response = requests.delete(f"{MEILISEARCH_URL}/indexes/{index_name}", headers=get_meilisearch_headers())
         if response.status_code == 202:
             task_uid = response.json().get("taskUid")
             wait_for_task(task_uid)
@@ -333,7 +342,8 @@ def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
     print(f"Creating/updating index '{index_name}'...")
     response = requests.post(
         f"{MEILISEARCH_URL}/indexes",
-        json={"uid": index_name, "primaryKey": "id"}
+        json={"uid": index_name, "primaryKey": "id"},
+        headers=get_meilisearch_headers()
     )
     if response.status_code == 202:
         task_uid = response.json().get("taskUid")
@@ -398,7 +408,8 @@ def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
 
     response = requests.patch(
         f"{MEILISEARCH_URL}/indexes/{index_name}/settings",
-        json=settings
+        json=settings,
+        headers=get_meilisearch_headers()
     )
 
     if response.status_code == 202:
@@ -433,7 +444,7 @@ def sync_to_meilisearch(index_name: str, documents: list):
         response = requests.post(
             f"{MEILISEARCH_URL}/indexes/{index_name}/documents",
             json=batch,
-            headers={"Content-Type": "application/json"}
+            headers=get_meilisearch_headers()
         )
 
         if response.status_code not in [200, 202]:
@@ -455,7 +466,7 @@ def main():
 
     # Check Meilisearch is running
     try:
-        health = requests.get(f"{MEILISEARCH_URL}/health")
+        health = requests.get(f"{MEILISEARCH_URL}/health", headers=get_meilisearch_headers())
         if health.status_code != 200:
             print("Error: Meilisearch is not healthy")
             sys.exit(1)

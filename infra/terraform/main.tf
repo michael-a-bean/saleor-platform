@@ -205,6 +205,8 @@ module "ecs" {
   media_bucket_name = module.s3.bucket_name
   allowed_hosts     = "api.${var.domain_name},localhost,${module.alb.alb_dns_name}"
   meilisearch_url   = var.meilisearch_enabled ? module.meilisearch[0].service_url : "http://meilisearch.${local.name_prefix}.local:7700"
+  # Pass Meilisearch API key secret ARN to storefront for authenticated requests
+  meilisearch_api_key_secret_arn = var.meilisearch_enabled ? aws_secretsmanager_secret.meilisearch_master_key[0].arn : ""
 
   api_desired_count        = var.api_desired_count
   api_cpu                  = var.api_cpu

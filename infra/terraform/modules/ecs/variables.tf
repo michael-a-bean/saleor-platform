@@ -127,6 +127,12 @@ variable "meilisearch_url" {
   type        = string
 }
 
+variable "meilisearch_api_key_secret_arn" {
+  description = "ARN of the Secrets Manager secret containing the Meilisearch API key"
+  type        = string
+  default     = ""
+}
+
 # Scaling
 variable "api_desired_count" {
   description = "Desired count for API service"

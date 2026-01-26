@@ -34,8 +34,17 @@ from typing import Optional
 
 SALEOR_API = os.environ.get("SALEOR_API_URL", "http://localhost:8000/graphql/")
 MEILISEARCH_URL = os.environ.get("MEILISEARCH_URL", "http://localhost:7700")
+MEILISEARCH_API_KEY = os.environ.get("MEILISEARCH_API_KEY")  # None is valid for local dev
 SALEOR_ADMIN_EMAIL = os.environ.get("SALEOR_ADMIN_EMAIL")
 SALEOR_ADMIN_PASSWORD = os.environ.get("SALEOR_ADMIN_PASSWORD")
+
+
+def get_meilisearch_headers() -> dict:
+    """Get headers for Meilisearch requests, including auth if API key is set."""
+    headers = {"Content-Type": "application/json"}
+    if MEILISEARCH_API_KEY:
+        headers["Authorization"] = f"Bearer {MEILISEARCH_API_KEY}"
+    return headers
 
 
 def decode_saleor_id(graphql_id: str) -> str:
@@ -94,6 +103,7 @@ def get_last_sync_time(index_name: str) -> Optional[str]:
                 "sort": ["last_indexed_at:desc"],
                 "attributesToRetrieve": ["last_indexed_at"]
             },
+            headers=get_meilisearch_headers(),
             timeout=10
         )
         if response.status_code == 200:
@@ -312,7 +322,7 @@ def upload_to_meilisearch(documents: list, index_name: str) -> bool:
     response = requests.post(
         f"{MEILISEARCH_URL}/indexes/{index_name}/documents",
         json=documents,
-        headers={"Content-Type": "application/json"},
+        headers=get_meilisearch_headers(),
         timeout=120
     )
 
@@ -323,7 +333,7 @@ def upload_to_meilisearch(documents: list, index_name: str) -> bool:
         # Wait for task completion
         start = time.time()
         while time.time() - start < 120:
-            task_response = requests.get(f"{MEILISEARCH_URL}/tasks/{task_uid}")
+            task_response = requests.get(f"{MEILISEARCH_URL}/tasks/{task_uid}", headers=get_meilisearch_headers())
             if task_response.status_code == 200:
                 status = task_response.json().get("status")
                 if status == "succeeded":
