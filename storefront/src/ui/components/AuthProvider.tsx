@@ -20,12 +20,40 @@ export const saleorAuthClient = createSaleorAuthClient({
 	saleorApiUrl,
 });
 
+/**
+ * Wrapper around fetchWithAuth that gracefully handles the Next.js cookie error.
+ * The @saleor/auth-sdk tries to clear cookies when token refresh fails, but this
+ * can only be done in Server Actions. We catch this error and proceed with an
+ * unauthenticated request instead of crashing.
+ */
+const safeFetchWithAuth = async (
+	input: NodeJS.fetch.RequestInfo,
+	init?: RequestInit,
+): Promise<Response> => {
+	try {
+		return await saleorAuthClient.fetchWithAuth(input, init);
+	} catch (error) {
+		// Handle the Next.js cookie modification error gracefully
+		if (
+			error instanceof Error &&
+			error.message.includes("Cookies can only be modified in a Server Action")
+		) {
+			console.warn(
+				"[AuthProvider] Token refresh failed - proceeding without auth. User may need to sign in again.",
+			);
+			// Fall back to unauthenticated fetch
+			return fetch(input, init);
+		}
+		throw error;
+	}
+};
+
 const makeUrqlClient = () => {
 	return createClient({
 		url: saleorApiUrl,
 		suspense: true,
 		// requestPolicy: "cache-first",
-		fetch: (input, init) => saleorAuthClient.fetchWithAuth(input as NodeJS.fetch.RequestInfo, init),
+		fetch: (input, init) => safeFetchWithAuth(input as NodeJS.fetch.RequestInfo, init),
 		exchanges: [dedupExchange, cacheExchange, fetchExchange],
 	});
 };

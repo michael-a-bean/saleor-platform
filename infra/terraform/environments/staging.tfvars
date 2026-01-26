@@ -67,8 +67,8 @@ create_separate_celery_cache = false
 
 # ECS (minimal for staging)
 api_desired_count        = 1
-api_cpu                  = 512
-api_memory               = 1024
+api_cpu                  = 1024
+api_memory               = 2048
 worker_desired_count     = 1
 worker_cpu               = 512
 worker_memory            = 1024
