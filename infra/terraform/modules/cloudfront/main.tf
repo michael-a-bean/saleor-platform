@@ -56,8 +56,8 @@ resource "aws_cloudfront_distribution" "media" {
 
     # TTL settings - aggressive caching for product images
     min_ttl     = 0
-    default_ttl = var.default_ttl     # 24 hours
-    max_ttl     = var.max_ttl         # 7 days
+    default_ttl = var.default_ttl # 24 hours
+    max_ttl     = var.max_ttl     # 7 days
   }
 
   # Cache behavior for product images - longest TTL
@@ -80,9 +80,9 @@ resource "aws_cloudfront_distribution" "media" {
     compress               = true
 
     # Product images rarely change - aggressive caching
-    min_ttl     = 3600      # 1 hour minimum
-    default_ttl = 86400     # 24 hours
-    max_ttl     = 604800    # 7 days
+    min_ttl     = 3600   # 1 hour minimum
+    default_ttl = 86400  # 24 hours
+    max_ttl     = 604800 # 7 days
   }
 
   # Cache behavior for thumbnails - longest TTL
@@ -105,9 +105,9 @@ resource "aws_cloudfront_distribution" "media" {
     compress               = true
 
     # Thumbnails are derived - very aggressive caching
-    min_ttl     = 3600      # 1 hour minimum
-    default_ttl = 86400     # 24 hours
-    max_ttl     = 604800    # 7 days
+    min_ttl     = 3600   # 1 hour minimum
+    default_ttl = 86400  # 24 hours
+    max_ttl     = 604800 # 7 days
   }
 
   # Geo restrictions - none (global distribution within price class)
@@ -125,16 +125,16 @@ resource "aws_cloudfront_distribution" "media" {
 
   # Custom error responses - return 404 for missing files
   custom_error_response {
-    error_code         = 403
-    response_code      = 404
-    response_page_path = ""
+    error_code            = 403
+    response_code         = 404
+    response_page_path    = ""
     error_caching_min_ttl = 10
   }
 
   custom_error_response {
-    error_code         = 404
-    response_code      = 404
-    response_page_path = ""
+    error_code            = 404
+    response_code         = 404
+    response_page_path    = ""
     error_caching_min_ttl = 10
   }
 
