@@ -225,7 +225,7 @@ module "ecs" {
 
   ssm_path_prefix   = "/saleor/${var.environment}"
   media_bucket_name = module.s3.bucket_name
-  media_cdn_url     = var.enable_cloudfront ? module.cloudfront[0].domain_name : ""
+  media_cdn_url     = var.enable_cloudfront ? module.cloudfront[0].media_url : ""
   allowed_hosts     = "api.${var.domain_name},localhost,${module.alb.alb_dns_name}"
   meilisearch_url   = var.meilisearch_enabled ? module.meilisearch[0].service_url : "http://meilisearch.${local.name_prefix}.local:7700"
   # Pass Meilisearch API key secret ARN to storefront for authenticated requests
