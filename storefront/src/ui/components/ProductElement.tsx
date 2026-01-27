@@ -55,9 +55,9 @@ export function ProductElement({
 							loading={loading}
 							src={imageUrl}
 							alt={imageAlt}
-							width={512}
-							height={512}
-							sizes={"512px"}
+							width={488}
+							height={680}
+							sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 256px"
 							priority={priority}
 						/>
 					) : (
