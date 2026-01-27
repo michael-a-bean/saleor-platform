@@ -4,7 +4,7 @@
 **Status:** IN PROGRESS - Phase 0 Complete, Awaiting CI Verification
 **Environment:** Staging (NOT local)
 **Branch:** `platform/main`
-**Latest Commit:** `377494f` - terraform format fix pushed
+**Latest Commit:** `bfa0aaf` - lint fixes for inventory-ops pushed
 
 ---
 
@@ -240,6 +240,24 @@ repos:
 - **Commit:** `377494f`
 - **Workflow runs:** `21382996773` (test-platform), `21382996727` (deploy-staging)
 
+### Phase 0.5: Lint Fixes (Discovered Issue)
+
+- **Timestamp:** 2026-01-26 ~23:10 PST
+- **Issue:** Apps Checks job failed on inventory-ops lint errors
+- **Root cause:** Consecutive line comments, unused variables, unsorted exports
+- **Files fixed:**
+  - `circuit-breaker.ts` - removed unused destructured vars
+  - `env.ts` - block comment
+  - `reconciliation-runs-service.ts` - block comment
+  - `index.ts` - export sorting (via --fix)
+  - `order-fulfilled/use-case.ts` - block comment
+  - `cron/reconcile/route.ts` - block comments (2)
+- **Submodule commits:**
+  - `inventory-ops`: `1783d16`
+  - `saleor-apps`: `bde52ccf`
+  - `saleor-platform`: `bfa0aaf`
+- **Workflow runs:** `21389344290` (test-platform), `21389344285` (deploy-staging)
+
 ---
 
 ## Council Debate Summary
@@ -303,5 +321,5 @@ gh run watch
 
 ---
 
-**Last Updated:** 2026-01-26 19:05 PST
-**Next Action:** Monitor workflow run `21382996773` for test-platform success, then proceed to Phase 1
+**Last Updated:** 2026-01-26 23:15 PST
+**Next Action:** Monitor workflow run `21389344290` for test-platform success
