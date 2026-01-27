@@ -111,7 +111,7 @@ resource "aws_s3_bucket_cors_configuration" "media" {
   }
 }
 
-# Bucket policy for ECS task access and public read for media
+# Bucket policy for ECS task access and public/CloudFront read for media
 resource "aws_s3_bucket_policy" "media" {
   bucket = aws_s3_bucket.media.id
 
@@ -120,32 +120,56 @@ resource "aws_s3_bucket_policy" "media" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "EnforceTLSRequestsOnly"
-        Effect    = "Deny"
-        Principal = "*"
-        Action    = "s3:*"
-        Resource = [
-          aws_s3_bucket.media.arn,
-          "${aws_s3_bucket.media.arn}/*"
-        ]
-        Condition = {
-          Bool = {
-            "aws:SecureTransport" = "false"
+    Statement = concat(
+      # Always enforce TLS
+      [
+        {
+          Sid       = "EnforceTLSRequestsOnly"
+          Effect    = "Deny"
+          Principal = "*"
+          Action    = "s3:*"
+          Resource = [
+            aws_s3_bucket.media.arn,
+            "${aws_s3_bucket.media.arn}/*"
+          ]
+          Condition = {
+            Bool = {
+              "aws:SecureTransport" = "false"
+            }
           }
         }
-      },
-      {
-        Sid       = "PublicReadForMedia"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = "s3:GetObject"
-        Resource = [
-          "${aws_s3_bucket.media.arn}/products/*",
-          "${aws_s3_bucket.media.arn}/thumbnails/*"
-        ]
-      }
-    ]
+      ],
+      # CloudFront OAC access (when CloudFront is enabled)
+      var.cloudfront_distribution_arn != "" ? [
+        {
+          Sid    = "AllowCloudFrontServicePrincipal"
+          Effect = "Allow"
+          Principal = {
+            Service = "cloudfront.amazonaws.com"
+          }
+          Action   = "s3:GetObject"
+          Resource = "${aws_s3_bucket.media.arn}/*"
+          Condition = {
+            StringEquals = {
+              "AWS:SourceArn" = var.cloudfront_distribution_arn
+            }
+          }
+        }
+      ] : [],
+      # Public read (when CloudFront-only is NOT enabled)
+      # This maintains backward compatibility for environments without CloudFront
+      !var.enable_cloudfront_only_access ? [
+        {
+          Sid       = "PublicReadForMedia"
+          Effect    = "Allow"
+          Principal = "*"
+          Action    = "s3:GetObject"
+          Resource = [
+            "${aws_s3_bucket.media.arn}/products/*",
+            "${aws_s3_bucket.media.arn}/thumbnails/*"
+          ]
+        }
+      ] : []
+    )
   })
 }

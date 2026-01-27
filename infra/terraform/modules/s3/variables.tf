@@ -26,3 +26,19 @@ variable "cors_allowed_origins" {
   type        = list(string)
   default     = ["*"]
 }
+
+# =============================================================================
+# CloudFront Integration
+# =============================================================================
+
+variable "cloudfront_distribution_arn" {
+  description = "CloudFront distribution ARN for bucket policy (when CloudFront is enabled)"
+  type        = string
+  default     = ""
+}
+
+variable "enable_cloudfront_only_access" {
+  description = "When true, removes public access and only allows CloudFront OAC access"
+  type        = bool
+  default     = false
+}

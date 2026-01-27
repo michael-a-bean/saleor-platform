@@ -133,6 +133,12 @@ variable "meilisearch_api_key_secret_arn" {
   default     = ""
 }
 
+variable "media_cdn_url" {
+  description = "CDN URL for media assets (CloudFront domain). When set, Saleor uses this for media URLs."
+  type        = string
+  default     = ""
+}
+
 # Scaling
 variable "api_desired_count" {
   description = "Desired count for API service"

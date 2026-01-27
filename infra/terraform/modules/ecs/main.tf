@@ -97,20 +97,26 @@ resource "aws_ecs_task_definition" "api" {
           valueFrom = "${var.ssm_path_prefix}/api/RSA_PRIVATE_KEY"
         }
       ]
-      environment = [
-        { name = "DEBUG", value = "false" },
-        { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
-        { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts },
-        { name = "DEFAULT_CHANNEL_SLUG", value = "webstore" },
-        # S3 Media Storage - AWS_MEDIA_BUCKET_NAME is required for product images
-        { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
-        { name = "AWS_MEDIA_BUCKET_NAME", value = var.media_bucket_name },
-        { name = "AWS_S3_REGION_NAME", value = var.aws_region },
-        { name = "DASHBOARD_URL", value = "${var.public_dashboard_base_url}/" },
-        { name = "ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL", value = "false" },
-        # PUBLIC_URL tells Saleor its own public-facing URL (critical for app installation)
-        { name = "PUBLIC_URL", value = "${var.public_api_base_url}/" }
-      ]
+      environment = concat(
+        [
+          { name = "DEBUG", value = "false" },
+          { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
+          { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts },
+          { name = "DEFAULT_CHANNEL_SLUG", value = "webstore" },
+          # S3 Media Storage - AWS_MEDIA_BUCKET_NAME is required for product images
+          { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
+          { name = "AWS_MEDIA_BUCKET_NAME", value = var.media_bucket_name },
+          { name = "AWS_S3_REGION_NAME", value = var.aws_region },
+          { name = "DASHBOARD_URL", value = "${var.public_dashboard_base_url}/" },
+          { name = "ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL", value = "false" },
+          # PUBLIC_URL tells Saleor its own public-facing URL (critical for app installation)
+          { name = "PUBLIC_URL", value = "${var.public_api_base_url}/" }
+        ],
+        # CloudFront CDN for media - sets custom domain for media URLs in GraphQL responses
+        var.media_cdn_url != "" ? [
+          { name = "AWS_MEDIA_CUSTOM_DOMAIN", value = var.media_cdn_url }
+        ] : []
+      )
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -174,16 +180,22 @@ resource "aws_ecs_task_definition" "worker" {
           valueFrom = "${var.ssm_path_prefix}/api/RSA_PRIVATE_KEY"
         }
       ]
-      environment = [
-        { name = "DEBUG", value = "false" },
-        { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
-        { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts },
-        # S3 Media Storage - AWS_MEDIA_BUCKET_NAME is required for product images
-        { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
-        { name = "AWS_MEDIA_BUCKET_NAME", value = var.media_bucket_name },
-        { name = "AWS_S3_REGION_NAME", value = var.aws_region },
-        { name = "PUBLIC_URL", value = "${var.public_api_base_url}/" }
-      ]
+      environment = concat(
+        [
+          { name = "DEBUG", value = "false" },
+          { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
+          { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts },
+          # S3 Media Storage - AWS_MEDIA_BUCKET_NAME is required for product images
+          { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
+          { name = "AWS_MEDIA_BUCKET_NAME", value = var.media_bucket_name },
+          { name = "AWS_S3_REGION_NAME", value = var.aws_region },
+          { name = "PUBLIC_URL", value = "${var.public_api_base_url}/" }
+        ],
+        # CloudFront CDN for media
+        var.media_cdn_url != "" ? [
+          { name = "AWS_MEDIA_CUSTOM_DOMAIN", value = var.media_cdn_url }
+        ] : []
+      )
       logConfiguration = {
         logDriver = "awslogs"
         options = {

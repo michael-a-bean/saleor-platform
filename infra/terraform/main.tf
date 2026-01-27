@@ -68,6 +68,28 @@ module "s3" {
     "https://api.${var.domain_name}",
     "https://dashboard.${var.domain_name}"
   ]
+
+  # CloudFront integration
+  cloudfront_distribution_arn   = var.enable_cloudfront ? module.cloudfront[0].distribution_arn : ""
+  enable_cloudfront_only_access = var.enable_cloudfront && var.cloudfront_only_media_access
+}
+
+# =============================================================================
+# CloudFront CDN for Media
+# =============================================================================
+
+module "cloudfront" {
+  source = "./modules/cloudfront"
+  count  = var.enable_cloudfront ? 1 : 0
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  s3_bucket_name                 = module.s3.bucket_name
+  s3_bucket_arn                  = module.s3.bucket_arn
+  s3_bucket_regional_domain_name = module.s3.bucket_regional_domain_name
+
+  price_class = var.cloudfront_price_class
 }
 
 # =============================================================================
@@ -203,6 +225,7 @@ module "ecs" {
 
   ssm_path_prefix   = "/saleor/${var.environment}"
   media_bucket_name = module.s3.bucket_name
+  media_cdn_url     = var.enable_cloudfront ? module.cloudfront[0].domain_name : ""
   allowed_hosts     = "api.${var.domain_name},localhost,${module.alb.alb_dns_name}"
   meilisearch_url   = var.meilisearch_enabled ? module.meilisearch[0].service_url : "http://meilisearch.${local.name_prefix}.local:7700"
   # Pass Meilisearch API key secret ARN to storefront for authenticated requests

@@ -394,3 +394,25 @@ variable "alert_sns_topic_arn" {
   type        = string
   default     = ""
 }
+
+# =============================================================================
+# CloudFront CDN Configuration
+# =============================================================================
+
+variable "enable_cloudfront" {
+  description = "Enable CloudFront CDN for media bucket (recommended for staging/production)"
+  type        = bool
+  default     = true
+}
+
+variable "cloudfront_price_class" {
+  description = "CloudFront price class (PriceClass_100 = US/Europe, PriceClass_200 = adds Asia/Australia, PriceClass_All = global)"
+  type        = string
+  default     = "PriceClass_100"
+}
+
+variable "cloudfront_only_media_access" {
+  description = "When true, removes direct S3 public access for media - all requests must go through CloudFront"
+  type        = bool
+  default     = false
+}
