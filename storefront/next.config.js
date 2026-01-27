@@ -2,13 +2,33 @@
 const config = {
 	images: {
 		remotePatterns: [
+			// Scryfall card images - enable full optimization
+			{
+				protocol: "https",
+				hostname: "cards.scryfall.io",
+			},
+			{
+				protocol: "https",
+				hostname: "*.scryfall.io",
+			},
+			// Fallback for other sources (Saleor media, etc.)
 			{
 				hostname: "*",
 			},
 		],
-		// Skip image optimization to avoid Docker networking issues with localhost URLs
+		// Enable WebP and AVIF for modern browsers
+		formats: ["image/avif", "image/webp"],
+		// Device sizes optimized for card grids and detail pages
+		deviceSizes: [320, 420, 640, 768, 1024, 1280],
+		// Image sizes for card thumbnails and icons
+		imageSizes: [64, 96, 128, 256, 384],
+		// Cache optimized images for 24 hours
+		minimumCacheTTL: 86400,
 		dangerouslyAllowSVG: true,
-		unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED !== "false",
+		// Enable optimization for Scryfall (external HTTPS), disable for localhost/Saleor
+		// The remotePatterns above allow Next.js to optimize Scryfall images
+		// while localhost URLs will fall through unoptimized
+		unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === "true",
 	},
 	typedRoutes: false,
 	// used in the Dockerfile

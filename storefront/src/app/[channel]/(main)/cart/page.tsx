@@ -62,8 +62,9 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 									<Image
 										src={imageUrl}
 										alt={imageAlt}
-										width={200}
-										height={200}
+										width={256}
+										height={357}
+										sizes="(max-width: 640px) 96px, 128px"
 										className="h-full w-full object-contain object-center"
 									/>
 								)}

@@ -254,8 +254,9 @@ export default async function Page(props: {
 						<ProductImageWrapper
 							priority={true}
 							alt={firstImage.alt ?? ""}
-							width={1024}
-							height={1024}
+							width={672}
+							height={936}
+							sizes="(max-width: 1024px) 100vw, 45vw"
 							src={firstImage.url}
 						/>
 					)}
