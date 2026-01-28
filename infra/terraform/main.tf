@@ -7,6 +7,15 @@ locals {
   name_prefix = "${var.project_name}-${var.environment}"
   account_id  = data.aws_caller_identity.current.account_id
 
+  # Standard tags for drift detection and resource tracking
+  # All resources should include these tags
+  common_tags = {
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = "terraform"
+    Repository  = "saleor-platform"
+  }
+
   # URL scheme based on TLS availability
   url_scheme = var.use_https_urls ? "https" : "http"
 
@@ -44,6 +53,7 @@ module "vpc" {
   availability_zones   = var.availability_zones
   single_nat_gateway   = var.environment == "staging"
   create_vpc_endpoints = true
+  tags                 = local.common_tags
 }
 
 locals {
@@ -226,9 +236,9 @@ module "ecs" {
   ssm_path_prefix   = "/saleor/${var.environment}"
   media_bucket_name = module.s3.bucket_name
   # Saleor's AWS_MEDIA_CUSTOM_DOMAIN expects domain only (no https://), not full URL
-  media_cdn_url     = var.enable_cloudfront ? module.cloudfront[0].domain_name : ""
-  allowed_hosts     = "api.${var.domain_name},localhost,${module.alb.alb_dns_name}"
-  meilisearch_url   = var.meilisearch_enabled ? module.meilisearch[0].service_url : "http://meilisearch.${local.name_prefix}.local:7700"
+  media_cdn_url   = var.enable_cloudfront ? module.cloudfront[0].domain_name : ""
+  allowed_hosts   = "api.${var.domain_name},localhost,${module.alb.alb_dns_name}"
+  meilisearch_url = var.meilisearch_enabled ? module.meilisearch[0].service_url : "http://meilisearch.${local.name_prefix}.local:7700"
   # Pass Meilisearch API key secret ARN to storefront for authenticated requests
   meilisearch_api_key_secret_arn = var.meilisearch_enabled ? aws_secretsmanager_secret.meilisearch_master_key[0].arn : ""
 

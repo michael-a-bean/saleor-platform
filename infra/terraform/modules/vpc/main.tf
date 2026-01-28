@@ -4,6 +4,11 @@
 
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
+
+  # Merge passed tags with module-specific defaults
+  default_tags = merge(var.tags, {
+    Module = "vpc"
+  })
 }
 
 # =============================================================================
@@ -15,9 +20,9 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${local.name_prefix}-vpc"
-  }
+  })
 }
 
 # =============================================================================
@@ -27,9 +32,9 @@ resource "aws_vpc" "main" {
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${local.name_prefix}-igw"
-  }
+  })
 }
 
 # =============================================================================
@@ -44,10 +49,10 @@ resource "aws_subnet" "public" {
   availability_zone       = var.availability_zones[count.index]
   map_public_ip_on_launch = true
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${local.name_prefix}-public-${var.availability_zones[count.index]}"
     Tier = "public"
-  }
+  })
 }
 
 # Public route table
@@ -59,9 +64,9 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.main.id
   }
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${local.name_prefix}-public-rt"
-  }
+  })
 }
 
 resource "aws_route_table_association" "public" {
@@ -82,10 +87,10 @@ resource "aws_subnet" "private" {
   cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index + 10)
   availability_zone = var.availability_zones[count.index]
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${local.name_prefix}-private-${var.availability_zones[count.index]}"
     Tier = "private"
-  }
+  })
 }
 
 # =============================================================================
@@ -96,9 +101,9 @@ resource "aws_eip" "nat" {
   count  = var.single_nat_gateway ? 1 : length(var.availability_zones)
   domain = "vpc"
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${local.name_prefix}-nat-eip-${count.index}"
-  }
+  })
 
   depends_on = [aws_internet_gateway.main]
 }
@@ -109,9 +114,9 @@ resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${local.name_prefix}-nat-${count.index}"
-  }
+  })
 
   depends_on = [aws_internet_gateway.main]
 }
@@ -127,9 +132,9 @@ resource "aws_route_table" "private" {
     nat_gateway_id = aws_nat_gateway.main[var.single_nat_gateway ? 0 : count.index].id
   }
 
-  tags = {
+  tags = merge(local.default_tags, {
     Name = "${local.name_prefix}-private-rt-${count.index}"
-  }
+  })
 }
 
 resource "aws_route_table_association" "private" {
