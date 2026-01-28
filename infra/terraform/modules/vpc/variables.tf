@@ -37,3 +37,9 @@ variable "create_vpc_endpoints" {
   type        = bool
   default     = true
 }
+
+variable "tags" {
+  description = "Additional tags to apply to all resources"
+  type        = map(string)
+  default     = {}
+}
