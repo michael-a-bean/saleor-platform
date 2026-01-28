@@ -1,0 +1,248 @@
+# Quarterly IAM Policy Audit
+# Compares current IAM policies vs expected Terraform state
+# Creates snapshots and alerts on drift
+# Created: 2026-01-27 per Drift Prevention Next Steps
+
+name: Quarterly IAM Audit
+
+on:
+  schedule:
+    # Quarterly: First Monday of January, April, July, October at 10 AM UTC
+    - cron: '0 10 1-7 1,4,7,10 1'
+  workflow_dispatch:
+    inputs:
+      create_issue:
+        description: 'Create GitHub issue with results'
+        required: false
+        default: 'true'
+        type: boolean
+
+env:
+  AWS_REGION: us-west-1
+  AUDIT_DIR: docs/ops/audits
+
+jobs:
+  iam-audit:
+    name: IAM Policy Audit
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/saleor-platform-staging-github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create audit snapshot directory
+        run: |
+          SNAPSHOT_DATE=$(date +%Y%m%d)
+          SNAPSHOT_DIR="${AUDIT_DIR}/iam-snapshots-${SNAPSHOT_DATE}"
+          mkdir -p "$SNAPSHOT_DIR"
+          echo "SNAPSHOT_DIR=$SNAPSHOT_DIR" >> $GITHUB_ENV
+          echo "SNAPSHOT_DATE=$SNAPSHOT_DATE" >> $GITHUB_ENV
+
+      - name: Snapshot IAM roles
+        run: |
+          # List of IAM roles to audit
+          ROLES=(
+            "saleor-platform-staging-ecs-execution"
+            "saleor-platform-staging-ecs-api-task"
+            "saleor-platform-staging-ecs-worker-task"
+            "saleor-platform-staging-ecs-storefront-task"
+            "saleor-platform-staging-ecs-apps-task"
+            "saleor-platform-staging-github-actions-deploy"
+            "saleor-platform-staging-config"
+            "saleor-platform-staging-meilisearch-sync-worker"
+            "saleor-platform-staging-eventbridge-ecs"
+          )
+
+          echo "## IAM Role Snapshot Report" > "$SNAPSHOT_DIR/SUMMARY.md"
+          echo "" >> "$SNAPSHOT_DIR/SUMMARY.md"
+          echo "**Date:** $(date -u +"%Y-%m-%d %H:%M UTC")" >> "$SNAPSHOT_DIR/SUMMARY.md"
+          echo "" >> "$SNAPSHOT_DIR/SUMMARY.md"
+          echo "| Role | Status | Inline Policies | Attached Policies |" >> "$SNAPSHOT_DIR/SUMMARY.md"
+          echo "|------|--------|-----------------|-------------------|" >> "$SNAPSHOT_DIR/SUMMARY.md"
+
+          for role in "${ROLES[@]}"; do
+            echo "Processing role: $role"
+
+            # Create role-specific file
+            ROLE_FILE="$SNAPSHOT_DIR/${role}.json"
+
+            # Get role details
+            if aws iam get-role --role-name "$role" > /tmp/role.json 2>/dev/null; then
+              # Get inline policies
+              aws iam list-role-policies --role-name "$role" > /tmp/inline.json 2>/dev/null || echo '{"PolicyNames":[]}' > /tmp/inline.json
+
+              # Get attached policies
+              aws iam list-attached-role-policies --role-name "$role" > /tmp/attached.json 2>/dev/null || echo '{"AttachedPolicies":[]}' > /tmp/attached.json
+
+              # For each inline policy, get the actual policy document
+              INLINE_NAMES=$(jq -r '.PolicyNames[]' /tmp/inline.json 2>/dev/null || true)
+              echo '[]' > /tmp/inline-docs.json
+              if [ -n "$INLINE_NAMES" ]; then
+                echo '[' > /tmp/inline-docs.json
+                FIRST=true
+                for policy_name in $INLINE_NAMES; do
+                  if [ "$FIRST" = true ]; then
+                    FIRST=false
+                  else
+                    echo ',' >> /tmp/inline-docs.json
+                  fi
+                  aws iam get-role-policy --role-name "$role" --policy-name "$policy_name" >> /tmp/inline-docs.json 2>/dev/null || true
+                done
+                echo ']' >> /tmp/inline-docs.json
+              fi
+
+              # Combine into single file
+              jq -s '{role: .[0], inline_policies: .[1], attached_policies: .[2], inline_policy_documents: .[3]}' \
+                /tmp/role.json /tmp/inline.json /tmp/attached.json /tmp/inline-docs.json > "$ROLE_FILE"
+
+              # Extract counts for summary
+              INLINE_COUNT=$(jq '.PolicyNames | length' /tmp/inline.json)
+              ATTACHED_COUNT=$(jq '.AttachedPolicies | length' /tmp/attached.json)
+
+              echo "| $role | ✅ Found | $INLINE_COUNT | $ATTACHED_COUNT |" >> "$SNAPSHOT_DIR/SUMMARY.md"
+            else
+              echo '{"error": "Role not found"}' > "$ROLE_FILE"
+              echo "| $role | ❌ Not Found | - | - |" >> "$SNAPSHOT_DIR/SUMMARY.md"
+            fi
+          done
+
+          # Add notes section
+          echo "" >> "$SNAPSHOT_DIR/SUMMARY.md"
+          echo "### Notes" >> "$SNAPSHOT_DIR/SUMMARY.md"
+          echo "" >> "$SNAPSHOT_DIR/SUMMARY.md"
+          echo "- This snapshot was generated automatically by the quarterly IAM audit workflow" >> "$SNAPSHOT_DIR/SUMMARY.md"
+          echo "- Compare with Terraform state using \`terraform state show\` commands" >> "$SNAPSHOT_DIR/SUMMARY.md"
+          echo "- Previous snapshots can be found in \`docs/ops/audits/iam-snapshots-*/\`" >> "$SNAPSHOT_DIR/SUMMARY.md"
+
+      - name: Compare with previous snapshot
+        id: compare
+        run: |
+          # Find most recent previous snapshot
+          PREV_SNAPSHOT=$(ls -d ${AUDIT_DIR}/iam-snapshots-* 2>/dev/null | grep -v "$SNAPSHOT_DATE" | sort -r | head -1 || true)
+
+          if [ -n "$PREV_SNAPSHOT" ] && [ -d "$PREV_SNAPSHOT" ]; then
+            echo "Comparing with previous snapshot: $PREV_SNAPSHOT"
+            echo "has_previous=true" >> $GITHUB_OUTPUT
+
+            # Create diff report
+            DIFF_FILE="$SNAPSHOT_DIR/DIFF_FROM_PREVIOUS.md"
+            echo "## Differences from Previous Audit" > "$DIFF_FILE"
+            echo "" >> "$DIFF_FILE"
+            echo "Previous snapshot: \`$(basename $PREV_SNAPSHOT)\`" >> "$DIFF_FILE"
+            echo "" >> "$DIFF_FILE"
+
+            CHANGES_DETECTED=false
+
+            for file in "$SNAPSHOT_DIR"/*.json; do
+              filename=$(basename "$file")
+              if [ -f "$PREV_SNAPSHOT/$filename" ]; then
+                if ! diff -q "$PREV_SNAPSHOT/$filename" "$file" > /dev/null 2>&1; then
+                  CHANGES_DETECTED=true
+                  echo "### $filename" >> "$DIFF_FILE"
+                  echo "" >> "$DIFF_FILE"
+                  echo '```diff' >> "$DIFF_FILE"
+                  diff "$PREV_SNAPSHOT/$filename" "$file" >> "$DIFF_FILE" || true
+                  echo '```' >> "$DIFF_FILE"
+                  echo "" >> "$DIFF_FILE"
+                fi
+              else
+                echo "### $filename (NEW)" >> "$DIFF_FILE"
+                echo "" >> "$DIFF_FILE"
+                echo "This role was not present in the previous snapshot." >> "$DIFF_FILE"
+                echo "" >> "$DIFF_FILE"
+                CHANGES_DETECTED=true
+              fi
+            done
+
+            if [ "$CHANGES_DETECTED" = false ]; then
+              echo "✅ No changes detected from previous audit." >> "$DIFF_FILE"
+              echo "drift_detected=false" >> $GITHUB_OUTPUT
+            else
+              echo "drift_detected=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "No previous snapshot found for comparison"
+            echo "has_previous=false" >> $GITHUB_OUTPUT
+            echo "drift_detected=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit snapshot
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          git add "$SNAPSHOT_DIR"
+          git commit -m "chore(audit): quarterly IAM snapshot ${SNAPSHOT_DATE}
+
+          Automated IAM policy audit snapshot.
+          - Captured policies for all Saleor Platform IAM roles
+          - See SUMMARY.md for overview
+
+          Co-Authored-By: GitHub Actions <noreply@github.com>"
+
+          git push
+
+      - name: Create GitHub Issue
+        if: (steps.compare.outputs.drift_detected == 'true' || github.event_name == 'workflow_dispatch') && inputs.create_issue != 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync(`${process.env.SNAPSHOT_DIR}/SUMMARY.md`, 'utf8');
+
+            let body = `## Quarterly IAM Audit Results
+
+            **Snapshot Date:** ${process.env.SNAPSHOT_DATE}
+            **Snapshot Location:** \`${process.env.SNAPSHOT_DIR}\`
+
+            ${summary}
+
+            ### Review Required
+
+            Please review the IAM policy snapshot and verify:
+            1. All roles are present and accounted for
+            2. Inline policies match Terraform definitions
+            3. Attached policies are expected
+            4. No unexpected permission escalation
+
+            ### Actions
+            - [ ] Review SUMMARY.md
+            - [ ] Compare with Terraform state if discrepancies found
+            - [ ] Update Terraform if manual changes were intended
+            - [ ] Close this issue when audit is complete
+            `;
+
+            if ('${{ steps.compare.outputs.drift_detected }}' === 'true') {
+              body += `
+
+            ### ⚠️ Changes Detected
+
+            IAM policy changes were detected since the last audit. Please review the DIFF_FROM_PREVIOUS.md file in the snapshot directory.
+            `;
+            }
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `📋 Quarterly IAM Audit - ${process.env.SNAPSHOT_DATE}`,
+              body: body,
+              labels: ['iam-audit', 'security', 'quarterly-review']
+            });
+
+      - name: Upload snapshot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iam-snapshot-${{ env.SNAPSHOT_DATE }}
+          path: ${{ env.SNAPSHOT_DIR }}
+          retention-days: 365

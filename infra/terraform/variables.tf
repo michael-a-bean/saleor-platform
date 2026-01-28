@@ -416,3 +416,13 @@ variable "cloudfront_only_media_access" {
   type        = bool
   default     = false
 }
+
+# =============================================================================
+# Drift Prevention & Compliance
+# =============================================================================
+
+variable "enable_config_rules" {
+  description = "Enable AWS Config rules for drift prevention and compliance monitoring"
+  type        = bool
+  default     = true
+}
