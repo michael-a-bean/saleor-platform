@@ -28,6 +28,7 @@ Key extensions live in `saleor-apps/apps/` and integrate tightly with pricing, i
 | **Work on `platform/main` or `feature/*`** | These are the only branches for changes |
 | **Prefer extension over modification** | Use Saleor Apps, webhooks, workers, env configuration |
 | **Always verify the active branch** | `git branch --show-current` before any changes |
+| **No untracked infrastructure changes** | Manual AWS changes must be logged and reconciled with Terraform |
 
 These rules apply to every task.
 
@@ -44,6 +45,7 @@ You are expected to **do real work**, not just suggest changes.
 - Storefront changes → Next.js builds and pages load
 - Data logic → Inspect via GraphQL or database queries
 - Workers → Logs indicate successful execution
+- Infrastructure changes → `terraform plan` shows expected changes only
 
 If unsure, ask before acting rather than skipping verification.
 
@@ -57,6 +59,7 @@ This file stays intentionally lean. Detailed procedures live elsewhere and shoul
 - `.claude/skills/storefront-branding` — WotC/MTG graphics and visual identity
 - `.claude/skills/saleor-graphql` — GraphQL queries and API exploration
 - `.claude/skills/saleor-database` — PostgreSQL queries and data inspection
+- `infra/terraform/` — AWS infrastructure (Terraform) — **read `.claude/rules/infrastructure.md` first**
 
 ### Domain-Specific Logic
 - `.claude/skills/inventory-ops` — Purchase orders, goods receipts, WAC, COGS
@@ -68,7 +71,8 @@ This file stays intentionally lean. Detailed procedures live elsewhere and shoul
 - `docs/reference/architecture.md` — Full platform architecture
 - `docs/reference/git-philosophy.md` — Detailed git workflow guide
 - `docs/reference/sync-contracts.md` — Data sync contracts (Saleor/Meilisearch/inventory-ops)
-- `.claude/rules/` — Critical gotchas (database pricing, storefront builds)
+- `docs/reference/expected-divergence.md` — Terraform drift that is intentional vs concerning
+- `.claude/rules/` — Critical gotchas (database, storefront, git, **infrastructure**)
 
 ### Legacy Material
 - `docs/legacy/` — Historical context only; do not auto-apply
