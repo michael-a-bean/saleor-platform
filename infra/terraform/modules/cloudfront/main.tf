@@ -123,18 +123,15 @@ resource "aws_cloudfront_distribution" "media" {
     cloudfront_default_certificate = true
   }
 
-  # Custom error responses - return 404 for missing files
+  # Custom error responses - cache errors briefly
+  # Note: Cannot use response_code without response_page_path
   custom_error_response {
     error_code            = 403
-    response_code         = 404
-    response_page_path    = ""
     error_caching_min_ttl = 10
   }
 
   custom_error_response {
     error_code            = 404
-    response_code         = 404
-    response_page_path    = ""
     error_caching_min_ttl = 10
   }
 
