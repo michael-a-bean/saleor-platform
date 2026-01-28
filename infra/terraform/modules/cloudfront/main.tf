@@ -123,8 +123,8 @@ resource "aws_cloudfront_distribution" "media" {
     cloudfront_default_certificate = true
   }
 
-  # Custom error responses - cache errors briefly
-  # Note: Cannot use response_code without response_page_path
+  # Custom error responses - cache 403/404 briefly to avoid hammering S3
+  # Note: We don't transform the response code - just cache the error briefly
   custom_error_response {
     error_code            = 403
     error_caching_min_ttl = 10
