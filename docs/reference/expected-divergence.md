@@ -63,9 +63,9 @@ The following were recreated outside Terraform during VPC migration and later im
 
 | VPC | Status | ID | Contains |
 |-----|--------|-----|----------|
-| Original VPC | Orphaned (cleanup candidate) | `vpc-03bec79de659bddf7` | Nothing |
+| Original VPC | ~~Orphaned~~ **DELETED** | `vpc-03bec79de659bddf7` | N/A |
 | Production VPC | **TERRAFORM-MANAGED** | `vpc-0b0360f5c0c874c59` | All infrastructure (ALB, ECS, RDS, ElastiCache, VPC endpoints) |
-| Old Terraform VPC | Orphaned (cleanup candidate) | `vpc-088fb7c0a22060c10` | Nothing - removed from state |
+| Old Terraform VPC | ~~Orphaned~~ **DELETED** | `vpc-088fb7c0a22060c10` | N/A |
 
 **Resolution Applied:**
 1. ✅ Removed old VPC resources from Terraform state (21 resources)
@@ -74,7 +74,9 @@ The following were recreated outside Terraform during VPC migration and later im
 4. ✅ Imported production service discovery namespace
 5. ✅ Terraform state now aligned with AWS reality
 
-**Cleanup Remaining:** Delete orphaned VPCs (`vpc-03bec79de659bddf7`, `vpc-088fb7c0a22060c10`) when convenient.
+**Cleanup Completed (2026-01-27):**
+- ✅ `vpc-03bec79de659bddf7` - Already deleted (not found)
+- ✅ `vpc-088fb7c0a22060c10` - Deleted with all resources (6 VPC endpoints, 1 NAT gateway, 8 security groups, 4 subnets, 1 IGW, 2 route tables)
 
 ### Recreated Resources
 
@@ -85,22 +87,9 @@ The following were recreated outside Terraform during VPC migration and later im
 | ElastiCache | Old VPC | New VPC | **Removed from imports.tf** - Terraform creates fresh |
 | Meilisearch EFS | N/A | New VPC | **Terraform-managed** from creation |
 
-### Orphaned Resources (May Still Exist)
+### Orphaned Resources (CLEANED UP 2026-01-27)
 
-Check for orphaned resources in old VPC:
-
-```bash
-# Security groups
-aws ec2 describe-security-groups \
-  --filters "Name=vpc-id,Values=vpc-03bec79de659bddf7" \
-  --query 'SecurityGroups[*].[GroupId,GroupName]' \
-  --output table
-
-# Target groups
-aws elbv2 describe-target-groups \
-  --query 'TargetGroups[?VpcId==`vpc-03bec79de659bddf7`].[TargetGroupName]' \
-  --output table
-```
+All orphaned VPC resources have been deleted. No cleanup required.
 
 ---
 
