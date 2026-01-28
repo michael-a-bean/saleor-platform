@@ -1,0 +1,249 @@
+# Expected Terraform Divergence
+
+**Last Updated:** 2026-01-27
+**Source:** Council analysis of AWS architecture drift
+
+This document catalogs **intentional drift** between Terraform state and AWS reality. Consult this before interpreting `terraform plan` output to distinguish expected changes from actual drift.
+
+---
+
+## ECS Task Definitions (Intentional - Always Stale)
+
+All ECS services use `lifecycle { ignore_changes = [task_definition] }` to allow CI/CD deployments without Terraform interference.
+
+**Affected Services:**
+- `api` - Saleor API
+- `worker` - Celery worker
+- `storefront` - Next.js storefront
+- `dashboard` - Saleor Dashboard
+- `stripe` - Stripe payment app
+- `inventory-ops` - Inventory operations app
+- `buylist` - Customer buylist app
+- `pos` - Point of sale app
+- `meilisearch` - Search service
+
+**Why This Exists:**
+
+Task definitions are versioned resources in AWS. Each deployment creates a new revision:
+- CI/CD deploys `task-definition:42`
+- Terraform state still references `task-definition:35`
+- This is expected - Terraform should NOT overwrite CI/CD deployments
+
+**Security Implication:**
+
+This pattern creates audit blind spots. A compromised deployment could modify:
+- IAM role assignments
+- Secret references
+- Network configuration
+
+**Audit Strategy:**
+
+Quarterly comparison of running task definition vs Terraform state:
+
+```bash
+# Get running task definition
+aws ecs describe-services \
+  --cluster saleor-platform-staging \
+  --services api \
+  --query 'services[0].taskDefinition'
+
+# Compare against Terraform
+terraform state show 'module.ecs.aws_ecs_task_definition.api'
+```
+
+---
+
+## VPC Migration Resources (2026-01-22)
+
+The following were recreated outside Terraform during VPC migration and later imported into state.
+
+### VPC Context (RESOLVED - 2026-01-27)
+
+**VPC alignment completed on 2026-01-27.**
+
+| VPC | Status | ID | Contains |
+|-----|--------|-----|----------|
+| Original VPC | Orphaned (cleanup candidate) | `vpc-03bec79de659bddf7` | Nothing |
+| Production VPC | **TERRAFORM-MANAGED** | `vpc-0b0360f5c0c874c59` | All infrastructure (ALB, ECS, RDS, ElastiCache, VPC endpoints) |
+| Old Terraform VPC | Orphaned (cleanup candidate) | `vpc-088fb7c0a22060c10` | Nothing - removed from state |
+
+**Resolution Applied:**
+1. ✅ Removed old VPC resources from Terraform state (21 resources)
+2. ✅ Imported production VPC and all subnets, gateways, route tables, endpoints
+3. ✅ Imported production security groups (8 resources)
+4. ✅ Imported production service discovery namespace
+5. ✅ Terraform state now aligned with AWS reality
+
+**Cleanup Remaining:** Delete orphaned VPCs (`vpc-03bec79de659bddf7`, `vpc-088fb7c0a22060c10`) when convenient.
+
+### Recreated Resources
+
+| Resource | Old Location | New Location | Import Status |
+|----------|--------------|--------------|---------------|
+| ALB | Old VPC | New VPC | **Removed from imports.tf** - Terraform creates fresh |
+| RDS | Old VPC | New VPC | **Removed from imports.tf** - Terraform creates fresh |
+| ElastiCache | Old VPC | New VPC | **Removed from imports.tf** - Terraform creates fresh |
+| Meilisearch EFS | N/A | New VPC | **Terraform-managed** from creation |
+
+### Orphaned Resources (May Still Exist)
+
+Check for orphaned resources in old VPC:
+
+```bash
+# Security groups
+aws ec2 describe-security-groups \
+  --filters "Name=vpc-id,Values=vpc-03bec79de659bddf7" \
+  --query 'SecurityGroups[*].[GroupId,GroupName]' \
+  --output table
+
+# Target groups
+aws elbv2 describe-target-groups \
+  --query 'TargetGroups[?VpcId==`vpc-03bec79de659bddf7`].[TargetGroupName]' \
+  --output table
+```
+
+---
+
+## Imported IAM Roles (2026-01-22)
+
+Six IAM roles were imported into Terraform state. Policy drift may exist if manual changes were made.
+
+| Role | Import Source | Drift Risk |
+|------|---------------|------------|
+| `saleor-platform-staging-ecs-execution` | `imports.tf:79` | Medium |
+| `saleor-platform-staging-ecs-api-task` | `imports.tf:84` | **High** (EFS access) |
+| `saleor-platform-staging-ecs-worker-task` | `imports.tf:89` | Medium |
+| `saleor-platform-staging-ecs-storefront-task` | `imports.tf:94` | Low |
+| `saleor-platform-staging-ecs-apps-task` | `imports.tf:99` | Medium |
+| `saleor-platform-staging-github-actions-deploy` | `imports.tf:104` | **High** (CI/CD) |
+
+**Audit Command:**
+
+```bash
+# Compare actual vs Terraform-expected policies
+aws iam list-role-policies --role-name saleor-platform-staging-ecs-api-task
+terraform state show 'module.iam.aws_iam_role_policy.ecs_api_task_inline'
+```
+
+---
+
+## Manual Environment Variable Additions
+
+The following environment variables were added via AWS CLI during incident response, not through Terraform.
+
+| Variable | Service(s) | Date Added | Context |
+|----------|-----------|------------|---------|
+| `AWS_MEDIA_BUCKET_NAME` | api, worker, migrate | 2026-01-25 | staging-images investigation |
+
+**Current State:** These are now defined in Terraform ECS module (`modules/ecs/main.tf`), but running tasks may have older definitions without this variable.
+
+**Resolution:** Force new deployment to pick up Terraform-managed task definition:
+
+```bash
+aws ecs update-service \
+  --cluster saleor-platform-staging \
+  --service api \
+  --force-new-deployment
+```
+
+---
+
+## CloudFront CDN (Secured)
+
+### Current Configuration (Updated 2026-01-27)
+
+| Variable | Default | staging.tfvars | Effective |
+|----------|---------|----------------|-----------|
+| `enable_cloudfront` | `true` | Not set | `true` |
+| `cloudfront_only_media_access` | `false` | Not set | `false` |
+
+**Status:** S3 bucket policy was manually updated via AWS CLI on 2026-01-27 to remove `PublicReadForMedia` statement. This closes the security gap ahead of Terraform alignment.
+
+### Applied Fix (2026-01-27)
+
+The `PublicReadForMedia` policy statement was removed via:
+```bash
+aws s3api put-bucket-policy --bucket saleor-platform-media-staging-546464732019 \
+  --policy file:///tmp/s3-policy-secure.json
+```
+
+**Verification:**
+- Direct S3 access: 403 Forbidden ✅
+- CloudFront access: 200 OK ✅
+
+**Backup:** `docs/ops/audits/s3-policy-backup-20260127/current-policy.json`
+
+### Terraform State Note
+
+The S3 module will show policy drift until Terraform is aligned. This is expected and intentional - the manual fix was applied to close the security gap while VPC alignment is planned separately.
+
+---
+
+## Meilisearch Sync Infrastructure (Unverified)
+
+The following resources are defined in Terraform but execution is unverified:
+
+| Resource | Terraform Location | Status |
+|----------|-------------------|--------|
+| SNS Topic (product-events) | `main.tf:552` | Defined |
+| SQS Queue (meilisearch-sync) | `main.tf:577` | Defined |
+| SQS DLQ | `main.tf:564` | Defined |
+| EventBridge (15-min catchup) | `main.tf:814` | Defined |
+| EventBridge (daily reconcile) | `main.tf:860` | Defined |
+| ECS Task (sync-worker) | `main.tf:705` | Defined |
+
+**Verification Required:**
+
+1. Does `price-sync-worker` image exist in ECR?
+2. Are EventBridge rules enabled and invoking tasks?
+3. Are any messages in DLQ (indicating failures)?
+
+```bash
+# Check ECR image
+aws ecr describe-images --repository-name saleor-platform/price-sync-worker
+
+# Check EventBridge rules
+aws events list-rules --name-prefix saleor-platform-staging-meilisearch
+
+# Check DLQ depth
+aws sqs get-queue-attributes \
+  --queue-url $(terraform output -raw meilisearch_sync_dlq_url) \
+  --attribute-names ApproximateNumberOfMessages
+```
+
+---
+
+## How to Use This Document
+
+### Before Running `terraform plan`
+
+1. Review this document
+2. Note which drift is expected
+3. Compare plan output against expected list
+4. Investigate ONLY unexpected drift
+
+### When You See Drift
+
+| Drift Type | Action |
+|------------|--------|
+| ECS task definition | **Ignore** - Expected due to lifecycle rule |
+| IAM policy change | **Investigate** - Compare against snapshots |
+| S3 bucket policy | **Verify** - Check if CloudFront migration complete |
+| New resource creation | **Review** - May be legitimate Terraform addition |
+| Resource destruction | **STOP** - Requires investigation |
+
+### Updating This Document
+
+When making infrastructure changes:
+
+1. If change is intentional divergence → Add to this document
+2. If change should be Terraform-managed → Update `.tf` files
+3. If change is temporary → Note with expected removal date
+
+---
+
+## Related Documentation
+
+- `docs/ops/prompts/AWS-ARCHITECTURE-TERRAFORM-DRIFT-REMEDIATION.md` - Full remediation plan
+- `infra/terraform/imports.tf` - Import history and comments
+- `docs/ops/investigations/staging-images-2026-01-25.md` - S3/image context

@@ -103,6 +103,9 @@ ecr_image_tag_mutability = "MUTABLE"
 meilisearch_enabled = true
 # meilisearch_master_key = "" # Leave empty to auto-generate
 
+# S3 Media Security (locked to CloudFront-only access 2026-01-27)
+cloudfront_only_media_access = true
+
 # Monitoring
 enable_container_insights = true
 log_retention_days        = 14

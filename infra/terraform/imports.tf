@@ -37,31 +37,260 @@ import {
 }
 
 # =============================================================================
-# ALB - REMOVED: Recreated during VPC migration 2026-01-22
+# ALB - Re-added 2026-01-27 after drift analysis
 # =============================================================================
-# import {
-#   to = module.alb.aws_lb.main
-#   id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:loadbalancer/app/saleor-platform-staging-alb/544ea1780304c8eb"
-# }
-#
-# import {
-#   to = module.alb.aws_lb_listener.http
-#   id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener/app/saleor-platform-staging-alb/544ea1780304c8eb/9381df049fadaacd"
-# }
+# NOTE: ALB was recreated in new VPC vpc-0b0360f5c0c874c59 and is now stable
+import {
+  to = module.alb.aws_lb.main
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:loadbalancer/app/saleor-platform-staging-alb/db6a77fe4c4f68d7"
+}
 
-# SKIPPED: Target Groups
-# These exist in vpc-03bec79de659bddf7 but Terraform manages vpc-0b0360f5c0c874c59.
-# Importing would force replacement and cause downtime.
-# Managed out-of-band until VPC migration maintenance window.
-#
-# Target groups in AWS (for reference):
-# - saleor-platform-staging-api
-# - sp-staging-storefront
-# - sp-staging-dashboard
-# - saleor-platform-staging-stripe
-# - saleor-platform-staging-inv-ops
-# - saleor-platform-staging-buylist
-# - saleor-platform-staging-pos
+import {
+  to = module.alb.aws_lb_listener.http
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c"
+}
+
+# =============================================================================
+# ALB Target Groups - All in production VPC vpc-0b0360f5c0c874c59
+# =============================================================================
+import {
+  to = module.alb.aws_lb_target_group.api
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:targetgroup/saleor-platform-staging-api/28b0d316d9f3989d"
+}
+
+import {
+  to = module.alb.aws_lb_target_group.storefront
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:targetgroup/sp-staging-storefront/478edad36d16d8ff"
+}
+
+import {
+  to = module.alb.aws_lb_target_group.dashboard
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:targetgroup/sp-staging-dashboard/5a7797b424f69083"
+}
+
+import {
+  to = module.alb.aws_lb_target_group.stripe_app
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:targetgroup/saleor-platform-staging-stripe/84c4e26a9263e1ad"
+}
+
+import {
+  to = module.alb.aws_lb_target_group.inventory_ops_app
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:targetgroup/saleor-platform-staging-inv-ops/b29c1eb89c75ed0b"
+}
+
+import {
+  to = module.alb.aws_lb_target_group.buylist_app
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:targetgroup/saleor-platform-staging-buylist/2d69fd6447cdc796"
+}
+
+import {
+  to = module.alb.aws_lb_target_group.pos_app
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:targetgroup/saleor-platform-staging-pos/89fd87464e2f1975"
+}
+
+# =============================================================================
+# ALB Listener Rules (HTTP) - Added 2026-01-27
+# =============================================================================
+# Note: These are HTTP rules (count[0] = certificate_arn == "")
+import {
+  to = module.alb.aws_lb_listener_rule.api_http[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/35868051d5fa042e"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.dashboard_http[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/d581cabdc86df6c6"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.stripe_app_http[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/1e018d58eace6ab4"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.inventory_ops_app_http[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/a5623eb88a8384ab"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.buylist_app_http[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/3dac97da295ebca1"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.pos_app_http[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/117520dd16ff43b1"
+}
+
+# =============================================================================
+# CloudFront - Added 2026-01-27 after drift analysis
+# =============================================================================
+import {
+  to = module.cloudfront[0].aws_cloudfront_distribution.media
+  id = "E1D0RKJ52XDEZO"
+}
+
+import {
+  to = module.cloudfront[0].aws_cloudfront_origin_access_control.media
+  id = "E3Q4SB0MFYLG2B"
+}
+
+# =============================================================================
+# Service Discovery Namespace - Production VPC
+# =============================================================================
+import {
+  to = aws_service_discovery_private_dns_namespace.main
+  id = "ns-xhvqzcnvqxn3agm7:vpc-0b0360f5c0c874c59"
+}
+
+# =============================================================================
+# Security Groups - Production VPC (vpc-0b0360f5c0c874c59)
+# =============================================================================
+import {
+  to = module.alb.aws_security_group.alb
+  id = "sg-0adc2ff387fdce93f"
+}
+
+import {
+  to = module.alb.aws_security_group.ecs_backend
+  id = "sg-0210b4854c817f8ac"
+}
+
+import {
+  to = module.alb.aws_security_group.ecs_frontend
+  id = "sg-0fd88ba47a4b3affc"
+}
+
+import {
+  to = module.alb.aws_security_group.ecs_internal
+  id = "sg-0eddc188d791f3c86"
+}
+
+import {
+  to = module.elasticache.aws_security_group.redis
+  id = "sg-085c4f77b6a9296a1"
+}
+
+import {
+  to = module.rds.aws_security_group.rds
+  id = "sg-0c71ecc1820c1a974"
+}
+
+import {
+  to = module.meilisearch[0].aws_security_group.efs
+  id = "sg-0b50adccacaf0d569"
+}
+
+# =============================================================================
+# Production VPC - Imported 2026-01-27 during VPC alignment maintenance
+# =============================================================================
+# NOTE: Production runs in vpc-0b0360f5c0c874c59
+# The old vpc-088fb7c0a22060c10 was removed from state (orphaned)
+
+import {
+  to = module.vpc[0].aws_vpc.main
+  id = "vpc-0b0360f5c0c874c59"
+}
+
+import {
+  to = module.vpc[0].aws_subnet.public[0]
+  id = "subnet-03f8a9b1c117c7c19" # us-west-1a
+}
+
+import {
+  to = module.vpc[0].aws_subnet.public[1]
+  id = "subnet-04358a3ccacd34e6c" # us-west-1b
+}
+
+import {
+  to = module.vpc[0].aws_subnet.private[0]
+  id = "subnet-0885b491c2d394fb6" # us-west-1a
+}
+
+import {
+  to = module.vpc[0].aws_subnet.private[1]
+  id = "subnet-0917a8f4d0d7b7080" # us-west-1b
+}
+
+import {
+  to = module.vpc[0].aws_internet_gateway.main
+  id = "igw-029a454967ff72400"
+}
+
+import {
+  to = module.vpc[0].aws_nat_gateway.main[0]
+  id = "nat-05ca5f050c37e97a1"
+}
+
+import {
+  to = module.vpc[0].aws_eip.nat[0]
+  id = "eipalloc-0b7171488dae2fece"
+}
+
+import {
+  to = module.vpc[0].aws_route_table.public
+  id = "rtb-0558fbd2834d65219"
+}
+
+import {
+  to = module.vpc[0].aws_route_table.private[0]
+  id = "rtb-037085d4ee7ffdea8"
+}
+
+import {
+  to = module.vpc[0].aws_route_table_association.public[0]
+  id = "subnet-03f8a9b1c117c7c19/rtb-0558fbd2834d65219"
+}
+
+import {
+  to = module.vpc[0].aws_route_table_association.public[1]
+  id = "subnet-04358a3ccacd34e6c/rtb-0558fbd2834d65219"
+}
+
+import {
+  to = module.vpc[0].aws_route_table_association.private[0]
+  id = "subnet-0885b491c2d394fb6/rtb-037085d4ee7ffdea8"
+}
+
+import {
+  to = module.vpc[0].aws_route_table_association.private[1]
+  id = "subnet-0917a8f4d0d7b7080/rtb-037085d4ee7ffdea8"
+}
+
+import {
+  to = module.vpc[0].aws_security_group.vpc_endpoints[0]
+  id = "sg-032696ac44e478a88"
+}
+
+import {
+  to = module.vpc[0].aws_vpc_endpoint.ecr_api[0]
+  id = "vpce-0275dfaf077ce0aaa"
+}
+
+import {
+  to = module.vpc[0].aws_vpc_endpoint.ecr_dkr[0]
+  id = "vpce-084889bd73e996dce"
+}
+
+import {
+  to = module.vpc[0].aws_vpc_endpoint.ssm[0]
+  id = "vpce-0465fb738b80a896a"
+}
+
+import {
+  to = module.vpc[0].aws_vpc_endpoint.logs[0]
+  id = "vpce-07b5f26452aeda656"
+}
+
+import {
+  to = module.vpc[0].aws_vpc_endpoint.s3[0]
+  id = "vpce-0032d7cc325cb6435"
+}
+
+import {
+  to = module.vpc[0].aws_vpc_endpoint.dynamodb[0]
+  id = "vpce-0c08deb97674e3771"
+}
 
 # =============================================================================
 # S3
@@ -250,18 +479,83 @@ import {
 }
 
 # =============================================================================
-# Meilisearch
+# Meilisearch - Updated 2026-01-27 with explicit imports
 # =============================================================================
-# NOTE: Meilisearch is now FULLY MANAGED by Terraform via module.meilisearch
-#
-# Resolved 2026-01-22: VPC mismatch fixed, manual deployment removed.
-# All resources now in Terraform-managed VPC: vpc-0b0360f5c0c874c59
-#
-# Terraform-managed resources:
-# - EFS File System: fs-08f7c555c0bd96376 (persistent storage)
-# - EFS Mount Targets: 2 (one per AZ)
-# - ECS Task Definition: saleor-platform-staging-meilisearch
-# - ECS Service: meilisearch in saleor-platform-staging cluster
-# - Service Discovery Service: srv-xzf7plnegd6nuhst (meilisearch.saleor-platform-staging.local)
-# - Secrets Manager: saleor/staging/meilisearch/master-key
-# - CloudWatch Log Group: /ecs/saleor-platform-staging/meilisearch
+# NOTE: Meilisearch is FULLY MANAGED by Terraform via module.meilisearch
+# Added explicit imports to align state with AWS reality
+
+import {
+  to = module.meilisearch[0].aws_efs_file_system.meilisearch
+  id = "fs-08f7c555c0bd96376"
+}
+
+import {
+  to = module.meilisearch[0].aws_efs_mount_target.meilisearch[0]
+  id = "fsmt-0686a0163916d366b"
+}
+
+import {
+  to = module.meilisearch[0].aws_efs_mount_target.meilisearch[1]
+  id = "fsmt-01b5038f5535e4499"
+}
+
+import {
+  to = module.meilisearch[0].aws_service_discovery_service.meilisearch
+  id = "srv-xzf7plnegd6nuhst"
+}
+
+import {
+  to = module.meilisearch[0].aws_efs_access_point.meilisearch
+  id = "fsap-02f31a97e6d19e708"
+}
+
+import {
+  to = module.meilisearch[0].aws_ecs_service.meilisearch
+  id = "saleor-platform-staging/meilisearch"
+}
+
+# =============================================================================
+# EventBridge Targets - Added 2026-01-27
+# =============================================================================
+import {
+  to = aws_cloudwatch_event_target.meilisearch_catchup[0]
+  id = "saleor-platform-staging-meilisearch-catchup/meilisearch-catchup"
+}
+
+import {
+  to = aws_cloudwatch_event_target.meilisearch_reconcile[0]
+  id = "saleor-platform-staging-meilisearch-reconcile/meilisearch-reconcile"
+}
+
+# =============================================================================
+# Meilisearch Sync Worker Resources - Added 2026-01-27
+# =============================================================================
+import {
+  to = aws_secretsmanager_secret.meilisearch_master_key[0]
+  id = "arn:aws:secretsmanager:us-west-1:546464732019:secret:saleor/staging/meilisearch/master-key-WZCjY8"
+}
+
+import {
+  to = aws_iam_role.meilisearch_sync_worker[0]
+  id = "saleor-platform-staging-meilisearch-sync-worker"
+}
+
+import {
+  to = aws_iam_role.eventbridge_ecs[0]
+  id = "saleor-platform-staging-eventbridge-ecs"
+}
+
+import {
+  to = aws_cloudwatch_log_group.meilisearch_sync_worker[0]
+  id = "/ecs/saleor-platform-staging/meilisearch-sync-worker"
+}
+
+import {
+  to = module.ecs.aws_cloudwatch_log_group.services["beat"]
+  id = "/ecs/saleor-platform-staging/beat"
+}
+
+import {
+  to = module.ecs.aws_ecs_service.beat
+  id = "saleor-platform-staging/beat"
+}
