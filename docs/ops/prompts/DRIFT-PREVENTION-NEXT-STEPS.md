@@ -14,14 +14,19 @@
 - [x] Resource tagging - `ManagedBy=terraform` added to VPC module
 - [x] Incident change log template - `docs/ops/incident-changes.md`
 - [x] Agent rules - `.claude/rules/infrastructure.md`
+- [x] **Apply Terraform tags** - 10 VPC resources now have `ManagedBy=terraform` tags applied
+- [x] **AWS Config rule** - Required tags rule monitors VPCs, subnets, security groups, NAT gateways, ALBs
+- [x] **Quarterly IAM audit workflow** - `.github/workflows/iam-audit.yml` runs quarterly and compares snapshots
 
 ---
 
-## Short-Term Actions (This Month)
+## Short-Term Actions (This Month) ✅ COMPLETED
 
-### 1. Apply Terraform Tags to Existing Resources
+### 1. Apply Terraform Tags to Existing Resources ✅
 
-The tags are defined but not yet applied to production. Run terraform apply:
+**Status:** COMPLETED 2026-01-27
+
+Tags are now applied to production. Verified via terraform apply:
 
 ```bash
 cd infra/terraform
@@ -37,13 +42,15 @@ docker run --rm -v "$(pwd):/workspace" -v "$HOME/.aws:/root/.aws:ro" \
   hashicorp/terraform:1.5 apply -var-file=environments/staging.tfvars
 ```
 
-**Expected changes:** 10 resources updated (VPC, subnets, NAT gateway, IGW, route tables get new tags)
+**Result:** 10 resources updated with ManagedBy, Environment, Project, Repository, Module tags.
 
 ---
 
-### 2. AWS Config Rule for Required Tags
+### 2. AWS Config Rule for Required Tags ✅
 
-Create AWS Config rule to alert on resources missing the `ManagedBy` tag.
+**Status:** COMPLETED 2026-01-27
+
+AWS Config is now enabled with a required-tags rule.
 
 ```bash
 # Prompt for Claude:
@@ -82,9 +89,11 @@ resource "aws_config_config_rule" "required_tags" {
 
 ---
 
-### 3. Quarterly IAM Policy Audit Formalization
+### 3. Quarterly IAM Policy Audit Formalization ✅
 
-The IAM snapshot process needs to be scheduled and documented.
+**Status:** COMPLETED 2026-01-27
+
+The IAM audit workflow is now automated via `.github/workflows/iam-audit.yml`.
 
 ```bash
 # Prompt for Claude:
