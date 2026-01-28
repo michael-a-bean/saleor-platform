@@ -27,9 +27,11 @@ const TRUSTED_IMAGE_DOMAINS = [
   process.env.NEXT_PUBLIC_SALEOR_API_URL?.replace('/graphql/', '') || "http://localhost:8000",
   // AWS S3 media bucket for product images
   "https://saleor-platform-media-staging-546464732019.s3.amazonaws.com",
-  // Support any S3 region format
+  // Support S3 global and regional formats (double-wildcard like *.s3.*.amazonaws.com is invalid CSP)
   "https://*.s3.amazonaws.com",
-  "https://*.s3.*.amazonaws.com",
+  "https://*.s3.us-west-1.amazonaws.com",
+  // CloudFront CDN for thumbnails
+  "https://d30pbahsk8hi4i.cloudfront.net",
 ];
 
 function buildCSP(): string {

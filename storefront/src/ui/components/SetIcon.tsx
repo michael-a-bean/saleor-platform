@@ -25,7 +25,8 @@ const SIZES = {
 export function SetIcon({ setCode, rarity, size = "md" }: SetIconProps) {
 	const [hasError, setHasError] = useState(false);
 	const color = RARITY_ICON_COLORS[rarity?.toLowerCase() || ""] || "#1a1a1a";
-	const iconUrl = `https://svgs.scryfall.io/sets/${setCode.toLowerCase()}.svg`;
+	// Use local proxy to avoid CORS issues with CSS mask-image
+	const iconUrl = `/api/scryfall-icon?set=${setCode.toLowerCase()}`;
 
 	// Use CSS mask for the icon with color support
 	if (!hasError) {
