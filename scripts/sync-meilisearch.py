@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# DEBUG: Immediate output to diagnose ECS logging issues
+import sys
+print("=== SYNC SCRIPT STARTING ===", flush=True)
+print(f"Python: {sys.version}", flush=True)
 """
 Sync MTG products from Saleor to Meilisearch for search functionality.
 
@@ -62,7 +66,10 @@ def decode_saleor_id(graphql_id: str) -> str:
         # Fallback: replace special chars
         return graphql_id.replace('=', '').replace('+', '-').replace('/', '_')
 
-SALEOR_API = "http://localhost:8000/graphql/"
+SALEOR_API = os.environ.get("SALEOR_API_URL", os.environ.get("SALEOR_API", "http://localhost:8000/graphql/"))
+# Ensure URL ends with /graphql/
+if not SALEOR_API.endswith("/graphql/"):
+    SALEOR_API = SALEOR_API.rstrip("/") + "/graphql/"
 MEILISEARCH_URL = os.environ.get("MEILISEARCH_URL", "http://localhost:7700")
 MEILISEARCH_API_KEY = os.environ.get("MEILISEARCH_API_KEY")  # None is valid for local dev
 
