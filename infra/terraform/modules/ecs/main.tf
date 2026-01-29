@@ -41,7 +41,7 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 resource "aws_cloudwatch_log_group" "services" {
   for_each = toset([
     "api", "worker", "beat", "storefront", "dashboard",
-    "stripe-app", "inventory-ops-app", "buylist-app", "pos-app",
+    "stripe-app", "inventory-ops-app", "buylist-app", "pos-app", "mtg-import-app",
     "meilisearch", "migrate"
   ])
 

@@ -357,10 +357,6 @@ module "ecs" {
         {
           name      = "DATABASE_URL"
           valueFrom = "/saleor/${var.environment}/apps/inventory-ops/DATABASE_URL"
-        },
-        {
-          name      = "SECRET_KEY"
-          valueFrom = "/saleor/${var.environment}/apps/mtg-import/SECRET_KEY"
         }
       ]
       environment = {
