@@ -2,11 +2,12 @@
 #
 # Run database migrations as an ECS one-off task
 #
-# Usage: ./run-migrations.sh <environment> <type>
+# Usage: ./run-migrations.sh <environment> <type> [app]
 #
 # Arguments:
 #   environment - staging or production
 #   type        - django or prisma
+#   app         - (prisma only) app name: inventory-ops, mtg-import (default: inventory-ops)
 #
 # Required Environment Variables:
 #   ECS_TASK_SUBNETS          - Comma-separated subnet IDs for task networking
@@ -30,16 +31,31 @@ source "${SCRIPT_DIR}/lib/common.sh"
 
 ENV="${1:-}"
 MIGRATION_TYPE="${2:-}"
+PRISMA_APP="${3:-inventory-ops}"  # Default to inventory-ops for backwards compatibility
 
 if [[ -z "$ENV" || -z "$MIGRATION_TYPE" ]]; then
-    log_error "Usage: $0 <environment> <type>"
+    log_error "Usage: $0 <environment> <type> [app]"
     log_error "  type: django or prisma"
+    log_error "  app:  (prisma only) inventory-ops, mtg-import (default: inventory-ops)"
     exit 1
 fi
 
 if [[ "$MIGRATION_TYPE" != "django" && "$MIGRATION_TYPE" != "prisma" ]]; then
     log_error "Migration type must be 'django' or 'prisma'"
     exit 1
+fi
+
+# Validate Prisma app name
+if [[ "$MIGRATION_TYPE" == "prisma" ]]; then
+    case "$PRISMA_APP" in
+        inventory-ops|mtg-import)
+            ;;
+        *)
+            log_error "Invalid Prisma app: ${PRISMA_APP}"
+            log_error "Valid apps: inventory-ops, mtg-import"
+            exit 1
+            ;;
+    esac
 fi
 
 # =============================================================================
@@ -258,8 +274,8 @@ if [[ "$DRY_RUN" == "true" ]]; then
         DRY_CONTAINER_NAME="migrate"
         DRY_COMMAND='["python", "manage.py", "migrate", "--noinput"]'
     else
-        DRY_TASK_DEF="saleor-platform-${ENV}-inventory-ops"
-        DRY_CONTAINER_NAME="inventory-ops"
+        DRY_TASK_DEF="saleor-platform-${ENV}-${PRISMA_APP}"
+        DRY_CONTAINER_NAME="${PRISMA_APP}"
         DRY_COMMAND='["npx", "prisma", "migrate", "deploy"]'
     fi
     DRY_TASK_DEF="${DRY_TASK_DEF:-$TASK_DEF}"
@@ -298,10 +314,11 @@ if [[ "$MIGRATION_TYPE" == "django" ]]; then
     CONTAINER_NAME="migrate"
     COMMAND='["python", "manage.py", "migrate", "--noinput"]'
 else
-    # Prisma migrations run from inventory-ops task
-    TASK_DEF="saleor-platform-${ENV}-inventory-ops"
-    CONTAINER_NAME="inventory-ops"
+    # Prisma migrations run from the specified app's task definition
+    TASK_DEF="saleor-platform-${ENV}-${PRISMA_APP}"
+    CONTAINER_NAME="${PRISMA_APP}"
     COMMAND='["npx", "prisma", "migrate", "deploy"]'
+    log_info "  Prisma App: ${PRISMA_APP}"
 fi
 
 # Verify container name exists in task definition (fail fast)
