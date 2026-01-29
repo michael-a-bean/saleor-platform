@@ -295,11 +295,58 @@ The current environment lacks the required Node.js/pnpm setup, but the code stru
 4. Made `prisma.ts` lazy-load to avoid build-time instantiation
 5. Fixed null safety for `variant.sku` in audit-service.ts
 
+## Deployment Infrastructure (Added 2026-01-29)
+
+### Terraform Changes Applied
+
+| File | Change |
+|------|--------|
+| `modules/ecr/main.tf` | Added `mtg-import-app` to repositories |
+| `main.tf` | Added `mtg-import` app config (port 3005, /apps/mtg-import) |
+| `modules/alb/main.tf` | Added target group + listener rules (priority 240) |
+| `modules/alb/outputs.tf` | Added `mtg_import_app_target_group_arn` |
+| `modules/ecr/outputs.tf` | Added `mtg_import_app_repository_url` |
+| `variables.tf` | Added `mtg_import_app_image_tag` variable |
+| `environments/staging.tfvars` | Set `mtg_import_app_image_tag = "staging-latest"` |
+
+### GitHub Actions Changes
+
+| File | Change |
+|------|--------|
+| `.github/workflows/deploy-staging.yml` | Added mtg-import-app build + deploy steps |
+| `scripts/deploy/aws/deploy-service.sh` | Added mtg-import to IMAGE_MAP |
+| `scripts/smoke/apps-smoke.sh` | Added mtg-import to APPS array |
+
+### Dockerfile Created
+
+`saleor-apps/apps/mtg-import/Dockerfile`:
+- Multi-stage build following inventory-ops pattern
+- Port 3005, BASE_PATH=/apps/mtg-import
+- Scryfall cache directory at /tmp/scryfall-cache
+
+### Health Endpoint Created
+
+`saleor-apps/apps/mtg-import/src/pages/api/health.ts`:
+- Returns 200 OK with JSON status
+- Used by ALB health checks
+
 ## Next Steps
 
 1. ~~Run build validation~~ ✅ DONE
-2. Set up database and run Prisma migrations
-3. Configure Saleor product type and attribute IDs
-4. Deploy to staging ECS
-5. Install app in Saleor dashboard
-6. Test with a small set import (e.g., `neo`)
+2. ~~Create deployment infrastructure~~ ✅ DONE
+3. **Pre-deployment: Create AWS Secrets Manager secret**
+   ```bash
+   # Generate a 32-byte secret key
+   aws secretsmanager create-secret \
+     --name /saleor/staging/apps/mtg-import/SECRET_KEY \
+     --secret-string "$(openssl rand -hex 32)"
+   ```
+4. **Run Terraform apply** to create ECR repo and ECS resources
+   ```bash
+   cd infra/terraform
+   terraform apply -var-file=environments/staging.tfvars
+   ```
+5. **Push to platform/main** to trigger GitHub Actions deployment
+6. **Run Prisma migrations** (will run automatically in GitHub Actions)
+7. Install app in Saleor dashboard
+8. Test with a small set import (e.g., `neo`)
