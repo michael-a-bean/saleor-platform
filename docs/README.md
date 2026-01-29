@@ -14,6 +14,10 @@ This directory contains all project documentation for the Saleor Hobby Gaming Pl
 | [Git Philosophy](reference/git-philosophy.md) | Detailed git workflow and branching strategy |
 | [Local-Staging Workflow](reference/local-staging-workflow.md) | Development workflow isolation |
 | [Expected Divergence](reference/expected-divergence.md) | Intentional Terraform drift documentation |
+| [POS System](reference/pos.md) | Point of Sale system overview |
+| [Brand Integration](reference/brand-integration.md) | WotC/MTG branding guidelines |
+| [Singles Builder](reference/singles-builder-implementation.md) | Singles channel implementation |
+| [Delivery Contract](reference/DELIVERY_CONTRACT.md) | Project delivery agreements |
 
 ### Operations
 | Directory | Description |
@@ -27,8 +31,8 @@ This directory contains all project documentation for the Saleor Hobby Gaming Pl
 ### Setup & Configuration
 | Document | Description |
 |----------|-------------|
-| [Inventory Ops Setup](INVENTORY_OPS_SETUP.md) | Inventory operations configuration |
-| [Scryfall Sync Status](SCRYFALL_SYNC_STATUS.md) | Price sync from Scryfall |
+| [Inventory Ops Setup](setup/INVENTORY_OPS_SETUP.md) | Inventory operations configuration |
+| [Scryfall Sync Status](setup/SCRYFALL_SYNC_STATUS.md) | Price sync from Scryfall |
 | [Security Checklist](setup/security-checklist.md) | Production security requirements |
 | [Sealed Product Images](setup/sealed-product-images.md) | MTG sealed product imaging |
 
@@ -72,6 +76,7 @@ docs/
 ├── deploy/           # Deployment guides
 │   └── aws/          # AWS-specific deployment
 ├── legacy/           # Historical/archived docs
+│   └── completed/    # Completed plans and projects
 ├── ops/              # Operations documentation
 │   ├── audits/       # Health audits and reviews
 │   ├── completed/    # Archived investigations
@@ -80,10 +85,11 @@ docs/
 │   ├── issues/       # Issue tracking
 │   ├── prompts/      # Reusable prompts
 │   └── runbooks/     # Operational runbooks
-├── plans/            # Active implementation plans
 ├── reference/        # Reference documentation
 ├── research/         # Research and analysis
 └── setup/            # Setup and configuration guides
+
+# Active plans are in .claude/plans/ (not docs/)
 ```
 
 ---
