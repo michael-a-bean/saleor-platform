@@ -71,6 +71,11 @@ output "pos_app_target_group_arn" {
   value       = aws_lb_target_group.pos_app.arn
 }
 
+output "mtg_import_app_target_group_arn" {
+  description = "ARN of MTG Import app target group"
+  value       = aws_lb_target_group.mtg_import_app.arn
+}
+
 output "https_listener_arn" {
   description = "ARN of HTTPS listener"
   value       = length(aws_lb_listener.https) > 0 ? aws_lb_listener.https[0].arn : null

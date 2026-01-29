@@ -345,6 +345,32 @@ module "ecs" {
         REDIS_URL = module.elasticache.cache_url
       }
     }
+
+    mtg-import = {
+      port             = 3005
+      cpu              = 256
+      memory           = 512
+      base_path        = "/apps/mtg-import"
+      image            = "${module.ecr.mtg_import_app_repository_url}:${var.mtg_import_app_image_tag}"
+      target_group_arn = module.alb.mtg_import_app_target_group_arn
+      secrets = [
+        {
+          name      = "DATABASE_URL"
+          valueFrom = "/saleor/${var.environment}/apps/inventory-ops/DATABASE_URL"
+        },
+        {
+          name      = "SECRET_KEY"
+          valueFrom = "/saleor/${var.environment}/apps/mtg-import/SECRET_KEY"
+        }
+      ]
+      environment = {
+        APL                 = "redis"
+        REDIS_URL           = module.elasticache.cache_url
+        SCRYFALL_CACHE_DIR  = "/tmp/scryfall-cache"
+        DEFAULT_CURRENCY    = "USD"
+        IMPORT_BATCH_SIZE   = "100"
+      }
+    }
   }
 }
 
