@@ -35,6 +35,7 @@ APPS=(
   "inventory-ops|/apps/inventory|3002"
   "buylist|/apps/buylist|3003"
   "pos|/apps/pos|3004"
+  "mtg-import|/apps/mtg-import|3005"
 )
 
 log_info() {

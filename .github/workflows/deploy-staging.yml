@@ -36,6 +36,7 @@ jobs:
       inventory_ops_app_image: ${{ steps.build.outputs.inventory_ops_app_image }}
       buylist_app_image: ${{ steps.build.outputs.buylist_app_image }}
       pos_app_image: ${{ steps.build.outputs.pos_app_image }}
+      mtg_import_app_image: ${{ steps.build.outputs.mtg_import_app_image }}
 
     steps:
       - name: Checkout
@@ -145,6 +146,20 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push mtg-import-app
+        uses: docker/build-push-action@v6
+        with:
+          context: ./saleor-apps
+          file: ./saleor-apps/apps/mtg-import/Dockerfile
+          push: true
+          build-args: |
+            BASE_PATH=/apps/mtg-import
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/mtg-import-app:${{ steps.vars.outputs.sha_short }}
+            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/mtg-import-app:staging-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Set output images
         id: build
         run: |
@@ -155,6 +170,7 @@ jobs:
           echo "inventory_ops_app_image=${ECR_REGISTRY}/saleor-platform/inventory-ops-app:${SHA}" >> $GITHUB_OUTPUT
           echo "buylist_app_image=${ECR_REGISTRY}/saleor-platform/buylist-app:${SHA}" >> $GITHUB_OUTPUT
           echo "pos_app_image=${ECR_REGISTRY}/saleor-platform/pos-app:${SHA}" >> $GITHUB_OUTPUT
+          echo "mtg_import_app_image=${ECR_REGISTRY}/saleor-platform/mtg-import-app:${SHA}" >> $GITHUB_OUTPUT
 
   # ==========================================================================
   # Run Migrations
@@ -273,6 +289,8 @@ jobs:
             service: buylist
           - app: pos
             service: pos
+          - app: mtg-import
+            service: mtg-import
       fail-fast: false
 
     steps:
@@ -308,6 +326,7 @@ jobs:
           INVENTORY_OPS_APP_IMAGE: ${{ needs.build.outputs.inventory_ops_app_image }}
           BUYLIST_APP_IMAGE: ${{ needs.build.outputs.buylist_app_image }}
           POS_APP_IMAGE: ${{ needs.build.outputs.pos_app_image }}
+          MTG_IMPORT_APP_IMAGE: ${{ needs.build.outputs.mtg_import_app_image }}
 
       - name: Wait for service stability
         if: steps.check-service.outputs.status == 'ACTIVE'
@@ -377,3 +396,4 @@ jobs:
           echo "- Inventory: ${{ vars.STAGING_API_URL }}/apps/inventory" >> $GITHUB_STEP_SUMMARY
           echo "- Buylist: ${{ vars.STAGING_API_URL }}/apps/buylist" >> $GITHUB_STEP_SUMMARY
           echo "- POS: ${{ vars.STAGING_API_URL }}/apps/pos" >> $GITHUB_STEP_SUMMARY
+          echo "- MTG Import: ${{ vars.STAGING_API_URL }}/apps/mtg-import" >> $GITHUB_STEP_SUMMARY

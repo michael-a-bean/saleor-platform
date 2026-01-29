@@ -357,6 +357,29 @@ resource "aws_lb_target_group" "pos_app" {
   }
 }
 
+resource "aws_lb_target_group" "mtg_import_app" {
+  name        = "${local.name_prefix}-mtg-import"
+  port        = 3005
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+
+  health_check {
+    enabled             = true
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 30
+    path                = "/apps/mtg-import/api/health"
+    matcher             = "200"
+  }
+
+  tags = {
+    Name    = "${local.name_prefix}-mtg-import-app"
+    Service = "mtg-import-app"
+  }
+}
+
 # =============================================================================
 # Listeners
 # =============================================================================
@@ -548,6 +571,31 @@ resource "aws_lb_listener_rule" "pos_app" {
   }
 }
 
+# MTG Import app routing: apps.{domain}/mtg-import/*
+resource "aws_lb_listener_rule" "mtg_import_app" {
+  count = var.certificate_arn != "" ? 1 : 0
+
+  listener_arn = aws_lb_listener.https[0].arn
+  priority     = 240
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.mtg_import_app.arn
+  }
+
+  condition {
+    host_header {
+      values = ["apps.${var.domain_name}"]
+    }
+  }
+
+  condition {
+    path_pattern {
+      values = ["/mtg-import/*"]
+    }
+  }
+}
+
 # Storefront is default (www.{domain} or {domain})
 resource "aws_lb_listener_rule" "storefront" {
   count = var.certificate_arn != "" ? 1 : 0
@@ -689,6 +737,25 @@ resource "aws_lb_listener_rule" "pos_app_http" {
   condition {
     path_pattern {
       values = ["/apps/pos/*", "/apps/pos"]
+    }
+  }
+}
+
+# MTG Import app routing on HTTP: /apps/mtg-import/*
+resource "aws_lb_listener_rule" "mtg_import_app_http" {
+  count = var.certificate_arn == "" ? 1 : 0
+
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 240
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.mtg_import_app.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/apps/mtg-import/*", "/apps/mtg-import"]
     }
   }
 }

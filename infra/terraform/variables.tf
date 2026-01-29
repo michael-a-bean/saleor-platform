@@ -325,6 +325,12 @@ variable "pos_app_image_tag" {
   default     = "staging-latest"
 }
 
+variable "mtg_import_app_image_tag" {
+  description = "MTG Import app image tag"
+  type        = string
+  default     = "staging-latest"
+}
+
 # =============================================================================
 # Monitoring and Logging
 # =============================================================================
