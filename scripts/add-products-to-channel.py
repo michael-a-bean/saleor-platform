@@ -28,11 +28,13 @@ SALEOR_ADMIN_PASSWORD = os.environ.get("SALEOR_ADMIN_PASSWORD")
 
 
 class TokenManager:
-    """Manages authentication tokens."""
+    """Manages authentication tokens with auto-refresh."""
 
     def __init__(self):
         self.token: Optional[str] = None
         self.refresh_token: Optional[str] = None
+        self._request_count = 0
+        self._refresh_interval = 50  # Refresh every N requests to avoid expiration
 
     def authenticate(self) -> bool:
         """Authenticate and get tokens."""
@@ -77,10 +79,61 @@ class TokenManager:
 
         self.token = result.get("token")
         self.refresh_token = result.get("refreshToken")
+        self._request_count = 0
         return bool(self.token)
+
+    def refresh(self) -> bool:
+        """Refresh the access token using refresh token."""
+        if not self.refresh_token:
+            return self.authenticate()
+
+        mutation = """
+        mutation TokenRefresh($refreshToken: String!) {
+            tokenRefresh(refreshToken: $refreshToken) {
+                token
+                errors {
+                    field
+                    message
+                }
+            }
+        }
+        """
+
+        try:
+            response = requests.post(
+                SALEOR_API,
+                json={
+                    "query": mutation,
+                    "variables": {
+                        "refreshToken": self.refresh_token
+                    }
+                },
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
+
+            data = response.json()
+            result = data.get("data", {}).get("tokenRefresh", {})
+
+            if result and result.get("token"):
+                self.token = result["token"]
+                self._request_count = 0
+                return True
+        except Exception as e:
+            print(f"  Token refresh failed: {e}", file=sys.stderr)
+
+        # Fall back to full re-authentication
+        return self.authenticate()
+
+    def ensure_valid_token(self):
+        """Ensure token is valid, refreshing if needed."""
+        self._request_count += 1
+        if self._request_count >= self._refresh_interval:
+            self.refresh()
 
     def get_headers(self) -> Dict[str, str]:
         """Get headers with auth token."""
+        self.ensure_valid_token()
         headers = {"Content-Type": "application/json"}
         if self.token:
             headers["Authorization"] = f"Bearer {self.token}"
@@ -187,35 +240,70 @@ def add_product_to_channel(
     }
     """
 
-    response = requests.post(
-        SALEOR_API,
-        json={
-            "query": mutation,
-            "variables": {
-                "productId": product_id,
-                "input": {
-                    "updateChannels": [
-                        {
-                            "channelId": channel_id,
-                            "isPublished": True,
-                            "isAvailableForPurchase": True,
-                            "visibleInListings": True
-                        }
-                    ]
+    try:
+        response = requests.post(
+            SALEOR_API,
+            json={
+                "query": mutation,
+                "variables": {
+                    "productId": product_id,
+                    "input": {
+                        "updateChannels": [
+                            {
+                                "channelId": channel_id,
+                                "isPublished": True,
+                                "isAvailableForPurchase": True,
+                                "visibleInListings": True
+                            }
+                        ]
+                    }
                 }
-            }
-        },
-        headers=token_manager.get_headers()
-    )
+            },
+            headers=token_manager.get_headers(),
+            timeout=30
+        )
 
-    data = response.json()
-    errors = data.get("data", {}).get("productChannelListingUpdate", {}).get("errors", [])
-    if errors:
-        # Ignore "already exists" type errors
-        for err in errors:
-            if "already" not in err.get("message", "").lower():
-                return False
-    return True
+        if response.status_code != 200:
+            print(f"  HTTP {response.status_code} for product {product_id}", file=sys.stderr)
+            return False
+
+        data = response.json()
+        if data is None:
+            print(f"  Empty response for product {product_id}", file=sys.stderr)
+            return False
+
+        # Check for GraphQL-level errors (like token expiration)
+        if data.get("errors"):
+            for err in data["errors"]:
+                msg = err.get("message", "")
+                if "expired" in msg.lower() or "signature" in msg.lower():
+                    # Token expired - force refresh and retry once
+                    token_manager.refresh()
+                    return add_product_to_channel(token_manager, product_id, channel_id, currency)
+                print(f"  GraphQL error: {msg}", file=sys.stderr)
+            return False
+
+        update_result = data.get("data", {}).get("productChannelListingUpdate")
+        if update_result is None:
+            return False
+
+        errors = update_result.get("errors", [])
+        if errors:
+            # Ignore "already exists" type errors
+            for err in errors:
+                if "already" not in err.get("message", "").lower():
+                    return False
+        return True
+
+    except requests.exceptions.Timeout:
+        print(f"  Timeout for product {product_id}", file=sys.stderr)
+        return False
+    except requests.exceptions.RequestException as e:
+        print(f"  Request error for product {product_id}: {e}", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"  Unexpected error for product {product_id}: {e}", file=sys.stderr)
+        return False
 
 
 def add_variant_to_channel(
@@ -241,31 +329,66 @@ def add_variant_to_channel(
     }
     """
 
-    response = requests.post(
-        SALEOR_API,
-        json={
-            "query": mutation,
-            "variables": {
-                "variantId": variant_id,
-                "input": [
-                    {
-                        "channelId": channel_id,
-                        "price": price,
-                        "costPrice": price
-                    }
-                ]
-            }
-        },
-        headers=token_manager.get_headers()
-    )
+    try:
+        response = requests.post(
+            SALEOR_API,
+            json={
+                "query": mutation,
+                "variables": {
+                    "variantId": variant_id,
+                    "input": [
+                        {
+                            "channelId": channel_id,
+                            "price": price,
+                            "costPrice": price
+                        }
+                    ]
+                }
+            },
+            headers=token_manager.get_headers(),
+            timeout=30
+        )
 
-    data = response.json()
-    errors = data.get("data", {}).get("productVariantChannelListingUpdate", {}).get("errors", [])
-    if errors:
-        for err in errors:
-            if "already" not in err.get("message", "").lower():
-                return False
-    return True
+        if response.status_code != 200:
+            print(f"  HTTP {response.status_code} for variant {variant_id}", file=sys.stderr)
+            return False
+
+        data = response.json()
+        if data is None:
+            print(f"  Empty response for variant {variant_id}", file=sys.stderr)
+            return False
+
+        # Check for GraphQL-level errors (like token expiration)
+        if data.get("errors"):
+            for err in data["errors"]:
+                msg = err.get("message", "")
+                if "expired" in msg.lower() or "signature" in msg.lower():
+                    # Token expired - force refresh and retry once
+                    token_manager.refresh()
+                    return add_variant_to_channel(token_manager, variant_id, channel_id, price, currency)
+                print(f"  GraphQL error: {msg}", file=sys.stderr)
+            return False
+
+        update_result = data.get("data", {}).get("productVariantChannelListingUpdate")
+        if update_result is None:
+            return False
+
+        errors = update_result.get("errors", [])
+        if errors:
+            for err in errors:
+                if "already" not in err.get("message", "").lower():
+                    return False
+        return True
+
+    except requests.exceptions.Timeout:
+        print(f"  Timeout for variant {variant_id}", file=sys.stderr)
+        return False
+    except requests.exceptions.RequestException as e:
+        print(f"  Request error for variant {variant_id}: {e}", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"  Unexpected error for variant {variant_id}: {e}", file=sys.stderr)
+        return False
 
 
 def main():
