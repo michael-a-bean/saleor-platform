@@ -219,9 +219,17 @@ jobs:
           ECS_TASK_SUBNETS: ${{ vars.STAGING_ECS_TASK_SUBNETS }}
           ECS_TASK_SECURITY_GROUPS: ${{ vars.STAGING_ECS_TASK_SECURITY_GROUPS }}
 
-      - name: Run Prisma migrations
+      - name: Run Prisma migrations (inventory-ops)
         run: |
-          ./scripts/deploy/aws/run-migrations.sh staging prisma
+          ./scripts/deploy/aws/run-migrations.sh staging prisma inventory-ops
+        env:
+          SHA: ${{ needs.build.outputs.sha_short }}
+          ECS_TASK_SUBNETS: ${{ vars.STAGING_ECS_TASK_SUBNETS }}
+          ECS_TASK_SECURITY_GROUPS: ${{ vars.STAGING_ECS_TASK_SECURITY_GROUPS }}
+
+      - name: Run Prisma migrations (mtg-import)
+        run: |
+          ./scripts/deploy/aws/run-migrations.sh staging prisma mtg-import
         env:
           SHA: ${{ needs.build.outputs.sha_short }}
           ECS_TASK_SUBNETS: ${{ vars.STAGING_ECS_TASK_SUBNETS }}
