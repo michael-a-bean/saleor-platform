@@ -358,7 +358,7 @@ resource "aws_lb_target_group" "pos_app" {
 }
 
 resource "aws_lb_target_group" "mtg_import_app" {
-  name        = "${local.name_prefix}-mtg-import"
+  name        = "${local.name_prefix}-mtg-imp"
   port        = 3005
   protocol    = "HTTP"
   vpc_id      = var.vpc_id

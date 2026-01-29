@@ -559,3 +559,16 @@ import {
   to = module.ecs.aws_ecs_service.beat
   id = "saleor-platform-staging/beat"
 }
+
+# =============================================================================
+# AWS Config Resources - Added 2026-01-29
+# =============================================================================
+import {
+  to = aws_s3_bucket.config[0]
+  id = "saleor-platform-staging-config-546464732019"
+}
+
+import {
+  to = aws_iam_role.config[0]
+  id = "saleor-platform-staging-config"
+}
