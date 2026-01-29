@@ -1,0 +1,19 @@
+# Meilisearch Sync Worker
+# Runs sync-meilisearch.py to populate Meilisearch indices from Saleor
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN pip install --no-cache-dir requests meilisearch
+
+# Copy sync scripts
+COPY sync-meilisearch.py .
+COPY meilisearch-delta-sync.py .
+COPY meilisearch-reconcile.py .
+
+# Default command runs full sync for webstore channel
+# Override with ECS task overrides for different channels
+# Use -u for unbuffered stdout to ensure CloudWatch logs appear immediately
+CMD ["python", "-u", "sync-meilisearch.py", "--channel", "webstore"]
