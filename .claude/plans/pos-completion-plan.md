@@ -1,14 +1,18 @@
 # POS App Completion Plan
 
 **Created**: 2026-01-05
-**Last Updated**: 2026-01-05
+**Last Updated**: 2026-01-28
 **Goal**: Complete POS system for in-store hobby gaming transactions
 
 ---
 
 ## Current State Summary
 
-### Phase 1 (MVP): ~95% Complete
+### Phase 1 (MVP): ~85% Complete
+
+> **Status Update (2026-01-28)**: Verification against codebase shows Phase 1 is ~85% complete, not ~95%.
+> UI components for price override, line discount, and transaction discount are missing despite schema support.
+> See `.claude/plans/OPEN-PLANS-STATUS.md` for detailed verification.
 
 The POS app has a solid foundation with most core functionality implemented. Key integrations with Singles Builder and the shared credit system are working.
 
@@ -227,6 +231,12 @@ taxExemptCertId   String?   // Tax certificate reference
 
 ### Phase 4: Offline Mode (5-7 days)
 
+> **Note (2026-01-28)**: Some offline mode work already exists in commits:
+> - `db01db7` feat(offline): P4-4 add cursor-based pagination for product cache
+> - `0d88d21` feat(offline): add idempotency key for offline transaction sync
+>
+> This work was not previously documented in this plan.
+
 #### 4.1 Local Product Cache
 **New storage**: IndexedDB via idb-keyval or Dexie
 
@@ -437,11 +447,11 @@ pnpm db:migrate
 
 ## Priority Matrix
 
-| Task | Priority | Effort | Dependencies |
-|------|----------|--------|--------------|
-| Price Override UI | P1 | 0.5 day | None |
-| Line Discount UI | P1 | 0.5 day | None |
-| Transaction Discount UI | P1 | 0.5 day | None |
+| Task | Priority | Effort | Dependencies | Status |
+|------|----------|--------|--------------|--------|
+| Price Override UI | P1 | 0.5 day | None | ❌ Not started |
+| Line Discount UI | P1 | 0.5 day | None | ❌ Not started |
+| Transaction Discount UI | P1 | 0.5 day | None | ❌ Not started |
 | Returns Processing | P1 | 2 days | None |
 | Stripe Terminal | P2 | 2 days | Hardware + Stripe account |
 | Split Tender UI | P2 | 0.5 day | None |

@@ -3,7 +3,12 @@
 ## Current Status
 
 **Branch:** `feature/square-terminal-integration`
-**Last Updated:** 2026-01-06
+**Last Updated:** 2026-01-28
+
+> **Status Update (2026-01-28)**: Verification shows Phase 6 is ~60% complete.
+> `SquareCheckout.tsx` exists (134 lines) with checkout flow and status polling.
+> Additional commit `df21c7a` wired Square Terminal to payment flow.
+> See `.claude/plans/OPEN-PLANS-STATUS.md` for detailed verification.
 
 ### Completed Phases
 
@@ -14,7 +19,7 @@
 | Phase 3 | Device Pairing | ✅ Complete |
 | Phase 4 | Terminal Checkout | ✅ Complete |
 | Phase 5 | Webhook Handler | ✅ Complete |
-| Phase 6 | Frontend UI | ⏳ Not Started |
+| Phase 6 | Frontend UI | ⏳ ~60% Complete |
 | Phase 7 | Testing & Documentation | ⏳ Not Started |
 
 ---
@@ -153,14 +158,14 @@ crypto.timingSafeEqual(receivedBuffer, expectedBuffer);
 ### Phase 6: Frontend UI (Step 15-18)
 
 **Files to Create:**
-- `src/pages/settings/square.tsx` - Square settings/OAuth page
-- `src/ui/components/SquareDevicePairing.tsx` - Device pairing modal
-- `src/ui/components/SquareDeviceList.tsx` - Paired devices list
-- `src/ui/components/SquareCheckoutStatus.tsx` - Checkout progress display
-- `src/ui/components/SquarePaymentButton.tsx` - Card payment button
+- `src/pages/settings/square.tsx` - Square settings/OAuth page - ❌ Missing
+- `src/ui/components/SquareDevicePairing.tsx` - Device pairing modal - ❌ Missing
+- `src/ui/components/SquareDeviceList.tsx` - Paired devices list - ❌ Missing
+- `src/ui/components/SquareCheckoutStatus.tsx` - Checkout progress display - ❌ Missing
+- `src/ui/components/SquarePaymentButton.tsx` - Card payment button - ✅ **Implemented as `SquareCheckout.tsx`**
 
 **Files to Modify:**
-- `src/pages/transaction.tsx` - Add SquarePaymentButton, integrate checkout flow
+- `src/pages/transaction.tsx` - Add SquarePaymentButton, integrate checkout flow - ⏳ Partially done (commit df21c7a)
 
 ### Phase 7: Testing & Documentation (Step 19-21)
 
@@ -261,6 +266,7 @@ trpcRouter
 | platform | `62009cb` | Phase 3 submodule update |
 | platform | `4ebaf69` | Phase 4 submodule update |
 | platform | `7115aa1` | Phase 5 submodule update |
+| pos | `df21c7a` | Phase 6 (partial): Wire Square Terminal to payment flow |
 
 ---
 

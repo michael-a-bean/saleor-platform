@@ -1,6 +1,7 @@
 # MVP Test Plan
 
 **Created**: 2026-01-03
+**Last Updated**: 2026-01-28
 **Purpose**: Comprehensive test coverage for hobby gaming commerce platform MVP
 **Framework**: Vitest (unit tests), PactumJS (E2E API tests)
 
@@ -14,7 +15,12 @@ This test plan covers all MVP functionality across four main areas:
 3. **Inventory Ops** - WAC/COGS, purchase orders, price sync
 4. **POS App** - Register operations, transactions, customer integration
 
-**Current Coverage**: ~15% (3 test files for core apps)
+> **Status Update (2026-01-28)**: Verification against codebase shows actual coverage is ~5%, not ~15%.
+> Only 1 test file exists: `saleor-apps/apps/pos/src/modules/register/register-router.test.ts`
+> No test files found in: inventory-ops, buylist, or storefront.
+> See `.claude/plans/OPEN-PLANS-STATUS.md` for detailed verification.
+
+**Current Coverage**: ~5% (1 test file exists)
 **Target Coverage**: 80%+ for business-critical logic
 
 ---
