@@ -360,11 +360,11 @@ module "ecs" {
         }
       ]
       environment = {
-        APL                 = "redis"
-        REDIS_URL           = module.elasticache.cache_url
-        SCRYFALL_CACHE_DIR  = "/tmp/scryfall-cache"
-        DEFAULT_CURRENCY    = "USD"
-        IMPORT_BATCH_SIZE   = "100"
+        APL                = "redis"
+        REDIS_URL          = module.elasticache.cache_url
+        SCRYFALL_CACHE_DIR = "/tmp/scryfall-cache"
+        DEFAULT_CURRENCY   = "USD"
+        IMPORT_BATCH_SIZE  = "100"
       }
     }
   }
