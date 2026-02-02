@@ -348,8 +348,8 @@ module "ecs" {
 
     mtg-import = {
       port             = 3005
-      cpu              = 256
-      memory           = 512
+      cpu              = 512
+      memory           = 2048
       base_path        = "/apps/mtg-import"
       image            = "${module.ecr.mtg_import_app_repository_url}:${var.mtg_import_app_image_tag}"
       target_group_arn = module.alb.mtg_import_app_target_group_arn
