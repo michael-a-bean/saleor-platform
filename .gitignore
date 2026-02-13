@@ -37,3 +37,9 @@ data/
 # Sync logs
 *.sync.log
 meilisearch-sync.log
+
+# Terraform
+infra/terraform/.terraform/
+infra/terraform/*.tfplan
+infra/terraform/tfplan
+infra/terraform/.terraform.lock.hcl
