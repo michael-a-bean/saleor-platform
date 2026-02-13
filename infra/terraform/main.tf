@@ -51,9 +51,10 @@ module "vpc" {
   aws_region           = var.aws_region
   vpc_cidr             = var.vpc_cidr
   availability_zones   = var.availability_zones
-  single_nat_gateway   = var.environment == "staging"
-  create_vpc_endpoints = true
-  tags                 = local.common_tags
+  single_nat_gateway         = var.environment == "staging"
+  create_vpc_endpoints       = true
+  create_interface_endpoints = var.create_interface_endpoints
+  tags                       = local.common_tags
 }
 
 locals {
@@ -251,6 +252,7 @@ module "ecs" {
   storefront_desired_count = var.storefront_desired_count
   storefront_cpu           = var.storefront_cpu
   storefront_memory        = var.storefront_memory
+  dashboard_desired_count  = var.dashboard_desired_count
 
   enable_container_insights = var.enable_container_insights
   log_retention_days        = var.log_retention_days
@@ -350,6 +352,7 @@ module "ecs" {
       port             = 3005
       cpu              = 512
       memory           = 2048
+      desired_count    = 0 # Batch importer — run on-demand via ECS RunTask, not 24/7
       base_path        = "/apps/mtg-import"
       image            = "${module.ecr.mtg_import_app_repository_url}:${var.mtg_import_app_image_tag}"
       target_group_arn = module.alb.mtg_import_app_target_group_arn
@@ -589,9 +592,9 @@ module "meilisearch" {
   master_key_secret_arn = aws_secretsmanager_secret.meilisearch_master_key[0].arn
   meilisearch_image     = var.meilisearch_image
 
-  # Sizing: staging = 512 CPU / 1GB, production = 1024 CPU / 4GB (Council recommendation)
-  cpu    = var.environment == "production" ? 1024 : 512
-  memory = var.environment == "production" ? 4096 : 1024
+  # Sizing: staging = 256 CPU / 512MB (right-sized: 42MB avg usage), production = 1024 CPU / 4GB
+  cpu    = var.environment == "production" ? 1024 : 256
+  memory = var.environment == "production" ? 4096 : 512
 }
 
 # =============================================================================

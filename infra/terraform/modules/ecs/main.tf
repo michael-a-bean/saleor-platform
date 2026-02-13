@@ -516,7 +516,7 @@ resource "aws_ecs_service" "dashboard" {
   name            = "dashboard"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.dashboard.arn
-  desired_count   = 1
+  desired_count   = var.dashboard_desired_count
   launch_type     = "FARGATE"
 
   network_configuration {
@@ -693,7 +693,7 @@ resource "aws_ecs_service" "apps" {
   name            = each.key
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.apps[each.key].arn
-  desired_count   = var.apps_desired_count
+  desired_count   = coalesce(each.value.desired_count, var.apps_desired_count)
   launch_type     = "FARGATE"
 
   network_configuration {

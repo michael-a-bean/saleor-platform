@@ -33,7 +33,13 @@ variable "single_nat_gateway" {
 }
 
 variable "create_vpc_endpoints" {
-  description = "Create VPC endpoints for AWS services"
+  description = "Create VPC endpoints for AWS services (gateway endpoints are free)"
+  type        = bool
+  default     = true
+}
+
+variable "create_interface_endpoints" {
+  description = "Create Interface VPC endpoints (ECR, SSM, Logs). Each costs ~$7.30/mo. Set false for staging to save ~$29/mo when NAT gateway is present."
   type        = bool
   default     = true
 }

@@ -257,30 +257,11 @@ import {
   id = "subnet-0917a8f4d0d7b7080/rtb-037085d4ee7ffdea8"
 }
 
-import {
-  to = module.vpc[0].aws_security_group.vpc_endpoints[0]
-  id = "sg-032696ac44e478a88"
-}
-
-import {
-  to = module.vpc[0].aws_vpc_endpoint.ecr_api[0]
-  id = "vpce-0275dfaf077ce0aaa"
-}
-
-import {
-  to = module.vpc[0].aws_vpc_endpoint.ecr_dkr[0]
-  id = "vpce-084889bd73e996dce"
-}
-
-import {
-  to = module.vpc[0].aws_vpc_endpoint.ssm[0]
-  id = "vpce-0465fb738b80a896a"
-}
-
-import {
-  to = module.vpc[0].aws_vpc_endpoint.logs[0]
-  id = "vpce-07b5f26452aeda656"
-}
+# Interface VPC endpoints + SG REMOVED 2026-02-12: cost optimization
+# create_interface_endpoints = false in staging.tfvars
+# These 4 interface endpoints ($29/mo) are being destroyed; NAT handles traffic.
+# Removed: sg-032696ac44e478a88, vpce-0275dfaf077ce0aaa, vpce-084889bd73e996dce,
+#          vpce-0465fb738b80a896a, vpce-07b5f26452aeda656
 
 import {
   to = module.vpc[0].aws_vpc_endpoint.s3[0]
@@ -634,7 +615,7 @@ import {
 }
 
 import {
-  to = module.alb.aws_lb_listener_rule.mtg_import_app
+  to = module.alb.aws_lb_listener_rule.mtg_import_app_http[0]
   id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/078a4b3a3ba343ee"
 }
 

@@ -43,13 +43,22 @@ public_api_base_url        = "http://saleor-platform-staging-alb-1516106871.us-w
 public_storefront_base_url = "http://saleor-platform-staging-alb-1516106871.us-west-1.elb.amazonaws.com"
 public_dashboard_base_url  = "http://saleor-platform-staging-alb-1516106871.us-west-1.elb.amazonaws.com/dashboard"
 
-# VPC (create new for staging)
+# =============================================================================
+# VPC
+# =============================================================================
 create_vpc         = true
 vpc_cidr           = "10.0.0.0/16"
 availability_zones = ["us-west-1a", "us-west-1b"]
 
-# Database (smaller for staging)
-db_instance_class        = "db.t3.medium"
+# Cost optimization: Interface VPC endpoints cost ~$29/mo but only save ~$1/mo
+# in NAT data transfer for staging traffic levels. NAT gateway handles this.
+create_interface_endpoints = false
+
+# =============================================================================
+# Database (right-sized for staging)
+# =============================================================================
+# Downgraded from db.t3.medium: 5.3% avg CPU, 0.55 avg connections, 55% memory free
+db_instance_class        = "db.t3.small"
 db_allocated_storage     = 100
 db_multi_az              = false
 db_backup_retention_days = 7
@@ -58,23 +67,28 @@ db_deletion_protection   = false
 # Inventory DB on same instance for staging (per Gemini review)
 create_separate_inventory_db = false
 
-# Cache (smaller for staging)
+# =============================================================================
+# Cache (already minimal)
+# =============================================================================
 redis_node_type = "cache.t3.micro"
 redis_multi_az  = false
 
 # Separate Celery cache not needed for staging
 create_separate_celery_cache = false
 
-# ECS (minimal for staging)
+# =============================================================================
+# ECS (right-sized for staging based on utilization analysis 2026-02-12)
+# =============================================================================
 api_desired_count        = 1
 api_cpu                  = 1024
 api_memory               = 2048
 worker_desired_count     = 1
-worker_cpu               = 512
+worker_cpu               = 256  # Right-sized: 4.2 CPU units avg of 512 provisioned (0.8%)
 worker_memory            = 1024
 storefront_desired_count = 1
 storefront_cpu           = 256
 storefront_memory        = 512
+dashboard_desired_count  = 0    # Scale to 0: 0% CPU, 3MB memory. Scale up when needed.
 
 # Images (pin by digest in production, use tags in staging)
 # Updated 2026-01-12: API 3.22.26, Dashboard 3.21.18
@@ -107,6 +121,10 @@ meilisearch_enabled = true
 # S3 Media Security (locked to CloudFront-only access 2026-01-27)
 cloudfront_only_media_access = true
 
-# Monitoring
-enable_container_insights = true
+# =============================================================================
+# Monitoring (right-sized for staging)
+# =============================================================================
+# Container Insights disabled: 308 custom metrics cost ~$9/mo with no active monitoring.
+# Re-enable during debugging: set to true and apply.
+enable_container_insights = false
 log_retention_days        = 14
