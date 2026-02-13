@@ -1,6 +1,6 @@
 # Expected Terraform Divergence
 
-**Last Updated:** 2026-01-27
+**Last Updated:** 2026-02-12
 **Source:** Council analysis of AWS architecture drift
 
 This document catalogs **intentional drift** between Terraform state and AWS reality. Consult this before interpreting `terraform plan` output to distinguish expected changes from actual drift.
@@ -50,6 +50,39 @@ aws ecs describe-services \
 # Compare against Terraform
 terraform state show 'module.ecs.aws_ecs_task_definition.api'
 ```
+
+---
+
+## Cost Optimization Changes (2026-02-12)
+
+The following changes were applied via Terraform to reduce staging costs (~$94/mo savings).
+
+### VPC Interface Endpoints Removed
+
+Four interface VPC endpoints (ECR API, ECR DKR, CloudWatch Logs, SSM) and their security group were **destroyed**. NAT gateway handles this traffic. Gateway endpoints (S3, DynamoDB) remain — they are free.
+
+**Terraform control:** `create_interface_endpoints = false` in `staging.tfvars`.
+
+### Services Scaled to Zero
+
+| Service | Reason | How to Restore |
+|---------|--------|----------------|
+| Dashboard | 0% CPU, 3MB memory | `dashboard_desired_count = 1` in tfvars |
+| MTG Import | Batch job, run on-demand | `desired_count` in apps map or `aws ecs run-task` |
+
+### Resources Right-Sized
+
+| Resource | Before | After |
+|----------|--------|-------|
+| RDS | db.t3.medium | db.t3.small |
+| Worker CPU | 512 | 256 |
+| Meilisearch | 512 CPU / 1024 MB | 256 CPU / 512 MB |
+
+### Container Insights Disabled
+
+308 custom metrics were costing ~$9/mo with no alarms configured. Re-enable with `enable_container_insights = true` in tfvars.
+
+**Full audit:** `docs/ops/audits/2026-02-12-cost-optimization.md`
 
 ---
 

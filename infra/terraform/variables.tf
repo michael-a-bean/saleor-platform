@@ -66,6 +66,12 @@ variable "existing_private_subnet_ids" {
   default     = []
 }
 
+variable "create_interface_endpoints" {
+  description = "Create Interface VPC endpoints (ECR, SSM, Logs). Each costs ~$7.30/mo. Set false for staging when NAT gateway handles traffic."
+  type        = bool
+  default     = true
+}
+
 # =============================================================================
 # DNS and TLS
 # =============================================================================
@@ -239,6 +245,12 @@ variable "storefront_memory" {
   description = "Memory for storefront task in MB"
   type        = number
   default     = 512
+}
+
+variable "dashboard_desired_count" {
+  description = "Desired count for dashboard service. Set to 0 to save costs when not actively using admin UI."
+  type        = number
+  default     = 1
 }
 
 # =============================================================================

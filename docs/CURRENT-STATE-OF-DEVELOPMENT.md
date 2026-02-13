@@ -33,7 +33,7 @@ The Saleor Platform is a **customized fork of Saleor** tailored for a hobby gami
 | Total Branches (all repos) | 9 local, 11 remote |
 | Custom Saleor Apps | 5 (inventory-ops, buylist, pos, price-sync, mtg-import) |
 | Standard Saleor Apps | 8 (avatax, cms, klaviyo, np-atobarai, search, segment, smtp, stripe) |
-| Terraform Modules | 11 (alb, cloudfront, dynamodb, ecr, ecs, elasticache, iam, meilisearch, rds, s3, vpc) |
+| Terraform Modules | 12 (alb, cloudfront, dynamodb, ecr, ecs, elasticache, iam, meilisearch, rds, s3, secrets, vpc) |
 | Docker Services | 16 |
 | Total Codebase | ~3+ GB |
 | Last Activity | 2026-02-01 (saleor-platform), 2026-01-27 (saleor-apps) |
@@ -358,6 +358,7 @@ The parent `saleor-platform` has the deployment infrastructure (Terraform resour
 | `meilisearch` | Search engine instance |
 | `rds` | PostgreSQL RDS instances |
 | `s3` | S3 buckets (media, backups, static assets) |
+| `secrets` | SSM Parameter Store secrets management |
 | `vpc` | VPC, subnets, security groups, NAT |
 
 **Terraform State:** Remote backend (S3 + DynamoDB locking)
@@ -368,6 +369,7 @@ The parent `saleor-platform` has the deployment infrastructure (Terraform resour
 - VPC alignment maintenance documented
 - IAM snapshots taken (2026-01-27)
 - Drift prevention council review completed (2026-01-27)
+- Cost optimization applied (2026-02-12) — ~$94/mo savings via right-sizing, endpoint removal, scale-to-zero
 
 ---
 
@@ -405,6 +407,7 @@ The parent `saleor-platform` has the deployment infrastructure (Terraform resour
 
 | Date | Activity | Repos Affected |
 |------|----------|----------------|
+| 2026-02-12 | Staging cost optimization — RDS downsize, VPC endpoints removed, services right-sized (~$94/mo) | saleor-platform |
 | 2026-02-01 | MTG Import App — increase memory to 2GB for Scryfall bulk download | saleor-platform |
 | 2026-01-31 | MTG Import App — vitest config for unit tests | saleor-apps (remote) |
 | 2026-01-30 | MTG Import App — initial Prisma migrations | saleor-apps (remote) |

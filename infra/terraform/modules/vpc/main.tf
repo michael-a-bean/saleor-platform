@@ -182,9 +182,9 @@ resource "aws_vpc_endpoint" "dynamodb" {
   }
 }
 
-# ECR API Interface Endpoint
+# ECR API Interface Endpoint (~$7.30/mo each - skip in staging when NAT handles this)
 resource "aws_vpc_endpoint" "ecr_api" {
-  count = var.create_vpc_endpoints ? 1 : 0
+  count = var.create_vpc_endpoints && var.create_interface_endpoints ? 1 : 0
 
   vpc_id              = aws_vpc.main.id
   service_name        = "com.amazonaws.${var.aws_region}.ecr.api"
@@ -200,7 +200,7 @@ resource "aws_vpc_endpoint" "ecr_api" {
 
 # ECR DKR Interface Endpoint
 resource "aws_vpc_endpoint" "ecr_dkr" {
-  count = var.create_vpc_endpoints ? 1 : 0
+  count = var.create_vpc_endpoints && var.create_interface_endpoints ? 1 : 0
 
   vpc_id              = aws_vpc.main.id
   service_name        = "com.amazonaws.${var.aws_region}.ecr.dkr"
@@ -216,7 +216,7 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
 
 # CloudWatch Logs Interface Endpoint
 resource "aws_vpc_endpoint" "logs" {
-  count = var.create_vpc_endpoints ? 1 : 0
+  count = var.create_vpc_endpoints && var.create_interface_endpoints ? 1 : 0
 
   vpc_id              = aws_vpc.main.id
   service_name        = "com.amazonaws.${var.aws_region}.logs"
@@ -232,7 +232,7 @@ resource "aws_vpc_endpoint" "logs" {
 
 # SSM Interface Endpoint (for parameter store)
 resource "aws_vpc_endpoint" "ssm" {
-  count = var.create_vpc_endpoints ? 1 : 0
+  count = var.create_vpc_endpoints && var.create_interface_endpoints ? 1 : 0
 
   vpc_id              = aws_vpc.main.id
   service_name        = "com.amazonaws.${var.aws_region}.ssm"
@@ -246,9 +246,9 @@ resource "aws_vpc_endpoint" "ssm" {
   }
 }
 
-# Security group for VPC endpoints
+# Security group for VPC endpoints (only needed when interface endpoints exist)
 resource "aws_security_group" "vpc_endpoints" {
-  count = var.create_vpc_endpoints ? 1 : 0
+  count = var.create_vpc_endpoints && var.create_interface_endpoints ? 1 : 0
 
   name        = "${local.name_prefix}-vpc-endpoints-sg"
   description = "Security group for VPC endpoints"

@@ -232,6 +232,7 @@ variable "apps" {
     base_path        = string
     image            = string
     target_group_arn = string
+    desired_count    = optional(number)
     environment      = optional(map(string), {})
     secrets = optional(list(object({
       name      = string
@@ -242,7 +243,13 @@ variable "apps" {
 }
 
 variable "apps_desired_count" {
-  description = "Desired count for each app service"
+  description = "Default desired count for app services (overridden by per-app desired_count)"
+  type        = number
+  default     = 1
+}
+
+variable "dashboard_desired_count" {
+  description = "Desired count for dashboard service. Set to 0 to stop and save costs."
   type        = number
   default     = 1
 }
