@@ -391,6 +391,24 @@ module "iam" {
 }
 
 # =============================================================================
+# SSM Parameters (Secrets)
+# =============================================================================
+
+module "secrets" {
+  source = "./modules/secrets"
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  rds_endpoint      = module.rds.db_instance_endpoint
+  rds_password      = random_password.db_master.result
+  celery_broker_url = module.elasticache.broker_url
+
+  stripe_secret_key     = var.stripe_secret_key
+  stripe_webhook_secret = var.stripe_webhook_secret
+}
+
+# =============================================================================
 # ACM Certificate (optional)
 # =============================================================================
 

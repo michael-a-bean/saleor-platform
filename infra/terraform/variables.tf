@@ -432,3 +432,21 @@ variable "enable_config_rules" {
   type        = bool
   default     = true
 }
+
+# =============================================================================
+# External Service Secrets
+# =============================================================================
+
+variable "stripe_secret_key" {
+  description = "Stripe API secret key. On fresh deploy, uses placeholder. Update via: aws ssm put-parameter --name /saleor/{env}/apps/stripe/STRIPE_SECRET_KEY --type SecureString --value sk_live_xxx --overwrite"
+  type        = string
+  default     = "sk_test_PLACEHOLDER_UPDATE_ME"
+  sensitive   = true
+}
+
+variable "stripe_webhook_secret" {
+  description = "Stripe webhook signing secret. On fresh deploy, uses placeholder. Update via: aws ssm put-parameter --name /saleor/{env}/apps/stripe/STRIPE_WEBHOOK_SECRET --type SecureString --value whsec_xxx --overwrite"
+  type        = string
+  default     = "whsec_PLACEHOLDER_UPDATE_ME"
+  sensitive   = true
+}

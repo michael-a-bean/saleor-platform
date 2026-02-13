@@ -572,3 +572,76 @@ import {
   to = aws_iam_role.config[0]
   id = "saleor-platform-staging-config"
 }
+
+# =============================================================================
+# SSM Parameters (Secrets Module) - Added during IaC audit 2026-02-12
+# =============================================================================
+
+import {
+  to = module.secrets.aws_ssm_parameter.api_secret_key
+  id = "/saleor/staging/api/SECRET_KEY"
+}
+
+import {
+  to = module.secrets.aws_ssm_parameter.api_database_url
+  id = "/saleor/staging/api/DATABASE_URL"
+}
+
+import {
+  to = module.secrets.aws_ssm_parameter.api_celery_broker_url
+  id = "/saleor/staging/api/CELERY_BROKER_URL"
+}
+
+import {
+  to = module.secrets.aws_ssm_parameter.api_rsa_private_key
+  id = "/saleor/staging/api/RSA_PRIVATE_KEY"
+}
+
+import {
+  to = module.secrets.aws_ssm_parameter.apps_secret_key
+  id = "/saleor/staging/apps/SECRET_KEY"
+}
+
+import {
+  to = module.secrets.aws_ssm_parameter.stripe_secret_key
+  id = "/saleor/staging/apps/stripe/STRIPE_SECRET_KEY"
+}
+
+import {
+  to = module.secrets.aws_ssm_parameter.stripe_webhook_secret
+  id = "/saleor/staging/apps/stripe/STRIPE_WEBHOOK_SECRET"
+}
+
+import {
+  to = module.secrets.aws_ssm_parameter.inventory_database_url
+  id = "/saleor/staging/apps/inventory-ops/DATABASE_URL"
+}
+
+# MTG Import resources (created before Terraform adoption)
+import {
+  to = module.ecr.aws_ecr_repository.repos["mtg-import-app"]
+  id = "saleor-platform/mtg-import-app"
+}
+
+import {
+  to = module.ecs.aws_cloudwatch_log_group.services["mtg-import-app"]
+  id = "/ecs/saleor-platform-staging/mtg-import-app"
+}
+
+import {
+  to = module.alb.aws_lb_target_group.mtg_import_app
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:targetgroup/saleor-platform-staging-mtg-imp/a7cee7de4721f945"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.mtg_import_app
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/078a4b3a3ba343ee"
+}
+
+import {
+  to = module.ecs.aws_ecs_task_definition.apps["mtg-import"]
+  id = "arn:aws:ecs:us-west-1:546464732019:task-definition/saleor-platform-staging-mtg-import:8"
+}
+
+# ECS service imported via CLI (TF 1.5 import blocks don't support for_each service resources)
+# terraform import 'module.ecs.aws_ecs_service.apps["mtg-import"]' 'saleor-platform-staging/mtg-import'
