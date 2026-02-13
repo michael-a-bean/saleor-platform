@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 #
+# SUPERSEDED BY TERRAFORM (2026-02-12)
+# SSM parameters are now managed by module.secrets in infra/terraform/modules/secrets/
+# Terraform auto-generates SECRET_KEYs, computes DATABASE_URLs, and creates
+# Stripe key placeholders. Run `terraform apply` instead of this script.
+#
+# This script is kept for reference only. On fresh deploy:
+#   1. terraform apply -var-file=environments/staging.tfvars
+#   2. Update Stripe keys: aws ssm put-parameter --name /saleor/{env}/apps/stripe/STRIPE_SECRET_KEY --type SecureString --value sk_live_xxx --overwrite
+#
+# --- ORIGINAL DESCRIPTION ---
 # Bootstrap SSM parameters for Saleor apps
 #
 # Usage: ./bootstrap-app-secrets.sh <environment>
