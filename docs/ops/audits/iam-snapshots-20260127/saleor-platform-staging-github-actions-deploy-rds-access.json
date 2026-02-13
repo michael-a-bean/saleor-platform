@@ -1,0 +1,21 @@
+{
+    "RoleName": "saleor-platform-staging-github-actions-deploy",
+    "PolicyName": "rds-access",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "rds:DescribeDBSnapshots",
+                    "rds:CreateDBSnapshot"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "arn:aws:rds:us-west-1:546464732019:snapshot:saleor-platform-staging-*",
+                    "arn:aws:rds:us-west-1:546464732019:db:saleor-platform-staging-*"
+                ],
+                "Sid": "RDSSnapshot"
+            }
+        ]
+    }
+}

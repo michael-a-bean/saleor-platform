@@ -1,0 +1,24 @@
+{
+    "RoleName": "saleor-platform-staging-ecs-api-task",
+    "PolicyName": "efs-access",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "elasticfilesystem:ClientWrite",
+                    "elasticfilesystem:ClientRootAccess",
+                    "elasticfilesystem:ClientMount"
+                ],
+                "Condition": {
+                    "Bool": {
+                        "elasticfilesystem:AccessedViaMountTarget": "true"
+                    }
+                },
+                "Effect": "Allow",
+                "Resource": "*",
+                "Sid": "EFSAccess"
+            }
+        ]
+    }
+}

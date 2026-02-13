@@ -1,0 +1,9 @@
+{
+    "PolicyNames": [
+        "ecr-access",
+        "ecs-access",
+        "logs-access",
+        "rds-access",
+        "secrets-access"
+    ]
+}

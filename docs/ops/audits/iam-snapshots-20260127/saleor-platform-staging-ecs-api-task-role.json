@@ -1,0 +1,48 @@
+{
+    "Role": {
+        "Path": "/",
+        "RoleName": "saleor-platform-staging-ecs-api-task",
+        "RoleId": "AROAX6O6WCNZ5ZSKO7NVD",
+        "Arn": "arn:aws:iam::546464732019:role/saleor-platform-staging-ecs-api-task",
+        "CreateDate": "2026-01-11T18:50:31+00:00",
+        "AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "ecs-tasks.amazonaws.com"
+                    },
+                    "Action": "sts:AssumeRole"
+                }
+            ]
+        },
+        "MaxSessionDuration": 3600,
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "saleor-platform-staging-ecs-api-task"
+            },
+            {
+                "Key": "Repository",
+                "Value": "saleor-platform"
+            },
+            {
+                "Key": "Environment",
+                "Value": "staging"
+            },
+            {
+                "Key": "ManagedBy",
+                "Value": "terraform"
+            },
+            {
+                "Key": "Project",
+                "Value": "saleor-platform"
+            }
+        ],
+        "RoleLastUsed": {
+            "LastUsedDate": "2026-01-27T23:33:53+00:00",
+            "Region": "us-west-1"
+        }
+    }
+}

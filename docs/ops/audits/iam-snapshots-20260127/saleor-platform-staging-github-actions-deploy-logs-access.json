@@ -1,0 +1,19 @@
+{
+    "RoleName": "saleor-platform-staging-github-actions-deploy",
+    "PolicyName": "logs-access",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "logs:GetLogEvents",
+                    "logs:FilterLogEvents",
+                    "logs:DescribeLogStreams"
+                ],
+                "Effect": "Allow",
+                "Resource": "arn:aws:logs:us-west-1:546464732019:log-group:/ecs/saleor-platform-staging/*",
+                "Sid": "LogsRead"
+            }
+        ]
+    }
+}

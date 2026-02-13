@@ -1,0 +1,6 @@
+{
+    "PolicyNames": [
+        "api-permissions",
+        "efs-access"
+    ]
+}

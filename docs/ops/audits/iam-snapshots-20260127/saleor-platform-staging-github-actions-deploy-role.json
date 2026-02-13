@@ -1,0 +1,57 @@
+{
+    "Role": {
+        "Path": "/",
+        "RoleName": "saleor-platform-staging-github-actions-deploy",
+        "RoleId": "AROAX6O6WCNZ53UQVFRWF",
+        "Arn": "arn:aws:iam::546464732019:role/saleor-platform-staging-github-actions-deploy",
+        "CreateDate": "2026-01-11T19:19:10+00:00",
+        "AssumeRolePolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Federated": "arn:aws:iam::546464732019:oidc-provider/token.actions.githubusercontent.com"
+                    },
+                    "Action": "sts:AssumeRoleWithWebIdentity",
+                    "Condition": {
+                        "StringEquals": {
+                            "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                            "token.actions.githubusercontent.com:sub": [
+                                "repo:michael-a-bean/saleor-platform:ref:refs/heads/platform/main",
+                                "repo:michael-a-bean/saleor-platform:environment:staging"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "MaxSessionDuration": 3600,
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "saleor-platform-staging-github-actions-deploy"
+            },
+            {
+                "Key": "Repository",
+                "Value": "saleor-platform"
+            },
+            {
+                "Key": "Environment",
+                "Value": "staging"
+            },
+            {
+                "Key": "ManagedBy",
+                "Value": "terraform"
+            },
+            {
+                "Key": "Project",
+                "Value": "saleor-platform"
+            }
+        ],
+        "RoleLastUsed": {
+            "LastUsedDate": "2026-01-27T23:32:57+00:00",
+            "Region": "us-west-1"
+        }
+    }
+}

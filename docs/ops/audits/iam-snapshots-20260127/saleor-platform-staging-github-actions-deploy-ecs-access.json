@@ -1,0 +1,67 @@
+{
+    "RoleName": "saleor-platform-staging-github-actions-deploy",
+    "PolicyName": "ecs-access",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "ecs:RegisterTaskDefinition",
+                    "ecs:DescribeTaskDefinition",
+                    "ecs:DeregisterTaskDefinition"
+                ],
+                "Effect": "Allow",
+                "Resource": "*",
+                "Sid": "ECSTaskDefinition"
+            },
+            {
+                "Action": [
+                    "ecs:UpdateService",
+                    "ecs:ListTasks",
+                    "ecs:DescribeServices"
+                ],
+                "Effect": "Allow",
+                "Resource": "arn:aws:ecs:us-west-1:546464732019:service/saleor-platform-staging/*",
+                "Sid": "ECSService"
+            },
+            {
+                "Action": "ecs:DescribeTasks",
+                "Effect": "Allow",
+                "Resource": "arn:aws:ecs:us-west-1:546464732019:task/saleor-platform-staging/*",
+                "Sid": "ECSTasks"
+            },
+            {
+                "Action": [
+                    "ecs:StopTask",
+                    "ecs:RunTask"
+                ],
+                "Condition": {
+                    "ArnEquals": {
+                        "ecs:cluster": "arn:aws:ecs:us-west-1:546464732019:cluster/saleor-platform-staging"
+                    }
+                },
+                "Effect": "Allow",
+                "Resource": "arn:aws:ecs:us-west-1:546464732019:task-definition/saleor-platform-*",
+                "Sid": "ECSRunTask"
+            },
+            {
+                "Action": "ecs:DescribeClusters",
+                "Effect": "Allow",
+                "Resource": "arn:aws:ecs:us-west-1:546464732019:cluster/saleor-platform-staging",
+                "Sid": "ECSDescribeCluster"
+            },
+            {
+                "Action": "iam:PassRole",
+                "Effect": "Allow",
+                "Resource": [
+                    "arn:aws:iam::546464732019:role/saleor-platform-staging-ecs-worker-task",
+                    "arn:aws:iam::546464732019:role/saleor-platform-staging-ecs-storefront-task",
+                    "arn:aws:iam::546464732019:role/saleor-platform-staging-ecs-execution",
+                    "arn:aws:iam::546464732019:role/saleor-platform-staging-ecs-apps-task",
+                    "arn:aws:iam::546464732019:role/saleor-platform-staging-ecs-api-task"
+                ],
+                "Sid": "PassRole"
+            }
+        ]
+    }
+}

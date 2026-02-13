@@ -1,0 +1,22 @@
+{
+    "RoleName": "saleor-platform-staging-ecs-apps-task",
+    "PolicyName": "apps-permissions",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "dynamodb:UpdateItem",
+                    "dynamodb:Scan",
+                    "dynamodb:Query",
+                    "dynamodb:PutItem",
+                    "dynamodb:GetItem",
+                    "dynamodb:DeleteItem"
+                ],
+                "Effect": "Allow",
+                "Resource": "arn:aws:dynamodb:us-west-1:546464732019:table/saleor-platform-staging-stripe-*",
+                "Sid": "DynamoDB"
+            }
+        ]
+    }
+}

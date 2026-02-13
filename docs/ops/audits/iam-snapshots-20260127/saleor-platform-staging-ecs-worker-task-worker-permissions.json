@@ -1,0 +1,32 @@
+{
+    "RoleName": "saleor-platform-staging-ecs-worker-task",
+    "PolicyName": "worker-permissions",
+    "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": [
+                    "s3:PutObject",
+                    "s3:ListBucket",
+                    "s3:GetObject",
+                    "s3:DeleteObject"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "arn:aws:s3:::saleor-platform-media-staging-546464732019/*",
+                    "arn:aws:s3:::saleor-platform-media-staging-546464732019"
+                ],
+                "Sid": "S3Media"
+            },
+            {
+                "Action": [
+                    "ses:SendRawEmail",
+                    "ses:SendEmail"
+                ],
+                "Effect": "Allow",
+                "Resource": "*",
+                "Sid": "SES"
+            }
+        ]
+    }
+}
