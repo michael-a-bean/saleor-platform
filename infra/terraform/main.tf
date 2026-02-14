@@ -142,6 +142,7 @@ module "alb" {
   public_subnet_ids = local.public_subnet_ids
   domain_name       = var.domain_name
   certificate_arn   = var.create_acm_certificate ? aws_acm_certificate.main[0].arn : ""
+  enable_https      = var.create_acm_certificate
 
   enable_deletion_protection = var.environment == "production"
 }
@@ -506,6 +507,22 @@ resource "aws_route53_record" "apps" {
 
   zone_id = var.route53_zone_id
   name    = "apps.${var.domain_name}"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.alb_dns_name
+    zone_id                = module.alb.alb_zone_id
+    evaluate_target_health = true
+  }
+}
+
+# Bare domain (e.g., staging.michaelbean.org) points to storefront
+# This complements www.{domain} — both resolve to the ALB
+resource "aws_route53_record" "apex" {
+  count = var.route53_zone_id != "" ? 1 : 0
+
+  zone_id = var.route53_zone_id
+  name    = var.domain_name
   type    = "A"
 
   alias {

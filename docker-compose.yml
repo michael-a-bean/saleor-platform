@@ -396,6 +396,25 @@ services:
     profiles:
       - workers
 
+  # =========================================================================
+  # Local ALB Proxy (mimics staging ALB routing)
+  # Access at http://localhost:8080 for path-based routing parity with staging
+  # =========================================================================
+  proxy:
+    image: caddy:2-alpine
+    ports:
+      - 8080:80
+    volumes:
+      - ./Caddyfile.local:/etc/caddy/Caddyfile:ro
+    networks:
+      - saleor-backend-tier
+    depends_on:
+      - api
+      - storefront
+    profiles:
+      - proxy
+    restart: unless-stopped
+
 volumes:
   saleor-db:
     driver: local

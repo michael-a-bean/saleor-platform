@@ -393,7 +393,7 @@ resource "aws_lb_listener" "http" {
   protocol          = "HTTP"
 
   dynamic "default_action" {
-    for_each = var.certificate_arn != "" ? [1] : []
+    for_each = var.enable_https ? [1] : []
     content {
       type = "redirect"
       redirect {
@@ -405,7 +405,7 @@ resource "aws_lb_listener" "http" {
   }
 
   dynamic "default_action" {
-    for_each = var.certificate_arn == "" ? [1] : []
+    for_each = !var.enable_https ? [1] : []
     content {
       type             = "forward"
       target_group_arn = aws_lb_target_group.storefront.arn
@@ -415,7 +415,7 @@ resource "aws_lb_listener" "http" {
 
 # HTTPS Listener
 resource "aws_lb_listener" "https" {
-  count = var.certificate_arn != "" ? 1 : 0
+  count = var.enable_https ? 1 : 0
 
   load_balancer_arn = aws_lb.main.arn
   port              = 443
@@ -435,7 +435,7 @@ resource "aws_lb_listener" "https" {
 
 # API routing: api.{domain}
 resource "aws_lb_listener_rule" "api" {
-  count = var.certificate_arn != "" ? 1 : 0
+  count = var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.https[0].arn
   priority     = 100
@@ -454,7 +454,7 @@ resource "aws_lb_listener_rule" "api" {
 
 # Dashboard routing: dashboard.{domain}
 resource "aws_lb_listener_rule" "dashboard" {
-  count = var.certificate_arn != "" ? 1 : 0
+  count = var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.https[0].arn
   priority     = 110
@@ -473,7 +473,7 @@ resource "aws_lb_listener_rule" "dashboard" {
 
 # Stripe app routing: apps.{domain}/stripe/*
 resource "aws_lb_listener_rule" "stripe_app" {
-  count = var.certificate_arn != "" ? 1 : 0
+  count = var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.https[0].arn
   priority     = 200
@@ -498,7 +498,7 @@ resource "aws_lb_listener_rule" "stripe_app" {
 
 # Inventory ops app routing: apps.{domain}/inventory-ops/*
 resource "aws_lb_listener_rule" "inventory_ops_app" {
-  count = var.certificate_arn != "" ? 1 : 0
+  count = var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.https[0].arn
   priority     = 210
@@ -523,7 +523,7 @@ resource "aws_lb_listener_rule" "inventory_ops_app" {
 
 # Buylist app routing: apps.{domain}/buylist/*
 resource "aws_lb_listener_rule" "buylist_app" {
-  count = var.certificate_arn != "" ? 1 : 0
+  count = var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.https[0].arn
   priority     = 220
@@ -548,7 +548,7 @@ resource "aws_lb_listener_rule" "buylist_app" {
 
 # POS app routing: apps.{domain}/pos/*
 resource "aws_lb_listener_rule" "pos_app" {
-  count = var.certificate_arn != "" ? 1 : 0
+  count = var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.https[0].arn
   priority     = 230
@@ -573,7 +573,7 @@ resource "aws_lb_listener_rule" "pos_app" {
 
 # MTG Import app routing: apps.{domain}/mtg-import/*
 resource "aws_lb_listener_rule" "mtg_import_app" {
-  count = var.certificate_arn != "" ? 1 : 0
+  count = var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.https[0].arn
   priority     = 240
@@ -598,7 +598,7 @@ resource "aws_lb_listener_rule" "mtg_import_app" {
 
 # Storefront is default (www.{domain} or {domain})
 resource "aws_lb_listener_rule" "storefront" {
-  count = var.certificate_arn != "" ? 1 : 0
+  count = var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.https[0].arn
   priority     = 300
@@ -622,7 +622,7 @@ resource "aws_lb_listener_rule" "storefront" {
 
 # API routing on HTTP: /graphql/* and /health/*
 resource "aws_lb_listener_rule" "api_http" {
-  count = var.certificate_arn == "" ? 1 : 0
+  count = !var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.http.arn
   priority     = 100
@@ -643,7 +643,7 @@ resource "aws_lb_listener_rule" "api_http" {
 
 # Dashboard routing on HTTP: /dashboard/*
 resource "aws_lb_listener_rule" "dashboard_http" {
-  count = var.certificate_arn == "" ? 1 : 0
+  count = !var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.http.arn
   priority     = 110
@@ -667,7 +667,7 @@ resource "aws_lb_listener_rule" "dashboard_http" {
 
 # Stripe app routing on HTTP: /apps/stripe/*
 resource "aws_lb_listener_rule" "stripe_app_http" {
-  count = var.certificate_arn == "" ? 1 : 0
+  count = !var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.http.arn
   priority     = 200
@@ -686,7 +686,7 @@ resource "aws_lb_listener_rule" "stripe_app_http" {
 
 # Inventory ops app routing on HTTP: /apps/inventory/*
 resource "aws_lb_listener_rule" "inventory_ops_app_http" {
-  count = var.certificate_arn == "" ? 1 : 0
+  count = !var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.http.arn
   priority     = 210
@@ -705,7 +705,7 @@ resource "aws_lb_listener_rule" "inventory_ops_app_http" {
 
 # Buylist app routing on HTTP: /apps/buylist/*
 resource "aws_lb_listener_rule" "buylist_app_http" {
-  count = var.certificate_arn == "" ? 1 : 0
+  count = !var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.http.arn
   priority     = 220
@@ -724,7 +724,7 @@ resource "aws_lb_listener_rule" "buylist_app_http" {
 
 # POS app routing on HTTP: /apps/pos/*
 resource "aws_lb_listener_rule" "pos_app_http" {
-  count = var.certificate_arn == "" ? 1 : 0
+  count = !var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.http.arn
   priority     = 230
@@ -743,7 +743,7 @@ resource "aws_lb_listener_rule" "pos_app_http" {
 
 # MTG Import app routing on HTTP: /apps/mtg-import/*
 resource "aws_lb_listener_rule" "mtg_import_app_http" {
-  count = var.certificate_arn == "" ? 1 : 0
+  count = !var.enable_https ? 1 : 0
 
   listener_arn = aws_lb_listener.http.arn
   priority     = 240

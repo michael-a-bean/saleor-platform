@@ -1,0 +1,54 @@
+# Local ALB Proxy
+# Mimics the path-based routing that staging ALB uses, so routing bugs
+# are caught locally before they reach AWS.
+#
+# Usage: docker compose --profile proxy up -d proxy
+# Access: http://localhost:8080
+#
+# This matches the HTTP listener rules in infra/terraform/modules/alb/main.tf
+
+:80 {
+	# API routes (matches ALB priority 100)
+	handle /graphql/* {
+		reverse_proxy api:8000
+	}
+	handle /health/* {
+		reverse_proxy api:8000
+	}
+	handle /media/* {
+		reverse_proxy api:8000
+	}
+	handle /thumbnail/* {
+		reverse_proxy api:8000
+	}
+	handle /.well-known/* {
+		reverse_proxy api:8000
+	}
+
+	# Dashboard routes (matches ALB priority 110)
+	handle /dashboard/* {
+		reverse_proxy dashboard:80
+	}
+
+	# App routes (matches ALB priorities 200-240)
+	handle /apps/stripe/* {
+		reverse_proxy stripe-app:3001
+	}
+	handle /apps/inventory/* {
+		reverse_proxy inventory-ops-app:3002
+	}
+	handle /apps/buylist/* {
+		reverse_proxy buylist-app:3003
+	}
+	handle /apps/pos/* {
+		reverse_proxy pos-app:3004
+	}
+	handle /apps/mtg-import/* {
+		reverse_proxy mtg-import-app:3005
+	}
+
+	# Storefront (default — matches ALB priority 300 / default action)
+	handle {
+		reverse_proxy storefront:3000
+	}
+}
