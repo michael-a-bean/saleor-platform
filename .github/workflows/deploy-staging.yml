@@ -292,6 +292,10 @@ jobs:
           ECS_TASK_SECURITY_GROUPS: ${{ vars.STAGING_ECS_TASK_SECURITY_GROUPS }}
 
       - name: Run Prisma migrations (mtg-import)
+        # Non-blocking: mtg-import shares inventory-ops schema (symlink).
+        # inventory-ops migration handles the shared schema.
+        # Remove continue-on-error once mtg-import app is fully implemented.
+        continue-on-error: true
         run: |
           ./scripts/deploy/aws/run-migrations.sh staging prisma mtg-import
         env:
