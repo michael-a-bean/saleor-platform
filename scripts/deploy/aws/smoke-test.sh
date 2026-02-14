@@ -136,8 +136,19 @@ else
 fi
 
 # Dashboard Health Check
+# Dashboard may be scaled to 0 for cost savings (returns 503).
+# Accept both 200 (running) and 503 (scaled down) as valid.
 if [[ -n "$DASHBOARD_URL" ]]; then
-    test_endpoint "Dashboard" "${DASHBOARD_URL}/"
+    log_info "Testing Dashboard..."
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$TIMEOUT" "${DASHBOARD_URL}/" || echo "000")
+    if [[ "$http_code" == "200" ]]; then
+        log_success "Dashboard: HTTP ${http_code}"
+    elif [[ "$http_code" == "503" ]]; then
+        log_warn "Dashboard: HTTP 503 (scaled to 0 — expected for cost savings)"
+    else
+        log_error "Dashboard: Expected HTTP 200 or 503, got HTTP ${http_code}"
+        ((FAILURES++)) || true
+    fi
 else
     log_warn "DASHBOARD_URL not set, skipping dashboard tests"
 fi
