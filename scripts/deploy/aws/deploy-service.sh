@@ -119,8 +119,10 @@ else
             *) REPO_NAME="saleor-platform/${SERVICE}" ;;
         esac
         if ! image_exists_in_ecr "$REPO_NAME" "$SHA"; then
-            log_error "Image not found in ECR: ${IMAGE}"
-            exit 1
+            # Image wasn't built in this run (service had no code changes).
+            # Skip deploy — the service is already running its latest image.
+            log_info "Image not found for SHA ${SHA} — service was not rebuilt. Skipping deploy."
+            exit 0
         fi
         log_success "Image verified in ECR"
     fi
