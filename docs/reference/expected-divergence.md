@@ -1,6 +1,6 @@
 # Expected Terraform Divergence
 
-**Last Updated:** 2026-02-12
+**Last Updated:** 2026-02-14
 **Source:** Council analysis of AWS architecture drift
 
 This document catalogs **intentional drift** between Terraform state and AWS reality. Consult this before interpreting `terraform plan` output to distinguish expected changes from actual drift.
@@ -50,6 +50,51 @@ aws ecs describe-services \
 # Compare against Terraform
 terraform state show 'module.ecs.aws_ecs_task_definition.api'
 ```
+
+---
+
+## HTTPS Migration (2026-02-14)
+
+Staging now uses HTTPS with custom domain `*.staging.michaelbean.org`.
+
+### What Changed
+
+| Component | Before | After |
+|-----------|--------|-------|
+| Domain | ALB DNS name (HTTP only) | `staging.michaelbean.org` (HTTPS) |
+| ACM Certificate | None | Wildcard `*.staging.michaelbean.org` + apex |
+| ALB HTTP Listener | Forward to storefront (default) | 301 redirect to HTTPS |
+| ALB HTTPS Listener | None | Host-based routing on port 443 |
+| ALB Routing | Path-based on HTTP listener | Host-based on HTTPS listener |
+| Route53 Records | None | api, www, dashboard, apps, apex → ALB |
+
+### Routing Topology Change
+
+**Before (HTTP, path-based):**
+- `alb-dns:80/graphql/*` → API target group
+- `alb-dns:80/dashboard/*` → Dashboard target group
+- `alb-dns:80/apps/stripe/*` → Stripe target group
+- `alb-dns:80` (default) → Storefront target group
+
+**After (HTTPS, host-based):**
+- `api.staging.michaelbean.org:443/*` → API target group
+- `dashboard.staging.michaelbean.org:443/*` → Dashboard target group
+- `apps.staging.michaelbean.org:443/stripe/*` → Stripe target group
+- `staging.michaelbean.org:443` (default) → Storefront target group
+- Port 80 → 301 redirect to port 443
+
+### Terraform Control
+
+| Variable | Value | File |
+|----------|-------|------|
+| `enable_https` | `true` | `staging.tfvars` |
+| `create_acm_certificate` | `true` | `staging.tfvars` |
+| `route53_zone_id` | `Z04460563Q0BF3J4587VW` | `staging.tfvars` |
+| `domain_name` | `staging.michaelbean.org` | `staging.tfvars` |
+
+### Import Block Cleanup
+
+HTTP listener rules (`*_http[0]`) were removed from `imports.tf` — they were destroyed when `enable_https=true` was applied. HTTPS routing uses the HTTPS listener instead.
 
 ---
 

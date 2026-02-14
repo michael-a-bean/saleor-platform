@@ -114,17 +114,54 @@ docker compose up -d storefront
 # Should show: "LOCAL | API: localhost"
 ```
 
+### Testing with ALB Proxy (Staging Parity)
+
+The local Caddy proxy mimics staging ALB path-based routing:
+
+```bash
+# Start the proxy alongside your stack
+docker compose --profile proxy up -d proxy
+
+# Access everything via single entrypoint at http://localhost:8080
+# /graphql/* → api:8000
+# /dashboard/* → dashboard:80
+# /apps/stripe/* → stripe-app:3001
+# / (default) → storefront:3000
+```
+
+### Running Smoke Tests
+
+```bash
+make smoke-test          # Test local endpoints
+make smoke-test-staging  # Test staging endpoints (requires HTTPS)
+```
+
 ---
 
 ## Deploying to Staging
 
 ### Via CI/CD (Recommended)
 
-1. Create PR to `platform/main`
-2. CI runs validation
-3. Merge triggers deployment
-4. CI builds with staging URLs
-5. CI deploys to ECS
+1. Push or merge to `platform/main`
+2. CI detects changed services via `dorny/paths-filter`
+3. Only changed services are rebuilt (matrix builds in parallel)
+4. CI deploys core services and apps in parallel
+5. Smoke tests validate endpoints
+
+**Staging URLs (HTTPS):**
+- API: `https://api.staging.michaelbean.org`
+- Storefront: `https://staging.michaelbean.org`
+- Dashboard: `https://dashboard.staging.michaelbean.org`
+- Apps: `https://apps.staging.michaelbean.org/stripe/*`, etc.
+
+### Single-Service Deploy (Fast Iteration)
+
+For deploying a single service without full CI/CD (~5 min vs ~20 min):
+
+```bash
+./scripts/deploy/aws/deploy-single.sh staging storefront
+./scripts/deploy/aws/deploy-single.sh staging inventory-ops --skip-wait
+```
 
 ### Manual Deployment (Requires Validation)
 
@@ -137,7 +174,7 @@ cd infra/terraform
 terraform workspace select staging
 
 # 3. Apply infrastructure changes
-terraform apply
+terraform apply -var-file=environments/staging.tfvars
 ```
 
 ---
