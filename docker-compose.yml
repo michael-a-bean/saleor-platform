@@ -26,7 +26,7 @@ services:
       - SECRET_KEY=${SECRET_KEY:?SECRET_KEY is required}
       - DATABASE_URL=postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db/saleor
       - DASHBOARD_URL=http://localhost:9000/
-      - ALLOWED_HOSTS=localhost,127.0.0.1,api,stripe-app,inventory-ops-app,buylist-app,pos-app,host.docker.internal
+      - ALLOWED_HOSTS=localhost,127.0.0.1,api,stripe-app,inventory-ops-app,buylist-app,pos-app,mtg-import-app,host.docker.internal
       - HTTP_IP_FILTER_ENABLED=False
       - RSA_PRIVATE_KEY=${RSA_PRIVATE_KEY:-}
 
@@ -202,6 +202,8 @@ services:
       - APP_API_BASE_URL=http://inventory-ops-app:3002
       - APP_LOG_LEVEL=debug
       - DEFAULT_CURRENCY=USD
+      - MEILISEARCH_URL=http://meilisearch:7700
+      - MEILISEARCH_INDEX_PREFIX=
 
   # PostgreSQL database for Inventory Ops App
   inventory-ops-db:
@@ -291,9 +293,40 @@ services:
       - APP_API_BASE_URL=http://pos-app:3004
       - APP_LOG_LEVEL=debug
       - DEFAULT_CURRENCY=USD
+      - DEFAULT_TAX_RATE=0.1025
       # Stripe Terminal settings (Phase 2)
       # - STRIPE_SECRET_KEY=sk_test_...
       # - STRIPE_TERMINAL_LOCATION_ID=tml_...
+
+  # MTG Import App - bulk card import from Scryfall
+  mtg-import-app:
+    build:
+      context: ./saleor-apps
+      dockerfile: apps/mtg-import/Dockerfile
+    ports:
+      - 3005:3005
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    extra_hosts:
+      - "localhost:host-gateway"
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - api
+      - inventory-ops-db
+    volumes:
+      - mtg-import-apl:/app/apps/mtg-import/data
+    environment:
+      - SECRET_KEY=${MTG_IMPORT_SECRET_KEY:-a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2}
+      - DATABASE_URL=${INVENTORY_DATABASE_URL:?INVENTORY_DATABASE_URL is required}
+      - ALLOWED_DOMAIN_PATTERN=/.*/
+      - APP_IFRAME_BASE_URL=http://localhost:3005
+      - APP_API_BASE_URL=http://mtg-import-app:3005
+      - APP_LOG_LEVEL=debug
+      - DEFAULT_CURRENCY=USD
+      - SCRYFALL_API_BASE_URL=https://api.scryfall.com
+      - SCRYFALL_RATE_LIMIT_MS=100
+      - SCRYFALL_CONTACT_EMAIL=${SCRYFALL_CONTACT_EMAIL:-dev@localhost.local}
 
   # Meilisearch - fast search engine for singles-builder
   meilisearch:
@@ -378,6 +411,8 @@ volumes:
   buylist-apl:
     driver: local
   pos-apl:
+    driver: local
+  mtg-import-apl:
     driver: local
   meilisearch-data:
     driver: local
