@@ -144,8 +144,8 @@ jobs:
             change_key: storefront
             build_args_extra: |
               NEXT_PUBLIC_BUILD_ENV=staging
-              NEXT_PUBLIC_SALEOR_API_URL=$STAGING_API_URL/graphql/
-              NEXT_PUBLIC_STOREFRONT_URL=$STAGING_STOREFRONT_URL
+              NEXT_PUBLIC_SALEOR_API_URL=${{ vars.STAGING_API_URL }}/graphql/
+              NEXT_PUBLIC_STOREFRONT_URL=${{ vars.STAGING_STOREFRONT_URL }}
               NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
           - service: stripe-app
             image_name: saleor-platform/stripe-app
