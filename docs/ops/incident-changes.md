@@ -41,6 +41,54 @@ aws ec2 create-vpc --cidr-block 10.0.0.0/16
 
 ## Change History
 
+### 2026-02-14 - Staging HTTPS Migration
+
+**Incident:** Planned migration (not incident response)
+**Responder:** Michael + PAI
+**Time:** 2026-02-14
+
+**Changes Made:**
+```bash
+# Terraform applied: ACM cert, HTTPS listener, Route53 records, ALB routing
+terraform apply -var-file=environments/staging.tfvars
+
+# Force-deployed all ECS services to pick up new HTTPS URLs in task definitions
+for svc in api worker storefront stripe inventory-ops buylist pos; do
+  aws ecs update-service --cluster saleor-platform-staging --service "$svc" \
+    --task-definition <latest-revision> --force-new-deployment
+done
+
+# Updated GitHub Actions variables
+gh variable set STAGING_API_URL -b "https://api.staging.michaelbean.org"
+gh variable set STAGING_STOREFRONT_URL -b "https://staging.michaelbean.org"
+gh variable set STAGING_DASHBOARD_URL -b "https://dashboard.staging.michaelbean.org"
+```
+
+**Resources Created:**
+- ACM Certificate: `arn:aws:acm:us-west-1:546464732019:certificate/137b4f10-1fdc-4e47-9ff9-66f7afcbe0a2`
+- HTTPS Listener on ALB (port 443)
+- 7 HTTPS listener rules (host-based routing)
+- 6 Route53 A records (api, www, dashboard, apps, apex + ACM validation CNAMEs)
+
+**Resources Modified:**
+- HTTP Listener: changed from forward to 301 redirect to HTTPS
+- RDS: downsized from db.t3.medium to db.t3.small
+- All ECS task definitions: updated environment variables with HTTPS URLs
+
+**Resources Destroyed:**
+- 7 HTTP listener rules (replaced by HTTPS host-based rules)
+
+**Terraform Reconciliation Status:**
+- [x] All changes via Terraform (no manual AWS CLI)
+- [x] Stale import blocks removed from `imports.tf`
+- [x] Terraform plan shows no unexpected drift
+- [x] Documentation updated (`expected-divergence.md`, `local-staging-workflow.md`)
+
+**Notes:**
+First apply failed with `UnsupportedCertificate` error — ACM cert had just been created and wasn't propagated. Also had stale `_http[0]` import blocks referencing destroyed resources. Both fixed in second apply.
+
+---
+
 ### 2026-01-27 - VPC Alignment Reconciliation
 
 **Incident:** VPC drift discovered - Terraform state pointed to wrong VPC
