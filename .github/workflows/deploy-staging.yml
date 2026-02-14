@@ -1,6 +1,11 @@
 # Deploy to Staging
 # Triggers on merge to platform/main or manual dispatch
-# Builds images, runs migrations, deploys ECS services, runs smoke tests
+# Builds ONLY changed images, runs migrations, deploys services in parallel
+#
+# Optimizations (2026-02-13):
+# - Selective builds: skip unchanged services via path detection
+# - Matrix builds: parallel image builds across separate runners
+# - Parallel deploys: apps deploy alongside core (only need API, not storefront)
 
 name: Deploy to Staging
 
@@ -8,6 +13,12 @@ on:
   push:
     branches: [platform/main]
   workflow_dispatch:
+    inputs:
+      force_all:
+        description: 'Force rebuild all images (ignore change detection)'
+        required: false
+        default: 'false'
+        type: boolean
 
 concurrency:
   group: deploy-staging
@@ -24,19 +35,76 @@ env:
 
 jobs:
   # ==========================================================================
-  # Build and Push Images
+  # Detect Changes (skip unchanged services)
   # ==========================================================================
-  build:
-    name: Build & Push Images
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      storefront: ${{ steps.filter.outputs.storefront }}
+      stripe: ${{ steps.filter.outputs.stripe }}
+      inventory-ops: ${{ steps.filter.outputs.inventory-ops }}
+      buylist: ${{ steps.filter.outputs.buylist }}
+      pos: ${{ steps.filter.outputs.pos }}
+      mtg-import: ${{ steps.filter.outputs.mtg-import }}
+      any_app: ${{ steps.filter.outputs.stripe == 'true' || steps.filter.outputs.inventory-ops == 'true' || steps.filter.outputs.buylist == 'true' || steps.filter.outputs.pos == 'true' || steps.filter.outputs.mtg-import == 'true' }}
+      any_changed: ${{ steps.check.outputs.any_changed }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULES_TOKEN }}
+          fetch-depth: 0  # Needed for change detection
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            storefront:
+              - 'storefront/**'
+            stripe:
+              - 'saleor-apps/apps/stripe/**'
+              - 'saleor-apps/packages/**'
+            inventory-ops:
+              - 'saleor-apps/apps/inventory-ops/**'
+              - 'saleor-apps/packages/**'
+            buylist:
+              - 'saleor-apps/apps/buylist/**'
+              - 'saleor-apps/packages/**'
+            pos:
+              - 'saleor-apps/apps/pos/**'
+              - 'saleor-apps/packages/**'
+            mtg-import:
+              - 'saleor-apps/apps/mtg-import/**'
+              - 'saleor-apps/packages/**'
+
+      - name: Check if any service changed
+        id: check
+        run: |
+          if [[ "${{ inputs.force_all }}" == "true" ]] || \
+             [[ "${{ steps.filter.outputs.storefront }}" == "true" ]] || \
+             [[ "${{ steps.filter.outputs.stripe }}" == "true" ]] || \
+             [[ "${{ steps.filter.outputs.inventory-ops }}" == "true" ]] || \
+             [[ "${{ steps.filter.outputs.buylist }}" == "true" ]] || \
+             [[ "${{ steps.filter.outputs.pos }}" == "true" ]] || \
+             [[ "${{ steps.filter.outputs.mtg-import }}" == "true" ]]; then
+            echo "any_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "any_changed=false" >> $GITHUB_OUTPUT
+            echo "::notice::No service files changed. Skipping build and deploy."
+          fi
+
+  # ==========================================================================
+  # Validate Environment
+  # ==========================================================================
+  validate:
+    name: Validate Environment
     runs-on: ubuntu-latest
     outputs:
       sha_short: ${{ steps.vars.outputs.sha_short }}
-      storefront_image: ${{ steps.build.outputs.storefront_image }}
-      stripe_app_image: ${{ steps.build.outputs.stripe_app_image }}
-      inventory_ops_app_image: ${{ steps.build.outputs.inventory_ops_app_image }}
-      buylist_app_image: ${{ steps.build.outputs.buylist_app_image }}
-      pos_app_image: ${{ steps.build.outputs.pos_app_image }}
-      mtg_import_app_image: ${{ steps.build.outputs.mtg_import_app_image }}
 
     steps:
       - name: Checkout
@@ -47,137 +115,139 @@ jobs:
 
       - name: Validate environment configuration
         run: |
-          # Run pre-deploy validation to catch localhost contamination
           SALEOR_ENVIRONMENT=staging ./scripts/validate-environment.sh pre-deploy || {
             echo "::error::Environment validation failed. Check for localhost URLs or other issues."
             exit 1
           }
         env:
-          # Skip database checks in CI (no direct DB access)
           SKIP_DB_CHECKS: "true"
 
       - name: Set variables
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
+  # ==========================================================================
+  # Build and Push Images (parallel matrix — only changed services)
+  # ==========================================================================
+  build:
+    name: Build ${{ matrix.service }}
+    needs: [changes, validate]
+    if: needs.changes.outputs.any_changed == 'true' || inputs.force_all == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: storefront
+            image_name: saleor-platform/storefront
+            context: ./storefront
+            dockerfile: ./storefront/Dockerfile
+            change_key: storefront
+            build_args_extra: |
+              NEXT_PUBLIC_BUILD_ENV=staging
+              NEXT_PUBLIC_SALEOR_API_URL=$STAGING_API_URL/graphql/
+              NEXT_PUBLIC_STOREFRONT_URL=$STAGING_STOREFRONT_URL
+              NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
+          - service: stripe-app
+            image_name: saleor-platform/stripe-app
+            context: ./saleor-apps
+            dockerfile: ./saleor-apps/apps/stripe/Dockerfile
+            change_key: stripe
+            build_args_extra: |
+              BASE_PATH=/apps/stripe
+          - service: inventory-ops-app
+            image_name: saleor-platform/inventory-ops-app
+            context: ./saleor-apps
+            dockerfile: ./saleor-apps/apps/inventory-ops/Dockerfile
+            change_key: inventory-ops
+            build_args_extra: |
+              BASE_PATH=/apps/inventory
+          - service: buylist-app
+            image_name: saleor-platform/buylist-app
+            context: ./saleor-apps
+            dockerfile: ./saleor-apps/apps/buylist/Dockerfile
+            change_key: buylist
+            build_args_extra: |
+              BASE_PATH=/apps/buylist
+          - service: pos-app
+            image_name: saleor-platform/pos-app
+            context: ./saleor-apps
+            dockerfile: ./saleor-apps/apps/pos/Dockerfile
+            change_key: pos
+            build_args_extra: |
+              BASE_PATH=/apps/pos
+          - service: mtg-import-app
+            image_name: saleor-platform/mtg-import-app
+            context: ./saleor-apps
+            dockerfile: ./saleor-apps/apps/mtg-import/Dockerfile
+            change_key: mtg-import
+            build_args_extra: |
+              BASE_PATH=/apps/mtg-import
+      fail-fast: false
+
+    outputs:
+      sha_short: ${{ needs.validate.outputs.sha_short }}
+
+    steps:
+      - name: Check if service changed
+        id: should-build
+        run: |
+          CHANGED="${{ needs.changes.outputs[matrix.change_key] }}"
+          FORCE="${{ inputs.force_all }}"
+          if [[ "$CHANGED" == "true" ]] || [[ "$FORCE" == "true" ]]; then
+            echo "build=true" >> $GITHUB_OUTPUT
+            echo "Building ${{ matrix.service }} (changed=$CHANGED, force=$FORCE)"
+          else
+            echo "build=false" >> $GITHUB_OUTPUT
+            echo "::notice::Skipping ${{ matrix.service }} — no changes detected"
+          fi
+
+      - name: Checkout
+        if: steps.should-build.outputs.build == 'true'
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULES_TOKEN }}
+
       - name: Configure AWS credentials
+        if: steps.should-build.outputs.build == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/saleor-platform-staging-github-actions-deploy
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
+        if: steps.should-build.outputs.build == 'true'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up Docker Buildx
+        if: steps.should-build.outputs.build == 'true'
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push storefront
-        id: build-storefront
+      - name: Build and push ${{ matrix.service }}
+        if: steps.should-build.outputs.build == 'true'
         uses: docker/build-push-action@v6
         with:
-          context: ./storefront
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: true
-          build-args: |
-            NEXT_PUBLIC_BUILD_ENV=staging
-            NEXT_PUBLIC_SALEOR_API_URL=${{ vars.STAGING_API_URL }}/graphql/
-            NEXT_PUBLIC_STOREFRONT_URL=${{ vars.STAGING_STOREFRONT_URL }}
-            NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
+          build-args: ${{ matrix.build_args_extra }}
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/storefront:${{ steps.vars.outputs.sha_short }}
-            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/storefront:staging-latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push stripe-app
-        uses: docker/build-push-action@v6
-        with:
-          context: ./saleor-apps
-          file: ./saleor-apps/apps/stripe/Dockerfile
-          push: true
-          build-args: |
-            BASE_PATH=/apps/stripe
-          tags: |
-            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/stripe-app:${{ steps.vars.outputs.sha_short }}
-            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/stripe-app:staging-latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push inventory-ops-app
-        uses: docker/build-push-action@v6
-        with:
-          context: ./saleor-apps
-          file: ./saleor-apps/apps/inventory-ops/Dockerfile
-          push: true
-          build-args: |
-            BASE_PATH=/apps/inventory
-          tags: |
-            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/inventory-ops-app:${{ steps.vars.outputs.sha_short }}
-            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/inventory-ops-app:staging-latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push buylist-app
-        uses: docker/build-push-action@v6
-        with:
-          context: ./saleor-apps
-          file: ./saleor-apps/apps/buylist/Dockerfile
-          push: true
-          build-args: |
-            BASE_PATH=/apps/buylist
-          tags: |
-            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/buylist-app:${{ steps.vars.outputs.sha_short }}
-            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/buylist-app:staging-latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push pos-app
-        uses: docker/build-push-action@v6
-        with:
-          context: ./saleor-apps
-          file: ./saleor-apps/apps/pos/Dockerfile
-          push: true
-          build-args: |
-            BASE_PATH=/apps/pos
-          tags: |
-            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/pos-app:${{ steps.vars.outputs.sha_short }}
-            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/pos-app:staging-latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push mtg-import-app
-        uses: docker/build-push-action@v6
-        with:
-          context: ./saleor-apps
-          file: ./saleor-apps/apps/mtg-import/Dockerfile
-          push: true
-          build-args: |
-            BASE_PATH=/apps/mtg-import
-          tags: |
-            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/mtg-import-app:${{ steps.vars.outputs.sha_short }}
-            ${{ steps.login-ecr.outputs.registry }}/saleor-platform/mtg-import-app:staging-latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Set output images
-        id: build
-        run: |
-          ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
-          SHA="${{ steps.vars.outputs.sha_short }}"
-          echo "storefront_image=${ECR_REGISTRY}/saleor-platform/storefront:${SHA}" >> $GITHUB_OUTPUT
-          echo "stripe_app_image=${ECR_REGISTRY}/saleor-platform/stripe-app:${SHA}" >> $GITHUB_OUTPUT
-          echo "inventory_ops_app_image=${ECR_REGISTRY}/saleor-platform/inventory-ops-app:${SHA}" >> $GITHUB_OUTPUT
-          echo "buylist_app_image=${ECR_REGISTRY}/saleor-platform/buylist-app:${SHA}" >> $GITHUB_OUTPUT
-          echo "pos_app_image=${ECR_REGISTRY}/saleor-platform/pos-app:${SHA}" >> $GITHUB_OUTPUT
-          echo "mtg_import_app_image=${ECR_REGISTRY}/saleor-platform/mtg-import-app:${SHA}" >> $GITHUB_OUTPUT
+            ${{ steps.login-ecr.outputs.registry }}/${{ matrix.image_name }}:${{ needs.validate.outputs.sha_short }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ matrix.image_name }}:staging-latest
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
+        env:
+          STAGING_API_URL: ${{ vars.STAGING_API_URL }}
+          STAGING_STOREFRONT_URL: ${{ vars.STAGING_STOREFRONT_URL }}
 
   # ==========================================================================
   # Run Migrations
   # ==========================================================================
   migrate:
     name: Run Migrations
-    needs: build
+    needs: [validate, build]
+    if: always() && needs.validate.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped')
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -194,12 +264,7 @@ jobs:
 
       # STAGING SNAPSHOT POLICY:
       # Staging snapshots are BEST-EFFORT and NON-BLOCKING.
-      # We initiate a snapshot but do NOT wait for completion because:
-      # 1. Staging data is less critical than production
-      # 2. Faster deployment cycle is prioritized
-      # 3. Automated daily snapshots provide additional safety net
       # The snapshot will complete in the background during deployment.
-      # For production, see deploy-production.yml which requires verified snapshots.
       - name: Create pre-migration RDS snapshot (async, best-effort)
         run: |
           TIMESTAMP=$(date +%Y%m%d-%H%M%S)
@@ -209,13 +274,12 @@ jobs:
             --db-instance-identifier saleor-platform-staging-saleor \
             --db-snapshot-identifier "${SNAPSHOT_ID}" || true
           echo "Snapshot creation initiated (async - not waiting for completion)"
-          echo "Note: Snapshot will complete in background. This is intentional for staging."
 
       - name: Run Django migrations
         run: |
           ./scripts/deploy/aws/run-migrations.sh staging django
         env:
-          SHA: ${{ needs.build.outputs.sha_short }}
+          SHA: ${{ needs.validate.outputs.sha_short }}
           ECS_TASK_SUBNETS: ${{ vars.STAGING_ECS_TASK_SUBNETS }}
           ECS_TASK_SECURITY_GROUPS: ${{ vars.STAGING_ECS_TASK_SECURITY_GROUPS }}
 
@@ -223,7 +287,7 @@ jobs:
         run: |
           ./scripts/deploy/aws/run-migrations.sh staging prisma inventory-ops
         env:
-          SHA: ${{ needs.build.outputs.sha_short }}
+          SHA: ${{ needs.validate.outputs.sha_short }}
           ECS_TASK_SUBNETS: ${{ vars.STAGING_ECS_TASK_SUBNETS }}
           ECS_TASK_SECURITY_GROUPS: ${{ vars.STAGING_ECS_TASK_SECURITY_GROUPS }}
 
@@ -231,16 +295,17 @@ jobs:
         run: |
           ./scripts/deploy/aws/run-migrations.sh staging prisma mtg-import
         env:
-          SHA: ${{ needs.build.outputs.sha_short }}
+          SHA: ${{ needs.validate.outputs.sha_short }}
           ECS_TASK_SUBNETS: ${{ vars.STAGING_ECS_TASK_SUBNETS }}
           ECS_TASK_SECURITY_GROUPS: ${{ vars.STAGING_ECS_TASK_SECURITY_GROUPS }}
 
   # ==========================================================================
-  # Deploy Services
+  # Deploy Core Services (api, worker, storefront, dashboard)
   # ==========================================================================
   deploy:
-    name: Deploy Services
-    needs: [build, migrate]
+    name: Deploy ${{ matrix.service }}
+    needs: [validate, build, migrate]
+    if: always() && needs.migrate.result == 'success'
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -261,11 +326,10 @@ jobs:
 
       - name: Deploy ${{ matrix.service }}
         run: |
-          ./scripts/deploy/aws/deploy-service.sh staging ${{ matrix.service }} ${{ needs.build.outputs.sha_short }}
-        env:
-          STOREFRONT_IMAGE: ${{ needs.build.outputs.storefront_image }}
+          ./scripts/deploy/aws/deploy-service.sh staging ${{ matrix.service }} ${{ needs.validate.outputs.sha_short }}
 
       - name: Wait for service stability
+        if: matrix.service != 'dashboard'  # Skip if dashboard is scaled to 0
         run: |
           echo "Waiting for ${{ matrix.service }} to reach steady state..."
           aws ecs wait services-stable \
@@ -275,19 +339,18 @@ jobs:
           echo "Service ${{ matrix.service }} is stable"
 
   # ==========================================================================
-  # Deploy Apps
-  # NOTE: App services are created by Terraform. If services don't exist,
-  # deployment is skipped with a warning (not a failure).
+  # Deploy Apps (runs in PARALLEL with core — only needs migrations done)
+  # Apps depend on API being available, not on storefront/dashboard.
   # ==========================================================================
   deploy-apps:
-    name: Deploy Apps
-    needs: [build, migrate, deploy]
+    name: Deploy ${{ matrix.app }}
+    needs: [validate, build, migrate]
+    if: always() && needs.migrate.result == 'success'
     runs-on: ubuntu-latest
     environment:
       name: staging
     strategy:
       matrix:
-        # Map app names to their ECS service names
         include:
           - app: stripe
             service: stripe
@@ -322,19 +385,12 @@ jobs:
           echo "status=${SERVICE_STATUS}" >> $GITHUB_OUTPUT
           if [[ "$SERVICE_STATUS" != "ACTIVE" ]]; then
             echo "::warning::Service '${{ matrix.service }}' does not exist or is not active. Skipping deployment."
-            echo "::warning::Run 'terraform apply' to create the ECS infrastructure for apps."
           fi
 
       - name: Deploy ${{ matrix.app }}
         if: steps.check-service.outputs.status == 'ACTIVE'
         run: |
-          ./scripts/deploy/aws/deploy-service.sh staging ${{ matrix.service }} ${{ needs.build.outputs.sha_short }}
-        env:
-          STRIPE_APP_IMAGE: ${{ needs.build.outputs.stripe_app_image }}
-          INVENTORY_OPS_APP_IMAGE: ${{ needs.build.outputs.inventory_ops_app_image }}
-          BUYLIST_APP_IMAGE: ${{ needs.build.outputs.buylist_app_image }}
-          POS_APP_IMAGE: ${{ needs.build.outputs.pos_app_image }}
-          MTG_IMPORT_APP_IMAGE: ${{ needs.build.outputs.mtg_import_app_image }}
+          ./scripts/deploy/aws/deploy-service.sh staging ${{ matrix.service }} ${{ needs.validate.outputs.sha_short }}
 
       - name: Wait for service stability
         if: steps.check-service.outputs.status == 'ACTIVE'
@@ -352,6 +408,7 @@ jobs:
   validate-urls:
     name: Validate URLs
     needs: [deploy, deploy-apps]
+    if: always() && (needs.deploy.result == 'success' || needs.deploy-apps.result == 'success')
     runs-on: ubuntu-latest
 
     steps:
@@ -370,7 +427,8 @@ jobs:
   # ==========================================================================
   smoke-test:
     name: Smoke Tests
-    needs: [validate-urls]
+    needs: [validate, validate-urls]
+    if: always() && needs.validate-urls.result == 'success'
     runs-on: ubuntu-latest
 
     steps:
@@ -394,7 +452,7 @@ jobs:
         run: |
           echo "## Staging Deployment Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit**: ${{ needs.build.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ needs.validate.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
           echo "- **API**: ${{ vars.STAGING_API_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Storefront**: ${{ vars.STAGING_STOREFRONT_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Dashboard**: ${{ vars.STAGING_DASHBOARD_URL }}" >> $GITHUB_STEP_SUMMARY

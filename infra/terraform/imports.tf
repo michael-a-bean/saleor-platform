@@ -89,38 +89,13 @@ import {
 }
 
 # =============================================================================
-# ALB Listener Rules (HTTP) - Added 2026-01-27
+# ALB Listener Rules (HTTP) - REMOVED 2026-02-14
 # =============================================================================
-# Note: These are HTTP rules (count[0] = certificate_arn == "")
-import {
-  to = module.alb.aws_lb_listener_rule.api_http[0]
-  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/35868051d5fa042e"
-}
-
-import {
-  to = module.alb.aws_lb_listener_rule.dashboard_http[0]
-  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/d581cabdc86df6c6"
-}
-
-import {
-  to = module.alb.aws_lb_listener_rule.stripe_app_http[0]
-  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/1e018d58eace6ab4"
-}
-
-import {
-  to = module.alb.aws_lb_listener_rule.inventory_ops_app_http[0]
-  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/a5623eb88a8384ab"
-}
-
-import {
-  to = module.alb.aws_lb_listener_rule.buylist_app_http[0]
-  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/3dac97da295ebca1"
-}
-
-import {
-  to = module.alb.aws_lb_listener_rule.pos_app_http[0]
-  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/117520dd16ff43b1"
-}
+# These HTTP rules were destroyed when enable_https=true was applied.
+# HTTPS mode uses host-based routing on the HTTPS listener instead.
+# Kept as comments for historical reference.
+# Previously imported: api_http, dashboard_http, stripe_app_http,
+#   inventory_ops_app_http, buylist_app_http, pos_app_http
 
 # =============================================================================
 # CloudFront - Added 2026-01-27 after drift analysis
@@ -614,10 +589,7 @@ import {
   id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:targetgroup/saleor-platform-staging-mtg-imp/a7cee7de4721f945"
 }
 
-import {
-  to = module.alb.aws_lb_listener_rule.mtg_import_app_http[0]
-  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/a54dae16dc050f2c/078a4b3a3ba343ee"
-}
+# mtg_import_app_http[0] removed 2026-02-14 — destroyed with enable_https=true
 
 import {
   to = module.ecs.aws_ecs_task_definition.apps["mtg-import"]

@@ -29,7 +29,11 @@ fi
 # =============================================================================
 
 # Get URLs from environment variables
-if [[ "$ENV" == "staging" ]]; then
+if [[ "$ENV" == "local" ]]; then
+    API_URL="${LOCAL_API_URL:-http://localhost:8000}"
+    STOREFRONT_URL="${LOCAL_STOREFRONT_URL:-http://localhost:3000}"
+    DASHBOARD_URL="${LOCAL_DASHBOARD_URL:-http://localhost:9000}"
+elif [[ "$ENV" == "staging" ]]; then
     API_URL="${STAGING_API_URL:-}"
     STOREFRONT_URL="${STAGING_STOREFRONT_URL:-}"
     DASHBOARD_URL="${STAGING_DASHBOARD_URL:-}"
@@ -38,7 +42,7 @@ elif [[ "$ENV" == "production" ]]; then
     STOREFRONT_URL="${PRODUCTION_STOREFRONT_URL:-}"
     DASHBOARD_URL="${PRODUCTION_DASHBOARD_URL:-}"
 else
-    log_error "Environment must be 'staging' or 'production'"
+    log_error "Environment must be 'local', 'staging', or 'production'"
     exit 1
 fi
 

@@ -4,44 +4,32 @@
 environment = "staging"
 aws_region  = "us-west-1"
 
-# Domain (placeholder - not actively used when public_*_base_url overrides are set)
-# This value is only used for host-based ALB routing when a certificate is configured.
-# Since staging uses ALB DNS directly with path-based routing, this is effectively ignored.
-domain_name = "staging.saleor-platform.internal"
+# Domain: staging subdomain of michaelbean.org
+# ACM wildcard cert (*.staging.michaelbean.org) + Route53 records created by Terraform
+# Host-based ALB routing: api.staging.michaelbean.org, staging.michaelbean.org, etc.
+domain_name = "staging.michaelbean.org"
 
 # =============================================================================
-# Public URL Configuration (TWO-PHASE DEPLOYMENT)
+# HTTPS Configuration (2026-02-13)
 # =============================================================================
+# Custom domain with ACM certificate enables:
+# - HTTPS ALB listener (port 443) with TLS 1.3
+# - HTTP → HTTPS redirect on port 80
+# - Host-based routing (api.staging.*, dashboard.staging.*, apps.staging.*)
+# - Storefront CSP HTTPS upgrade
 #
-# IMPORTANT: Staging uses ALB DNS directly since custom domain DNS is not configured.
-# This requires a two-phase deployment:
+# This eliminates the HTTP/HTTPS parity gap between staging and production.
 #
-# PHASE 1 (First Deploy):
-#   1. Run: terraform apply -var-file=environments/staging.tfvars
-#   2. Note the ALB DNS from output: terraform output alb_dns_name
-#   3. Services will start but may have connectivity issues until Phase 2
-#
-# PHASE 2 (Configure URLs):
-#   1. Uncomment and set the public_*_base_url variables below with the ALB DNS
-#   2. Update GitHub Actions variables (STAGING_API_URL, STAGING_STOREFRONT_URL)
-#   3. Run: terraform apply -var-file=environments/staging.tfvars
-#   4. Redeploy services to pick up correct URLs
-#
-# Once custom domain is configured with DNS and TLS:
-#   - Set create_acm_certificate = true
-#   - Set route53_zone_id to your hosted zone ID
-#   - Remove the public_*_base_url overrides (will use domain_name)
-#   - Set use_https_urls = true
-#
-use_https_urls = false
+use_https_urls = true
 
-# Disable HTTPS upgrade in storefront CSP since ALB is HTTP-only
-enable_https = false
+# Enable HTTPS upgrade in storefront CSP
+enable_https = true
 
-# PHASE 2 ACTIVATED: ALB DNS URLs configured (2026-01-22 - VPC migration)
-public_api_base_url        = "http://saleor-platform-staging-alb-1516106871.us-west-1.elb.amazonaws.com"
-public_storefront_base_url = "http://saleor-platform-staging-alb-1516106871.us-west-1.elb.amazonaws.com"
-public_dashboard_base_url  = "http://saleor-platform-staging-alb-1516106871.us-west-1.elb.amazonaws.com/dashboard"
+# Public URL overrides removed — Terraform derives URLs from domain_name:
+#   API:        https://api.staging.michaelbean.org
+#   Storefront: https://staging.michaelbean.org
+#   Dashboard:  https://dashboard.staging.michaelbean.org
+#   Apps:       https://apps.staging.michaelbean.org/stripe, /inventory, etc.
 
 # =============================================================================
 # VPC
@@ -106,9 +94,9 @@ github_org    = "michael-a-bean"
 github_repo   = "saleor-platform"
 github_branch = "platform/main"
 
-# DNS (disabled for staging - using ALB defaults)
-create_acm_certificate = false
-route53_zone_id        = ""
+# DNS: Route53 hosted zone for michaelbean.org
+create_acm_certificate = true
+route53_zone_id        = "Z04460563Q0BF3J4587VW"
 
 # ECR
 # MUTABLE allows CI/CD to overwrite tags like 'staging-latest' on each deploy

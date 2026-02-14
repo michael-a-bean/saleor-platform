@@ -4,8 +4,8 @@
 environment = "production"
 aws_region  = "us-west-2"
 
-# Domain (update this)
-domain_name = "example.com"
+# Domain: production uses root domain
+domain_name = "michaelbean.org"
 
 # VPC (create new or use existing)
 create_vpc         = true
@@ -46,14 +46,14 @@ storefront_memory        = 1024
 saleor_api_image       = "ghcr.io/saleor/saleor:3.22.26"           # Replace with @sha256:... in production
 saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.21.18" # Replace with @sha256:...
 
-# GitHub (update these)
-github_org    = "YOUR_GITHUB_ORG"
+# GitHub
+github_org    = "michael-a-bean"
 github_repo   = "saleor-platform"
 github_branch = "platform/main"
 
-# DNS
+# DNS: Route53 hosted zone for michaelbean.org
 create_acm_certificate = true
-route53_zone_id        = "" # Set this if using Route53
+route53_zone_id        = "Z04460563Q0BF3J4587VW"
 
 # ECR
 # IMMUTABLE prevents overwriting tags - use unique SHA-based tags for production artifact integrity

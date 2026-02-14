@@ -280,3 +280,23 @@ deploy-staging: validate-env-strict
 	@echo "Deploying to staging..."
 	@echo "TODO: Add actual deployment commands"
 	@echo "Example: cd infra/terraform && terraform workspace select staging && terraform apply"
+
+# =============================================================================
+# Smoke Tests
+# =============================================================================
+
+.PHONY: smoke-test smoke-test-local
+
+# Run smoke tests against local environment
+# Requires: docker compose services running (api, storefront, dashboard)
+smoke-test-local:
+	@echo "Running smoke tests against local environment..."
+	@./scripts/deploy/aws/smoke-test.sh local
+
+# Run smoke tests against staging
+smoke-test-staging:
+	@echo "Running smoke tests against staging..."
+	@./scripts/deploy/aws/smoke-test.sh staging
+
+# Alias
+smoke-test: smoke-test-local
