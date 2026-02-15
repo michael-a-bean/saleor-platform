@@ -1,42 +1,18 @@
-# Local Issue Tracking
+# Issue Tracking
 
-This directory contains issue files for tracking work when GitHub Issues is disabled.
+**GitHub Issues is now the single source of truth for all issue tracking.**
 
-## Current Issues
+https://github.com/michael-a-bean/saleor-platform/issues
 
-| # | Priority | Title | Status |
-|---|----------|-------|--------|
-| 001 | P1 | Square Terminal Device Pairing UI | Open |
-| 002 | P2 | POS Discount UI | Open |
+## Migration (Feb 14, 2026)
 
-## Issue Lifecycle
+All open items from this directory and `docs/ops/issues/` have been migrated to GitHub Issues:
 
-1. **Open** - Ready for work
-2. **In Progress** - Being actively worked
-3. **Closed** - Completed or abandoned
+| Local File | GitHub Issue | Status |
+|------------|-------------|--------|
+| 001-square-terminal-device-pairing-ui.md | [#5](https://github.com/michael-a-bean/saleor-platform/issues/5) | **Closed** — fully implemented (validated 2026-02-15) |
+| 002-pos-discount-ui.md | [#6](https://github.com/michael-a-bean/saleor-platform/issues/6) | Open — updated: manual discounts done, Saleor voucher integration missing |
 
-## Creating New Issues
+## Legacy Files
 
-Use sequential numbering: `003-descriptive-name.md`
-
-Template:
-```markdown
-# Issue #NNN: Title
-
-**Priority**: P0/P1/P2/P3
-**Created**: YYYY-MM-DD
-**Status**: Open
-**Labels**: comma, separated
-
----
-
-## Summary
-[Brief description]
-
-## Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-## Context
-[Background, related work, etc.]
-```
+The `.md` files in this directory are retained for historical context only. Do not create new issues here — use GitHub Issues instead.
