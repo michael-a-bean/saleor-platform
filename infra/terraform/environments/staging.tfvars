@@ -74,8 +74,8 @@ worker_desired_count     = 1
 worker_cpu               = 256  # Right-sized: 4.2 CPU units avg of 512 provisioned (0.8%)
 worker_memory            = 1024
 storefront_desired_count = 1
-storefront_cpu           = 256
-storefront_memory        = 512
+storefront_cpu           = 512   # Doubled: 0.25→0.5 vCPU for faster SSR
+storefront_memory        = 1024  # Doubled: headroom for Next.js data cache
 dashboard_desired_count  = 0    # Scale to 0: 0% CPU, 3MB memory. Scale up when needed.
 
 # Images (pin by digest in production, use tags in staging)

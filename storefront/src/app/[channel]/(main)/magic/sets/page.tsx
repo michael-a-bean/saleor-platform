@@ -4,7 +4,7 @@ import { getAllSets } from "@/lib/filters";
 import { Breadcrumb } from "@/ui/components/Breadcrumb";
 import { MagicSubNav } from "@/ui/components/MagicSubNav";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
 	title: "Magic: The Gathering Sets",

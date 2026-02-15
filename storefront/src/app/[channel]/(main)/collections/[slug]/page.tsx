@@ -23,7 +23,7 @@ export const generateMetadata = async (
 	};
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function Page(props: { params: Promise<{ slug: string; channel: string }> }) {
 	const params = await props.params;

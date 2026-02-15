@@ -5,8 +5,8 @@ import { SearchIcon, Package, Sparkles, Users, Calendar } from "lucide-react";
 import { ProductList } from "@/ui/components/ProductList";
 import { getLatestSets, getTrendingProducts } from "@/lib/filters";
 
-// Force dynamic rendering for pages with dynamic nav components
-export const dynamic = "force-dynamic";
+// ISR: serve cached page, revalidate in background every 60s
+export const revalidate = 60;
 
 export const metadata = {
 	title: "Shuffle and Cut Games - Magic: The Gathering & More",

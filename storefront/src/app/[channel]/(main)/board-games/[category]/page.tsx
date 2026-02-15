@@ -7,7 +7,7 @@ import { BoardGamesSubNav } from "@/ui/components/BoardGamesSubNav";
 import { ProductList } from "@/ui/components/ProductList";
 import { Clock, ArrowLeft } from "lucide-react";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 // Same categories as in board-games/page.tsx for consistency
 const BOARDGAME_CATEGORIES = [

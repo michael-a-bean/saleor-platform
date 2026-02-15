@@ -62,10 +62,14 @@ function getSecurityHeaders(): Record<string, string> {
   };
 }
 
+// Paths that must not be browser-cached (auth, transactional, interactive)
+const DYNAMIC_PATHS = ["/checkout", "/login", "/orders", "/cart", "/singles-builder"];
+
 /**
- * Middleware for security headers and route protection.
+ * Middleware for security headers, caching, and route protection.
  *
  * - Applies CSP and security headers to all routes
+ * - Sets Cache-Control on cacheable catalog pages
  * - Protects /singles-builder/* routes (staff check in layout)
  */
 export function middleware(request: NextRequest) {
@@ -78,10 +82,10 @@ export function middleware(request: NextRequest) {
     response.headers.set(key, value);
   });
 
-  // Singles-builder routes require staff auth (handled in layout)
-  if (pathname.startsWith("/singles-builder")) {
-    // The layout will handle the actual auth check
-    // This middleware just ensures the route exists and passes through
+  // Cache-Control: cache catalog pages, skip auth/transactional routes
+  const isDynamic = DYNAMIC_PATHS.some((p) => pathname.startsWith(p));
+  if (!isDynamic && !pathname.startsWith("/api")) {
+    response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
   }
 
   return response;
