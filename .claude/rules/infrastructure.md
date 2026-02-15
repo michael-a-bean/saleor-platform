@@ -19,9 +19,7 @@
 ```bash
 # 1. Check current Terraform state alignment
 cd infra/terraform
-docker run --rm -v "$(pwd):/workspace" -v "$HOME/.aws:/root/.aws:ro" \
-  -w /workspace -e AWS_REGION=us-west-1 \
-  hashicorp/terraform:1.5 plan -var-file=environments/staging.tfvars
+terraform plan -var-file=environments/staging.tfvars
 
 # 2. If drift exists, investigate before proceeding
 ```
