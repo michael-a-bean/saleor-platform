@@ -16,8 +16,7 @@ import { AvailabilityMessage } from "@/ui/components/AvailabilityMessage";
 import { OtherPrintings } from "@/ui/components/OtherPrintings";
 import { RelatedProductsCarousel } from "@/ui/components/RelatedProductsCarousel";
 
-// Force dynamic rendering since this page uses notFound() and server actions
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export async function generateMetadata(
 	props: {
