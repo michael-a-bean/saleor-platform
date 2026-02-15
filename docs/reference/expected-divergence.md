@@ -96,6 +96,37 @@ Staging now uses HTTPS with custom domain `*.staging.michaelbean.org`.
 
 HTTP listener rules (`*_http[0]`) were removed from `imports.tf` — they were destroyed when `enable_https=true` was applied. HTTPS routing uses the HTTPS listener instead.
 
+### Storefront Task Definition Runtime URLs
+
+The Terraform-managed storefront task definition sets `SALEOR_API_URL` and `NEXT_PUBLIC_STOREFRONT_URL` based on `use_https_urls` and `domain_name` variables. However, CI/CD deploys create new task definition revisions by copying the current one (only updating the image tag). This means:
+
+- Terraform creates rev N with correct HTTPS URLs
+- CI deploys create rev N+1 by copying N and updating image — URLs preserved
+- **If Terraform hasn't been applied since the HTTPS migration**, CI copies old HTTP URLs forward
+
+**Current State (2026-02-14):** Storefront rev 65 was manually registered with correct HTTPS URLs. Future CI deploys will propagate these URLs. Next `terraform apply` will also align the Terraform-managed revision.
+
+---
+
+## Prisma Shared Schema (Intentional — CI/CD Pattern)
+
+**inventory-ops**, **POS**, **buylist**, and **mtg-import** share a single Prisma schema via symlinks. All point to `inventory-ops/prisma/schema.prisma` and share the same `inventory_ops` database.
+
+**CI/CD Rule:** Only **inventory-ops** runs `prisma migrate deploy`. Other apps must NOT run migrations independently because:
+
+1. They have their own `prisma/migrations/` directories with auto-generated initial migrations
+2. These migrations try to CREATE tables that inventory-ops already created
+3. Failed migration records in `_prisma_migrations` block ALL subsequent runs (Prisma P3009)
+
+**If P3009 occurs:** Delete the failed record:
+```bash
+aws ecs run-task --cluster saleor-platform-staging \
+  --task-definition saleor-platform-staging-inventory-ops \
+  --overrides '{"containerOverrides":[{"name":"inventory-ops","command":["sh","-c","echo \"DELETE FROM _prisma_migrations WHERE finished_at IS NULL;\" | npx prisma db execute --stdin"]}]}' \
+  --network-configuration '{"awsvpcConfiguration":{"subnets":["subnet-0885b491c2d394fb6","subnet-0917a8f4d0d7b7080"],"securityGroups":["sg-0210b4854c817f8ac"],"assignPublicIp":"DISABLED"}}' \
+  --launch-type FARGATE
+```
+
 ---
 
 ## Cost Optimization Changes (2026-02-12)
