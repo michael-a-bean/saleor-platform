@@ -1,20 +1,18 @@
 # Repository Issues Index
 
+> **DEPRECATED (Feb 14, 2026):** Issue tracking has moved to GitHub Issues.
+> https://github.com/michael-a-bean/saleor-platform/issues
+>
+> Open items from this directory have been migrated. Files below are retained for historical context only.
+>
+> **Cross-reference (validated 2026-02-15):**
+> - ISSUE-008 → [#7 Storefront test coverage](https://github.com/michael-a-bean/saleor-platform/issues/7) (8 tests / 371 files = 2.16%)
+> - ISSUE-012 → [#3 POS product search](https://github.com/michael-a-bean/saleor-platform/issues/3), [#4 hardcoded IDs](https://github.com/michael-a-bean/saleor-platform/issues/4), [#2 tax](https://github.com/michael-a-bean/saleor-platform/issues/2)
+> - ISSUE-013 → [#8 React Compiler / Formik](https://github.com/michael-a-bean/saleor-platform/issues/8) (8 files use Formik, all in checkout)
+> - ISSUE-014 → [#9 Saleor 4.0 deprecations](https://github.com/michael-a-bean/saleor-platform/issues/9)
+
 **Source:** Repository Health Audit (2026-01-23)
 **Full Audit:** `../audits/2026-01-23-repository-health-audit.md`
-
----
-
-## How to Use
-
-Each issue file is self-contained with:
-- Problem description
-- Impact analysis
-- Step-by-step remediation
-- Verification commands
-- Definition of done checklist
-
-Start a new session and reference the specific issue file to tackle it independently.
 
 ---
 
