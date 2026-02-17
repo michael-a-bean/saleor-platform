@@ -9,7 +9,7 @@
 #   ./scripts/smoke/apps-smoke.sh <ALB_BASE_URL>
 #
 # Example:
-#   ./scripts/smoke/apps-smoke.sh http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com
+#   ./scripts/smoke/apps-smoke.sh https://apps.staging.michaelbean.org
 #
 # Exit codes:
 #   0 - All tests passed
@@ -265,7 +265,7 @@ test_logo() {
 main() {
   if [[ -z "$ALB_BASE_URL" ]]; then
     echo "Usage: $0 <ALB_BASE_URL>"
-    echo "Example: $0 http://saleor-platform-staging-alb-540548859.us-west-1.elb.amazonaws.com"
+    echo "Example: $0 https://apps.staging.michaelbean.org"
     exit 1
   fi
 

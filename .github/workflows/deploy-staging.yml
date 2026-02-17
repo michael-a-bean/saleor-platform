@@ -443,11 +443,8 @@ jobs:
           STAGING_DASHBOARD_URL: ${{ vars.STAGING_DASHBOARD_URL }}
 
       - name: Run apps smoke tests
-        # Non-blocking: app routing paths need updating for HTTPS host-based routing.
-        # TODO: Update apps-smoke.sh to use apps.staging.michaelbean.org with correct paths.
-        continue-on-error: true
         run: |
-          ./scripts/smoke/apps-smoke.sh ${{ vars.STAGING_API_URL }}
+          ./scripts/smoke/apps-smoke.sh ${{ vars.STAGING_APPS_URL }}
 
       - name: Report deployment success
         if: success()
@@ -460,8 +457,8 @@ jobs:
           echo "- **Dashboard**: ${{ vars.STAGING_DASHBOARD_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Apps Verified" >> $GITHUB_STEP_SUMMARY
-          echo "- Stripe: ${{ vars.STAGING_API_URL }}/apps/stripe" >> $GITHUB_STEP_SUMMARY
-          echo "- Inventory: ${{ vars.STAGING_API_URL }}/apps/inventory" >> $GITHUB_STEP_SUMMARY
-          echo "- Buylist: ${{ vars.STAGING_API_URL }}/apps/buylist" >> $GITHUB_STEP_SUMMARY
-          echo "- POS: ${{ vars.STAGING_API_URL }}/apps/pos" >> $GITHUB_STEP_SUMMARY
-          echo "- MTG Import: ${{ vars.STAGING_API_URL }}/apps/mtg-import" >> $GITHUB_STEP_SUMMARY
+          echo "- Stripe: ${{ vars.STAGING_APPS_URL }}/apps/stripe" >> $GITHUB_STEP_SUMMARY
+          echo "- Inventory: ${{ vars.STAGING_APPS_URL }}/apps/inventory" >> $GITHUB_STEP_SUMMARY
+          echo "- Buylist: ${{ vars.STAGING_APPS_URL }}/apps/buylist" >> $GITHUB_STEP_SUMMARY
+          echo "- POS: ${{ vars.STAGING_APPS_URL }}/apps/pos" >> $GITHUB_STEP_SUMMARY
+          echo "- MTG Import: ${{ vars.STAGING_APPS_URL }}/apps/mtg-import" >> $GITHUB_STEP_SUMMARY

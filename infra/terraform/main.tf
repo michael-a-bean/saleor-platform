@@ -79,9 +79,9 @@ module "s3" {
   account_id   = local.account_id
 
   cors_allowed_origins = [
-    "https://www.${var.domain_name}",
-    "https://api.${var.domain_name}",
-    "https://dashboard.${var.domain_name}"
+    "${local.url_scheme}://www.${var.domain_name}",
+    "${local.url_scheme}://api.${var.domain_name}",
+    "${local.url_scheme}://dashboard.${var.domain_name}"
   ]
 
   # CloudFront integration
