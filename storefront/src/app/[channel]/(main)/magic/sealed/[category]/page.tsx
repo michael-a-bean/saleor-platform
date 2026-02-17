@@ -7,7 +7,7 @@ import { Breadcrumb } from "@/ui/components/Breadcrumb";
 import { MagicSubNav } from "@/ui/components/MagicSubNav";
 import { SealedCategoryFilter } from "@/ui/components/SealedCategoryFilter";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 // Same categories as in sealed/page.tsx for consistency
 const SEALED_CATEGORIES = [

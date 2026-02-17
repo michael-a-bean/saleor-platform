@@ -16,7 +16,7 @@ import { AvailabilityMessage } from "@/ui/components/AvailabilityMessage";
 import { OtherPrintings } from "@/ui/components/OtherPrintings";
 import { RelatedProductsCarousel } from "@/ui/components/RelatedProductsCarousel";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata(
 	props: {
