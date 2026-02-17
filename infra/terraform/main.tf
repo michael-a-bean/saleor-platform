@@ -36,6 +36,10 @@ locals {
     var.public_dashboard_base_url != "" ? var.public_dashboard_base_url :
     "${local.url_scheme}://dashboard.${var.domain_name}"
   )
+
+  # Apps base URL: where Saleor apps are externally reachable
+  # Used for APP_API_BASE_URL and APP_IFRAME_BASE_URL in app containers
+  public_apps_base_url = "${local.url_scheme}://apps.${var.domain_name}"
 }
 
 # =============================================================================
@@ -217,6 +221,7 @@ module "ecs" {
   public_api_base_url        = local.public_api_base_url
   public_storefront_base_url = local.public_storefront_base_url
   public_dashboard_base_url  = local.public_dashboard_base_url
+  public_apps_base_url       = local.public_apps_base_url
 
   private_subnet_ids             = local.private_subnet_ids
   ecs_backend_security_group_id  = module.alb.ecs_backend_security_group_id
@@ -285,7 +290,7 @@ module "ecs" {
         }
       ]
       environment = {
-        STRIPE_WEBHOOK_URL       = "${local.public_api_base_url}/apps/stripe/api/webhooks/stripe"
+        STRIPE_WEBHOOK_URL       = "${local.public_apps_base_url}/apps/stripe/api/webhooks/stripe"
         APL                      = "dynamodb"
         DYNAMODB_MAIN_TABLE_NAME = module.dynamodb.stripe_app_table_name
         AWS_REGION               = var.aws_region

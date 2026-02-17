@@ -471,7 +471,8 @@ resource "aws_lb_listener_rule" "dashboard" {
   }
 }
 
-# Stripe app routing: apps.{domain}/stripe/*
+# Stripe app routing: apps.{domain}/apps/stripe/*
+# Path must match the app's BASE_PATH=/apps/stripe set at Docker build time
 resource "aws_lb_listener_rule" "stripe_app" {
   count = var.enable_https ? 1 : 0
 
@@ -491,12 +492,13 @@ resource "aws_lb_listener_rule" "stripe_app" {
 
   condition {
     path_pattern {
-      values = ["/stripe/*", "/api/webhooks/stripe/*"]
+      values = ["/apps/stripe/*", "/apps/stripe"]
     }
   }
 }
 
-# Inventory ops app routing: apps.{domain}/inventory-ops/*
+# Inventory ops app routing: apps.{domain}/apps/inventory/*
+# Path must match the app's BASE_PATH=/apps/inventory set at Docker build time
 resource "aws_lb_listener_rule" "inventory_ops_app" {
   count = var.enable_https ? 1 : 0
 
@@ -516,12 +518,13 @@ resource "aws_lb_listener_rule" "inventory_ops_app" {
 
   condition {
     path_pattern {
-      values = ["/inventory-ops/*"]
+      values = ["/apps/inventory/*", "/apps/inventory"]
     }
   }
 }
 
-# Buylist app routing: apps.{domain}/buylist/*
+# Buylist app routing: apps.{domain}/apps/buylist/*
+# Path must match the app's BASE_PATH=/apps/buylist set at Docker build time
 resource "aws_lb_listener_rule" "buylist_app" {
   count = var.enable_https ? 1 : 0
 
@@ -541,12 +544,13 @@ resource "aws_lb_listener_rule" "buylist_app" {
 
   condition {
     path_pattern {
-      values = ["/buylist/*"]
+      values = ["/apps/buylist/*", "/apps/buylist"]
     }
   }
 }
 
-# POS app routing: apps.{domain}/pos/*
+# POS app routing: apps.{domain}/apps/pos/*
+# Path must match the app's BASE_PATH=/apps/pos set at Docker build time
 resource "aws_lb_listener_rule" "pos_app" {
   count = var.enable_https ? 1 : 0
 
@@ -566,12 +570,13 @@ resource "aws_lb_listener_rule" "pos_app" {
 
   condition {
     path_pattern {
-      values = ["/pos/*"]
+      values = ["/apps/pos/*", "/apps/pos"]
     }
   }
 }
 
-# MTG Import app routing: apps.{domain}/mtg-import/*
+# MTG Import app routing: apps.{domain}/apps/mtg-import/*
+# Path must match the app's BASE_PATH=/apps/mtg-import set at Docker build time
 resource "aws_lb_listener_rule" "mtg_import_app" {
   count = var.enable_https ? 1 : 0
 
@@ -591,7 +596,7 @@ resource "aws_lb_listener_rule" "mtg_import_app" {
 
   condition {
     path_pattern {
-      values = ["/mtg-import/*"]
+      values = ["/apps/mtg-import/*", "/apps/mtg-import"]
     }
   }
 }
