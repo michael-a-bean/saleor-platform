@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
 import edjsHTML from "editorjs-html";
+
+export const dynamic = "force-dynamic";
 import xss from "xss";
 import { PageGetBySlugDocument } from "@/gql/graphql";
 import { executeGraphQL } from "@/lib/graphql";
