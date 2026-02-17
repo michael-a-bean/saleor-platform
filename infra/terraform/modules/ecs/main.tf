@@ -651,8 +651,8 @@ resource "aws_ecs_task_definition" "apps" {
           { name = "BASE_PATH", value = each.value.base_path },
           { name = "NEXT_PUBLIC_BASE_PATH", value = each.value.base_path },
           { name = "SALEOR_API_URL", value = "${var.public_api_base_url}/graphql/" },
-          { name = "APP_API_BASE_URL", value = "${var.public_api_base_url}${each.value.base_path}" },
-          { name = "APP_IFRAME_BASE_URL", value = "${var.public_api_base_url}${each.value.base_path}" },
+          { name = "APP_API_BASE_URL", value = "${var.public_apps_base_url}${each.value.base_path}" },
+          { name = "APP_IFRAME_BASE_URL", value = "${var.public_apps_base_url}${each.value.base_path}" },
           { name = "APP_LOG_LEVEL", value = "info" }
         ],
         # App-specific environment variables (can override APL via environment config)

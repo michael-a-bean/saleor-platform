@@ -41,6 +41,44 @@ aws ec2 create-vpc --cidr-block 10.0.0.0/16
 
 ## Change History
 
+### 2026-02-17 - Fix ALB HTTPS Routing for Saleor Apps
+
+**Incident:** All 5 Saleor apps returning 404 in staging — not accessible from dashboard
+**Responder:** Michael + PAI (Gen)
+**Time:** 2026-02-17
+
+**Root Cause:**
+When HTTPS host-based routing was added (2026-02-14), the ALB listener rules for apps used incorrect path patterns. The HTTPS rules matched `/stripe/*`, `/inventory-ops/*`, etc., but the apps are built with `BASE_PATH=/apps/stripe`, `/apps/inventory`, etc. Requests to `/apps/stripe/*` fell through to the default rule (storefront), returning a Next.js 404.
+
+**Changes Made:**
+```bash
+# Modified 5 ALB HTTPS listener rules to match actual app BASE_PATH values:
+# Priority 200: /stripe/* → /apps/stripe/*
+# Priority 210: /inventory-ops/* → /apps/inventory/*
+# Priority 220: /buylist/* → /apps/buylist/*
+# Priority 230: /pos/* → /apps/pos/*
+# Priority 240: /mtg-import/* → /apps/mtg-import/*
+
+aws elbv2 modify-rule --rule-arn <rule-arn> --conditions '[
+  {"Field":"host-header","HostHeaderConfig":{"Values":["apps.staging.michaelbean.org"]}},
+  {"Field":"path-pattern","PathPatternConfig":{"Values":["/apps/<app>/*","/apps/<app>"]}}
+]' --region us-west-1
+# (repeated for all 5 app rules)
+```
+
+**Resources Modified:**
+- ALB HTTPS listener rules (priorities 200, 210, 220, 230, 240) on `saleor-platform-staging-alb`
+- Region: us-west-1
+
+**Terraform Reconciliation Status:**
+- [x] Terraform code updated in `infra/terraform/modules/alb/main.tf` (same commit)
+- [ ] Terraform plan confirms no drift (run `terraform plan` to verify)
+
+**Notes:**
+The HTTP (non-HTTPS) rules already had the correct `/apps/*` paths. The mismatch was introduced when creating the HTTPS host-based rules, which incorrectly stripped the `/apps/` prefix. All 5 apps confirmed responding HTTP 200 after fix.
+
+---
+
 ### 2026-02-14 - CI/CD Pipeline Fixes (post-HTTPS migration)
 
 **Incident:** CI/CD pipeline failures after HTTPS migration
@@ -76,6 +114,32 @@ aws ecs update-service --cluster saleor-platform-staging --service storefront \
 - [x] No manual AWS infrastructure changes (only ECS task def + DB record)
 - [x] Storefront HTTPS URLs will propagate via CI/CD on next deploy
 - [ ] Terraform storefront task def still has old URLs — next `terraform apply` will fix
+
+### 2026-02-17 - Fix App Container URL Environment Variables
+
+**Incident:** Continuation of ALB routing fix — apps' `APP_API_BASE_URL` pointed to wrong subdomain
+**Responder:** Michael + PAI (Gen)
+**Time:** 2026-02-17
+
+**Root Cause:**
+App containers had `APP_API_BASE_URL=https://api.staging.michaelbean.org/apps/<app>` but apps are routed via `apps.staging.michaelbean.org`. The `api` subdomain routes to Saleor Django which returns 404 for `/apps/*` paths.
+
+**Changes Made:**
+```bash
+# Updated 5 ECS task definitions with correct APP_API_BASE_URL and APP_IFRAME_BASE_URL
+# stripe: rev 65 → 66, inventory-ops: rev 62 → 63, buylist: rev 62 → 63
+# pos: rev 62 → 63, mtg-import: rev 12 → 13
+# All updated from api.staging.michaelbean.org → apps.staging.michaelbean.org
+aws ecs register-task-definition --cli-input-json <updated-json>
+aws ecs update-service --cluster saleor-platform-staging --service <app> \
+  --task-definition <new-rev> --force-new-deployment
+```
+
+**Terraform Reconciliation Status:**
+- [x] Terraform code updated (new `public_apps_base_url` variable in same commit as ALB fix)
+- [ ] Next `terraform apply` will match the manual change
+
+---
 
 **Notes:**
 Root cause of Prisma P3009 cycle: mtg-import and inventory-ops share the same database (via symlinked schema) but have different migration directories. mtg-import's `0001_initial` tried to CREATE tables that already existed, failed, and the failed record blocked inventory-ops on subsequent runs.
