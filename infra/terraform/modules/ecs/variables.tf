@@ -36,6 +36,11 @@ variable "public_dashboard_base_url" {
   type        = string
 }
 
+variable "public_apps_base_url" {
+  description = "Public apps base URL (e.g., https://apps.staging.michaelbean.org)"
+  type        = string
+}
+
 # Network
 variable "private_subnet_ids" {
   description = "Private subnet IDs"
