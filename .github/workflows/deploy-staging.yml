@@ -66,18 +66,23 @@ jobs:
             storefront:
               - 'storefront/**'
             stripe:
+              - 'saleor-apps'
               - 'saleor-apps/apps/stripe/**'
               - 'saleor-apps/packages/**'
             inventory-ops:
+              - 'saleor-apps'
               - 'saleor-apps/apps/inventory-ops/**'
               - 'saleor-apps/packages/**'
             buylist:
+              - 'saleor-apps'
               - 'saleor-apps/apps/buylist/**'
               - 'saleor-apps/packages/**'
             pos:
+              - 'saleor-apps'
               - 'saleor-apps/apps/pos/**'
               - 'saleor-apps/packages/**'
             mtg-import:
+              - 'saleor-apps'
               - 'saleor-apps/apps/mtg-import/**'
               - 'saleor-apps/packages/**'
 
