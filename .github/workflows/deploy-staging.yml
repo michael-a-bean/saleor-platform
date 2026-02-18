@@ -42,12 +42,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       storefront: ${{ steps.filter.outputs.storefront }}
-      stripe: ${{ steps.filter.outputs.stripe }}
-      inventory-ops: ${{ steps.filter.outputs.inventory-ops }}
-      buylist: ${{ steps.filter.outputs.buylist }}
-      pos: ${{ steps.filter.outputs.pos }}
-      mtg-import: ${{ steps.filter.outputs.mtg-import }}
-      any_app: ${{ steps.filter.outputs.stripe == 'true' || steps.filter.outputs.inventory-ops == 'true' || steps.filter.outputs.buylist == 'true' || steps.filter.outputs.pos == 'true' || steps.filter.outputs.mtg-import == 'true' }}
+      stripe: ${{ steps.merge.outputs.stripe }}
+      inventory-ops: ${{ steps.merge.outputs.inventory-ops }}
+      buylist: ${{ steps.merge.outputs.buylist }}
+      pos: ${{ steps.merge.outputs.pos }}
+      mtg-import: ${{ steps.merge.outputs.mtg-import }}
+      any_app: ${{ steps.merge.outputs.stripe == 'true' || steps.merge.outputs.inventory-ops == 'true' || steps.merge.outputs.buylist == 'true' || steps.merge.outputs.pos == 'true' || steps.merge.outputs.mtg-import == 'true' }}
       any_changed: ${{ steps.check.outputs.any_changed }}
 
     steps:
@@ -58,7 +58,7 @@ jobs:
           token: ${{ secrets.SUBMODULES_TOKEN }}
           fetch-depth: 0  # Needed for change detection
 
-      - name: Detect changed paths
+      - name: Detect changed paths (non-submodule)
         uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -66,36 +66,117 @@ jobs:
             storefront:
               - 'storefront/**'
             stripe:
-              - 'saleor-apps'
               - 'saleor-apps/apps/stripe/**'
               - 'saleor-apps/packages/**'
             inventory-ops:
-              - 'saleor-apps'
               - 'saleor-apps/apps/inventory-ops/**'
               - 'saleor-apps/packages/**'
             buylist:
-              - 'saleor-apps'
               - 'saleor-apps/apps/buylist/**'
               - 'saleor-apps/packages/**'
             pos:
-              - 'saleor-apps'
               - 'saleor-apps/apps/pos/**'
               - 'saleor-apps/packages/**'
             mtg-import:
-              - 'saleor-apps'
               - 'saleor-apps/apps/mtg-import/**'
               - 'saleor-apps/packages/**'
+
+      # dorny/paths-filter can't see inside submodule content changes —
+      # it only sees the pointer diff. This step inspects the actual files
+      # that changed inside saleor-apps between the old and new pointer.
+      - name: Detect submodule content changes
+        id: submodule
+        run: |
+          # Get the submodule diff between this commit and its parent
+          DIFF=$(git diff --submodule=diff HEAD~1 HEAD -- saleor-apps 2>/dev/null || echo "")
+
+          if [[ -z "$DIFF" ]]; then
+            echo "No submodule changes detected"
+            echo "stripe=false" >> $GITHUB_OUTPUT
+            echo "inventory-ops=false" >> $GITHUB_OUTPUT
+            echo "buylist=false" >> $GITHUB_OUTPUT
+            echo "pos=false" >> $GITHUB_OUTPUT
+            echo "mtg-import=false" >> $GITHUB_OUTPUT
+            echo "packages=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Submodule diff detected, checking which apps changed..."
+
+          # Extract changed file paths from the submodule diff
+          # Lines look like: "diff --git a/apps/mtg-import/... b/apps/mtg-import/..."
+          CHANGED_FILES=$(echo "$DIFF" | grep '^diff --git' | sed 's|diff --git a/||; s| b/.*||')
+          echo "Changed files in submodule:"
+          echo "$CHANGED_FILES"
+
+          # Check each app directory for changes
+          check_app() {
+            local app_dir="$1"
+            if echo "$CHANGED_FILES" | grep -q "^${app_dir}/"; then
+              echo "true"
+            else
+              echo "false"
+            fi
+          }
+
+          echo "stripe=$(check_app apps/stripe)" >> $GITHUB_OUTPUT
+          echo "inventory-ops=$(check_app apps/inventory-ops)" >> $GITHUB_OUTPUT
+          echo "buylist=$(check_app apps/buylist)" >> $GITHUB_OUTPUT
+          echo "pos=$(check_app apps/pos)" >> $GITHUB_OUTPUT
+          echo "mtg-import=$(check_app apps/mtg-import)" >> $GITHUB_OUTPUT
+          echo "packages=$(check_app packages)" >> $GITHUB_OUTPUT
+
+      # Merge: an app needs rebuild if EITHER dorny detected changes
+      # OR the submodule content inspection found changes in that app.
+      # Shared packages changes trigger all apps (same as before).
+      - name: Merge change detection results
+        id: merge
+        run: |
+          merge() {
+            local app="$1"
+            local dorny="${2}"
+            local sub="${3}"
+            local sub_packages="${4}"
+            if [[ "$dorny" == "true" ]] || [[ "$sub" == "true" ]] || [[ "$sub_packages" == "true" ]]; then
+              echo "true"
+            else
+              echo "false"
+            fi
+          }
+
+          SUB_PKG="${{ steps.submodule.outputs.packages }}"
+
+          STRIPE=$(merge stripe "${{ steps.filter.outputs.stripe }}" "${{ steps.submodule.outputs.stripe }}" "$SUB_PKG")
+          INVOPS=$(merge inventory-ops "${{ steps.filter.outputs.inventory-ops }}" "${{ steps.submodule.outputs.inventory-ops }}" "$SUB_PKG")
+          BUYLIST=$(merge buylist "${{ steps.filter.outputs.buylist }}" "${{ steps.submodule.outputs.buylist }}" "$SUB_PKG")
+          POS=$(merge pos "${{ steps.filter.outputs.pos }}" "${{ steps.submodule.outputs.pos }}" "$SUB_PKG")
+          MTGIMP=$(merge mtg-import "${{ steps.filter.outputs.mtg-import }}" "${{ steps.submodule.outputs.mtg-import }}" "$SUB_PKG")
+
+          echo "stripe=$STRIPE" >> $GITHUB_OUTPUT
+          echo "inventory-ops=$INVOPS" >> $GITHUB_OUTPUT
+          echo "buylist=$BUYLIST" >> $GITHUB_OUTPUT
+          echo "pos=$POS" >> $GITHUB_OUTPUT
+          echo "mtg-import=$MTGIMP" >> $GITHUB_OUTPUT
+
+          echo "## Change Detection Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | dorny | submodule | merged |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| stripe | ${{ steps.filter.outputs.stripe }} | ${{ steps.submodule.outputs.stripe }} | $STRIPE |" >> $GITHUB_STEP_SUMMARY
+          echo "| inventory-ops | ${{ steps.filter.outputs.inventory-ops }} | ${{ steps.submodule.outputs.inventory-ops }} | $INVOPS |" >> $GITHUB_STEP_SUMMARY
+          echo "| buylist | ${{ steps.filter.outputs.buylist }} | ${{ steps.submodule.outputs.buylist }} | $BUYLIST |" >> $GITHUB_STEP_SUMMARY
+          echo "| pos | ${{ steps.filter.outputs.pos }} | ${{ steps.submodule.outputs.pos }} | $POS |" >> $GITHUB_STEP_SUMMARY
+          echo "| mtg-import | ${{ steps.filter.outputs.mtg-import }} | ${{ steps.submodule.outputs.mtg-import }} | $MTGIMP |" >> $GITHUB_STEP_SUMMARY
 
       - name: Check if any service changed
         id: check
         run: |
           if [[ "${{ inputs.force_all }}" == "true" ]] || \
              [[ "${{ steps.filter.outputs.storefront }}" == "true" ]] || \
-             [[ "${{ steps.filter.outputs.stripe }}" == "true" ]] || \
-             [[ "${{ steps.filter.outputs.inventory-ops }}" == "true" ]] || \
-             [[ "${{ steps.filter.outputs.buylist }}" == "true" ]] || \
-             [[ "${{ steps.filter.outputs.pos }}" == "true" ]] || \
-             [[ "${{ steps.filter.outputs.mtg-import }}" == "true" ]]; then
+             [[ "${{ steps.merge.outputs.stripe }}" == "true" ]] || \
+             [[ "${{ steps.merge.outputs.inventory-ops }}" == "true" ]] || \
+             [[ "${{ steps.merge.outputs.buylist }}" == "true" ]] || \
+             [[ "${{ steps.merge.outputs.pos }}" == "true" ]] || \
+             [[ "${{ steps.merge.outputs.mtg-import }}" == "true" ]]; then
             echo "any_changed=true" >> $GITHUB_OUTPUT
           else
             echo "any_changed=false" >> $GITHUB_OUTPUT
