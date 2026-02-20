@@ -104,8 +104,10 @@ jobs:
           echo "Submodule diff detected, checking which apps changed..."
 
           # Extract changed file paths from the submodule diff
-          # Lines look like: "diff --git a/apps/mtg-import/... b/apps/mtg-import/..."
-          CHANGED_FILES=$(echo "$DIFF" | grep '^diff --git' | sed 's|diff --git a/||; s| b/.*||')
+          # Lines look like: "diff --git a/saleor-apps/apps/mtg-import/... b/saleor-apps/apps/mtg-import/..."
+          # The saleor-apps/ prefix (submodule mount point) must be stripped so
+          # check_app can match against bare paths like "apps/mtg-import/".
+          CHANGED_FILES=$(echo "$DIFF" | grep '^diff --git' | sed 's|diff --git a/||; s| b/.*||; s|^saleor-apps/||')
           echo "Changed files in submodule:"
           echo "$CHANGED_FILES"
 
