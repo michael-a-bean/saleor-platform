@@ -7,26 +7,6 @@
         "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
       },
       "autoStart": false
-    },
-    "saleor-graphql": {
-      "command": "docker",
-      "args": [
-        "run", "--rm", "-i",
-        "--network", "saleor-platform_saleor-backend-tier",
-        "-e", "ENDPOINT_URL=http://api:8000/graphql/",
-        "node:20-alpine",
-        "npx", "-y", "mcp-graphql"
-      ],
-      "autoStart": false
-    },
-    "saleor-mcp": {
-      "type": "http",
-      "url": "http://localhost:6000/mcp",
-      "headers": {
-        "X-Saleor-API-URL": "http://localhost:8000/graphql/",
-        "X-Saleor-Auth-Token": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImtSaThHSDVuaXh5MVVOZjZ0Y2FJTEdnUzh2UHRXUTJDcmJ3SHJuNmJWZU0iLCJ0eXAiOiJKV1QifQ.eyJpYXQiOjE3NjYyMDgxOTMsIm93bmVyIjoic2FsZW9yIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDAwL2dyYXBocWwvIiwiZXhwIjoxNzY4ODAwMTkzLCJ0b2tlbiI6InJVb3BtTWZza2s2dSIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5jb20iLCJ0eXBlIjoicmVmcmVzaCIsInVzZXJfaWQiOiJWWE5sY2pveCIsImlzX3N0YWZmIjp0cnVlLCJjc3JmVG9rZW4iOiJyMXdMOFlvMG5yN3BpclRzaVNEQlpXSTJpVUJ4SVRmYU1hV2ZLSWFKcE50dnh4eEdsUGFVRmpRbjkxR20zQWgzIn0.VYvE5VI31lF-5KG3op4qY0Jv7s3n3_xpJKnc3zwxfIKUhrpsaUmT2_JkGA04n2bny0aXg_SAU2y4Rsx8py3TLhbViYF3UEHKJI_ClTMscmN6ODduuLK8fEdMFKP6IU-pgRfMzMjxJboeQwc8Jl3rTCYKy4JOLdDjsMQVPN0nOez9yVUpG69QrQdydJj5ropr6XififWWdpCUcOhvjbW5_YOYCuKeQsvmtkfv0pJllUNNe3sqs3PZEmik3sH3MbM57ZUjwUZjwduRxhNl36Y0H5BVWUy53irBj6y76hC2q5WzCkYs9EmkwGnpARpPl2GtFfAwQW0Lx0uEu8Ku0ZJbcw"
-      },
-      "autoStart": false
     }
   }
 }
