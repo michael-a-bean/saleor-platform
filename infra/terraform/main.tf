@@ -304,15 +304,24 @@ module "ecs" {
       base_path        = "/apps/inventory"
       image            = "${module.ecr.inventory_ops_app_repository_url}:${var.inventory_ops_app_image_tag}"
       target_group_arn = module.alb.inventory_ops_app_target_group_arn
-      secrets = [
-        {
-          name      = "DATABASE_URL"
-          valueFrom = "/saleor/${var.environment}/apps/inventory-ops/DATABASE_URL"
-        }
-      ]
+      secrets = concat(
+        [
+          {
+            name      = "DATABASE_URL"
+            valueFrom = "/saleor/${var.environment}/apps/inventory-ops/DATABASE_URL"
+          }
+        ],
+        var.meilisearch_enabled ? [
+          {
+            name      = "MEILISEARCH_API_KEY"
+            valueFrom = aws_secretsmanager_secret.meilisearch_master_key[0].arn
+          }
+        ] : []
+      )
       environment = {
-        APL       = "redis"
-        REDIS_URL = module.elasticache.cache_url
+        APL             = "redis"
+        REDIS_URL       = module.elasticache.cache_url
+        MEILISEARCH_URL = local.meilisearch_url
       }
     }
 
