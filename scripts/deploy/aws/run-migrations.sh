@@ -14,6 +14,8 @@
 #   ECS_TASK_SECURITY_GROUPS  - Comma-separated security group IDs
 #
 # Optional Environment Variables:
+#   SHA                         - Git SHA / image tag to override the container image
+#                                 (ensures migrations run against the newly-built image)
 #   ECS_TASK_ASSIGN_PUBLIC_IP   - ENABLED or DISABLED (default: DISABLED)
 #   FALLBACK_NETWORK_FROM_SERVICE - Set to 'true' to allow fallback to existing service
 #   SERVICE_NAME                - Service name for fallback (required if fallback enabled)
@@ -63,8 +65,11 @@ fi
 # =============================================================================
 
 REGION="${AWS_REGION:-us-west-2}"
+ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(get_account_id)}"
+ECR_REGISTRY="$(get_ecr_registry "$ACCOUNT_ID" "$REGION")"
 CLUSTER="$(get_cluster_name "$ENV")"
 TASK_DEF="saleor-platform-${ENV}-migrate"
+SHA="${SHA:-}"
 DRY_RUN="${DRY_RUN:-false}"
 
 # =============================================================================
@@ -310,6 +315,7 @@ log_info "Starting migration task..."
 
 # Build command override based on type
 # IMPORTANT: Container name must match the container defined in the task definition
+IMAGE_OVERRIDE=""
 if [[ "$MIGRATION_TYPE" == "django" ]]; then
     CONTAINER_NAME="migrate"
     COMMAND='["python", "manage.py", "migrate", "--noinput"]'
@@ -319,6 +325,19 @@ else
     CONTAINER_NAME="${PRISMA_APP}"
     COMMAND='["npx", "prisma", "migrate", "deploy"]'
     log_info "  Prisma App: ${PRISMA_APP}"
+
+    # Map Prisma app names to ECR image names
+    declare -A PRISMA_IMAGE_MAP=(
+        ["inventory-ops"]="inventory-ops-app"
+        ["mtg-import"]="mtg-import-app"
+    )
+
+    # Override container image with newly-built image if SHA is provided
+    if [[ -n "$SHA" ]]; then
+        IMAGE_NAME="${PRISMA_IMAGE_MAP[$PRISMA_APP]}"
+        IMAGE_OVERRIDE="${ECR_REGISTRY}/saleor-platform/${IMAGE_NAME}:${SHA}"
+        log_info "  Image override: ${IMAGE_OVERRIDE}"
+    fi
 fi
 
 # Verify container name exists in task definition (fail fast)
@@ -340,12 +359,19 @@ if ! echo "$CONTAINER_NAMES" | grep -qw "$CONTAINER_NAME"; then
 fi
 log_success "Container '${CONTAINER_NAME}' found in task definition"
 
+# Build container override JSON (with optional image override)
+if [[ -n "$IMAGE_OVERRIDE" ]]; then
+    OVERRIDES="{\"containerOverrides\":[{\"name\":\"${CONTAINER_NAME}\",\"command\":${COMMAND},\"image\":\"${IMAGE_OVERRIDE}\"}]}"
+else
+    OVERRIDES="{\"containerOverrides\":[{\"name\":\"${CONTAINER_NAME}\",\"command\":${COMMAND}}]}"
+fi
+
 TASK_ARN=$(aws ecs run-task \
     --cluster "$CLUSTER" \
     --task-definition "$TASK_DEF" \
     --launch-type FARGATE \
     --network-configuration "$NETWORK_JSON" \
-    --overrides "{\"containerOverrides\":[{\"name\":\"${CONTAINER_NAME}\",\"command\":${COMMAND}}]}" \
+    --overrides "$OVERRIDES" \
     --query 'tasks[0].taskArn' \
     --output text)
 
