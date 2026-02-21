@@ -379,12 +379,13 @@ jobs:
           ECS_TASK_SUBNETS: ${{ vars.STAGING_ECS_TASK_SUBNETS }}
           ECS_TASK_SECURITY_GROUPS: ${{ vars.STAGING_ECS_TASK_SECURITY_GROUPS }}
 
-      # NOTE: mtg-import Prisma migrations are INTENTIONALLY OMITTED.
-      # mtg-import shares inventory-ops's database and schema (symlink).
-      # Running migrations from both apps causes conflicts:
-      #   - mtg-import's 0001_initial tries to CREATE tables inventory-ops already made
-      #   - Failed record poisons _prisma_migrations, blocking inventory-ops on next run
-      # Only inventory-ops should run Prisma migrations for the shared schema.
+      - name: Run Prisma migrations (mtg-import)
+        run: |
+          ./scripts/deploy/aws/run-migrations.sh staging prisma mtg-import
+        env:
+          SHA: ${{ needs.validate.outputs.sha_short }}
+          ECS_TASK_SUBNETS: ${{ vars.STAGING_ECS_TASK_SUBNETS }}
+          ECS_TASK_SECURITY_GROUPS: ${{ vars.STAGING_ECS_TASK_SECURITY_GROUPS }}
 
   # ==========================================================================
   # Deploy Core Services (api, worker, storefront, dashboard)
