@@ -359,16 +359,45 @@ if ! echo "$CONTAINER_NAMES" | grep -qw "$CONTAINER_NAME"; then
 fi
 log_success "Container '${CONTAINER_NAME}' found in task definition"
 
-# Build container override JSON (with optional image override)
+# If image override is needed, register a new task definition revision with the updated image
+EFFECTIVE_TASK_DEF="$TASK_DEF"
 if [[ -n "$IMAGE_OVERRIDE" ]]; then
-    OVERRIDES="{\"containerOverrides\":[{\"name\":\"${CONTAINER_NAME}\",\"command\":${COMMAND},\"image\":\"${IMAGE_OVERRIDE}\"}]}"
-else
-    OVERRIDES="{\"containerOverrides\":[{\"name\":\"${CONTAINER_NAME}\",\"command\":${COMMAND}}]}"
+    log_info "Registering new task definition with updated image..."
+
+    # Get current task definition JSON
+    CURRENT_TD=$(aws ecs describe-task-definition \
+        --task-definition "$TASK_DEF" \
+        --query 'taskDefinition' \
+        --output json)
+
+    # Replace the image in container definitions and register new revision
+    NEW_TD=$(echo "$CURRENT_TD" | python3 -c "
+import json, sys
+td = json.load(sys.stdin)
+for c in td['containerDefinitions']:
+    if c['name'] == '${CONTAINER_NAME}':
+        c['image'] = '${IMAGE_OVERRIDE}'
+# Only keep fields valid for register-task-definition
+keep = ['family','containerDefinitions','taskRoleArn','executionRoleArn',
+        'networkMode','volumes','placementConstraints','requiresCompatibilities',
+        'cpu','memory','runtimePlatform']
+out = {k: td[k] for k in keep if k in td}
+print(json.dumps(out))
+")
+
+    EFFECTIVE_TASK_DEF=$(aws ecs register-task-definition \
+        --cli-input-json "$NEW_TD" \
+        --query 'taskDefinition.taskDefinitionArn' \
+        --output text)
+
+    log_success "Registered task definition: ${EFFECTIVE_TASK_DEF}"
 fi
+
+OVERRIDES="{\"containerOverrides\":[{\"name\":\"${CONTAINER_NAME}\",\"command\":${COMMAND}}]}"
 
 TASK_ARN=$(aws ecs run-task \
     --cluster "$CLUSTER" \
-    --task-definition "$TASK_DEF" \
+    --task-definition "$EFFECTIVE_TASK_DEF" \
     --launch-type FARGATE \
     --network-configuration "$NETWORK_JSON" \
     --overrides "$OVERRIDES" \
