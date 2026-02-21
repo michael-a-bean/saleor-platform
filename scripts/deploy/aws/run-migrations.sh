@@ -333,10 +333,20 @@ else
     )
 
     # Override container image with newly-built image if SHA is provided
+    # and the image actually exists in ECR (it won't if the build was skipped)
     if [[ -n "$SHA" ]]; then
         IMAGE_NAME="${PRISMA_IMAGE_MAP[$PRISMA_APP]}"
-        IMAGE_OVERRIDE="${ECR_REGISTRY}/saleor-platform/${IMAGE_NAME}:${SHA}"
-        log_info "  Image override: ${IMAGE_OVERRIDE}"
+        CANDIDATE_IMAGE="${ECR_REGISTRY}/saleor-platform/${IMAGE_NAME}:${SHA}"
+        if aws ecr describe-images \
+            --repository-name "saleor-platform/${IMAGE_NAME}" \
+            --image-ids imageTag="${SHA}" \
+            --query 'imageDetails[0].imageTags' \
+            --output text &>/dev/null; then
+            IMAGE_OVERRIDE="$CANDIDATE_IMAGE"
+            log_info "  Image override: ${IMAGE_OVERRIDE}"
+        else
+            log_info "  Image ${SHA} not found in ECR — using current task definition image"
+        fi
     fi
 fi
 
