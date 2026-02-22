@@ -48,7 +48,11 @@ jobs:
       - name: Terraform Init
         id: init
         working-directory: infra/terraform
-        run: terraform init -input=false
+        run: terraform init -input=false -backend-config="key=staging/terraform.tfstate"
+
+      - name: Terraform Format Check
+        working-directory: infra/terraform
+        run: terraform fmt -check -recursive
 
       - name: Terraform Plan (Drift Detection)
         id: plan
