@@ -608,6 +608,11 @@ resource "aws_secretsmanager_secret" "meilisearch_master_key" {
   name        = "saleor/${var.environment}/meilisearch/master-key"
   description = "Meilisearch master key for API authentication"
 
+  # Staging: immediate deletion so terraform destroy+apply doesn't hit
+  # "secret already scheduled for deletion" (default 30-day recovery window).
+  # Production keeps the 30-day safety net.
+  recovery_window_in_days = var.environment == "staging" ? 0 : 30
+
   tags = {
     Name    = "${local.name_prefix}-meilisearch-master-key"
     Service = "meilisearch"
