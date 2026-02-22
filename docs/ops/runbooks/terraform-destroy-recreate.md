@@ -804,6 +804,10 @@ Use this checklist to confirm the environment is ready for full functionality te
 **Impact:** After `terraform apply`, all ECS services referencing ECR images will fail because repos are empty.
 **Workaround:** Expected behavior. Push images (Step 2) and force-restart (Step 7) to resolve.
 
+### ~~Secrets Manager 30-Day Recovery Window~~ (FIXED)
+
+**Status:** Fixed. The Meilisearch master key secret now uses `recovery_window_in_days = 0` for staging. Without this, `terraform destroy` would schedule the secret for deletion with a 30-day recovery window, causing `terraform apply` to fail with "secret already scheduled for deletion" if run within that window. Production retains the 30-day safety net.
+
 ### Elastic IP Changes on Recreate
 
 **Impact:** NAT gateway gets a new Elastic IP. If any external services whitelist by IP, they need updating.
