@@ -282,7 +282,9 @@ module "ecs" {
   worker_max_capacity        = var.worker_max_capacity
   storefront_min_capacity    = var.storefront_min_capacity
   storefront_max_capacity    = var.storefront_max_capacity
+  beat_min_capacity          = var.beat_min_capacity
   beat_max_capacity          = var.beat_max_capacity
+  apps_scaling_min_capacity  = var.apps_scaling_min_capacity
   apps_scaling_max_capacity  = var.apps_scaling_max_capacity
 
   # ==========================================================================

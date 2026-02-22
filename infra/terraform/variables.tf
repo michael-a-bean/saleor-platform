@@ -323,10 +323,22 @@ variable "storefront_max_capacity" {
   default     = 2
 }
 
+variable "beat_min_capacity" {
+  description = "Minimum beat tasks for auto-scaling baseline"
+  type        = number
+  default     = 0
+}
+
 variable "beat_max_capacity" {
   description = "Maximum beat tasks (should be 1 to prevent duplicate scheduling)"
   type        = number
   default     = 1
+}
+
+variable "apps_scaling_min_capacity" {
+  description = "Minimum tasks per app service for auto-scaling baseline"
+  type        = number
+  default     = 0
 }
 
 variable "apps_scaling_max_capacity" {
