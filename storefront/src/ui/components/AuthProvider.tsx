@@ -27,7 +27,7 @@ export const saleorAuthClient = createSaleorAuthClient({
  * unauthenticated request instead of crashing.
  */
 const safeFetchWithAuth = async (
-	input: NodeJS.fetch.RequestInfo,
+	input: RequestInfo,
 	init?: RequestInit,
 ): Promise<Response> => {
 	try {
@@ -53,7 +53,7 @@ const makeUrqlClient = () => {
 		url: saleorApiUrl,
 		suspense: true,
 		// requestPolicy: "cache-first",
-		fetch: (input, init) => safeFetchWithAuth(input as NodeJS.fetch.RequestInfo, init),
+		fetch: (input, init) => safeFetchWithAuth(input as RequestInfo, init),
 		exchanges: [dedupExchange, cacheExchange, fetchExchange],
 	});
 };
