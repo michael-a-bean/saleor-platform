@@ -25,6 +25,9 @@ use_https_urls = true
 # Enable HTTPS upgrade in storefront CSP
 enable_https = true
 
+# OpenTelemetry → Grafana Cloud
+otel_exporter_endpoint = "https://otlp-gateway-prod-us-west-0.grafana.net/otlp"
+
 # Public URL overrides removed — Terraform derives URLs from domain_name:
 #   API:        https://api.staging.michaelbean.org
 #   Storefront: https://staging.michaelbean.org
