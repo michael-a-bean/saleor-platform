@@ -87,6 +87,9 @@ module "s3" {
   # CloudFront integration
   cloudfront_distribution_arn   = var.enable_cloudfront ? module.cloudfront[0].distribution_arn : ""
   enable_cloudfront_only_access = var.enable_cloudfront && var.cloudfront_only_media_access
+
+  # Allow terraform destroy without emptying bucket first (staging only)
+  force_destroy = var.environment == "staging"
 }
 
 # =============================================================================

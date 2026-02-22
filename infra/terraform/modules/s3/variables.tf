@@ -42,3 +42,9 @@ variable "enable_cloudfront_only_access" {
   type        = bool
   default     = false
 }
+
+variable "force_destroy" {
+  description = "Allow Terraform to destroy the bucket even when it contains objects. Use for staging only."
+  type        = bool
+  default     = false
+}
