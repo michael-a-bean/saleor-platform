@@ -4,90 +4,90 @@ import { LinkWithChannel } from "../atoms/LinkWithChannel";
 import { type ProductListItemFragment, type VariantDetailsFragment } from "@/gql/graphql";
 import { getHrefForVariant } from "@/lib/utils";
 
-// Condition order for MTG cards (short codes matching variant names)
-const CONDITION_ORDER = ["NM", "LP", "MP", "HP", "DMG"];
+// Attribute slugs for structured data access
+const CONDITION_SLUG = "mtg-condition";
+const FINISH_SLUG = "mtg-finish";
 
-// Finish order for MTG cards
-const FINISH_ORDER = ["Nonfoil", "Foil", "Etched"];
-
-// Display labels for conditions
-const CONDITION_LABELS: Record<string, string> = {
-	"NM": "NM",
-	"LP": "LP",
-	"MP": "MP",
-	"HP": "HP",
-	"DMG": "DMG",
+// Condition sort order (best to worst) — keys are full attribute value names from Saleor
+const CONDITION_ORDER: Record<string, number> = {
+	"Near Mint": 0,
+	"Lightly Played": 1,
+	"Moderately Played": 2,
+	"Heavily Played": 3,
+	"Damaged": 4,
 };
 
-// Full names for condition tooltips
-const CONDITION_FULL_NAMES: Record<string, string> = {
-	"NM": "Near Mint",
-	"LP": "Lightly Played",
-	"MP": "Moderately Played",
-	"HP": "Heavily Played",
-	"DMG": "Damaged",
+// Finish sort order — full attribute value names from Saleor
+const FINISH_ORDER = ["Non-Foil", "Foil", "Etched", "Glossy"];
+
+// Full condition name -> abbreviated display label
+const CONDITION_ABBREVIATIONS: Record<string, string> = {
+	"Near Mint": "NM",
+	"Lightly Played": "LP",
+	"Moderately Played": "MP",
+	"Heavily Played": "HP",
+	"Damaged": "DMG",
 };
 
-// Display labels for finishes
+// Finish display labels (attribute value -> display string)
 const FINISH_LABELS: Record<string, string> = {
-	"Nonfoil": "Non-Foil",
+	"Non-Foil": "Non-Foil",
 	"Foil": "Foil",
 	"Etched": "Etched",
+	"Glossy": "Glossy",
 };
 
 /**
- * Parse variant name to extract condition and finish.
- * Variant names follow the pattern: "NM - Nonfoil", "HP - Foil", "DMG - Etched"
+ * Extract condition from variant attributes.
+ * Falls back to parsing variant name ("Near Mint - Non-Foil" format).
  */
-function parseVariantName(variantName: string): { condition: string; finish: string } {
-	const parts = variantName.split(" - ");
-	if (parts.length >= 2) {
-		return { condition: parts[0].trim(), finish: parts[1].trim() };
-	}
-	return { condition: variantName, finish: "Nonfoil" };
+function getConditionFromVariant(variant: VariantDetailsFragment): string {
+	const value = variant.attributes
+		?.find((a) => a.attribute.slug === CONDITION_SLUG)
+		?.values[0]?.name;
+	if (value) return value;
+
+	// Fallback: parse variant name
+	const parts = variant.name.split(" - ");
+	return parts[0]?.trim() || variant.name;
 }
 
 /**
- * Extract just the condition from a variant name.
+ * Extract finish from variant attributes.
+ * Falls back to parsing variant name ("Near Mint - Non-Foil" format).
  */
-function getConditionFromVariant(variantName: string): string {
-	return parseVariantName(variantName).condition;
+function getFinishFromVariant(variant: VariantDetailsFragment): string {
+	const value = variant.attributes
+		?.find((a) => a.attribute.slug === FINISH_SLUG)
+		?.values[0]?.name;
+	if (value) return value;
+
+	// Fallback: parse variant name
+	const parts = variant.name.split(" - ");
+	return parts[1]?.trim() || "Non-Foil";
 }
 
 /**
- * Extract the finish from a variant name.
- */
-function getFinishFromVariant(variantName: string): string {
-	return parseVariantName(variantName).finish;
-}
-
-/**
- * Get available finishes from variants.
+ * Get available finishes from variants, sorted by FINISH_ORDER.
  */
 function getAvailableFinishes(variants: readonly VariantDetailsFragment[]): string[] {
 	const finishes = new Set<string>();
 	for (const v of variants) {
-		finishes.add(getFinishFromVariant(v.name));
+		finishes.add(getFinishFromVariant(v));
 	}
 	return FINISH_ORDER.filter((f) => finishes.has(f));
 }
 
 /**
- * Sort variants by condition order (NM first, DMG last).
+ * Sort variants by condition order (Near Mint first, Damaged last).
  */
 function sortVariantsByCondition(variants: readonly VariantDetailsFragment[]): VariantDetailsFragment[] {
 	return [...variants].sort((a, b) => {
-		const aCondition = getConditionFromVariant(a.name);
-		const bCondition = getConditionFromVariant(b.name);
-		const aIndex = CONDITION_ORDER.indexOf(aCondition);
-		const bIndex = CONDITION_ORDER.indexOf(bCondition);
-
-		if (aIndex !== -1 && bIndex !== -1) {
-			return aIndex - bIndex;
-		}
-		if (aIndex !== -1) return -1;
-		if (bIndex !== -1) return 1;
-		return aCondition.localeCompare(bCondition);
+		const aCondition = getConditionFromVariant(a);
+		const bCondition = getConditionFromVariant(b);
+		const aIndex = CONDITION_ORDER[aCondition] ?? 99;
+		const bIndex = CONDITION_ORDER[bCondition] ?? 99;
+		return aIndex - bIndex;
 	});
 }
 
@@ -98,9 +98,8 @@ function findBestAvailableVariant(
 	variants: readonly VariantDetailsFragment[],
 	preferredFinish?: string,
 ): VariantDetailsFragment | undefined {
-	// If a finish is preferred, try to find an available variant in that finish
 	if (preferredFinish) {
-		const finishVariants = variants.filter((v) => getFinishFromVariant(v.name) === preferredFinish);
+		const finishVariants = variants.filter((v) => getFinishFromVariant(v) === preferredFinish);
 		const sorted = sortVariantsByCondition(finishVariants);
 		const found = sorted.find((v) => v.quantityAvailable && v.quantityAvailable > 0);
 		if (found) return found;
@@ -108,7 +107,7 @@ function findBestAvailableVariant(
 
 	// Fall back to any available variant, preferring Non-Foil first
 	for (const finish of FINISH_ORDER) {
-		const finishVariants = variants.filter((v) => getFinishFromVariant(v.name) === finish);
+		const finishVariants = variants.filter((v) => getFinishFromVariant(v) === finish);
 		const sorted = sortVariantsByCondition(finishVariants);
 		const found = sorted.find((v) => v.quantityAvailable && v.quantityAvailable > 0);
 		if (found) return found;
@@ -126,8 +125,7 @@ function findVariantByFinishAndCondition(
 	condition: string,
 ): VariantDetailsFragment | undefined {
 	return variants.find((v) => {
-		const parsed = parseVariantName(v.name);
-		return parsed.finish === finish && parsed.condition === condition;
+		return getFinishFromVariant(v) === finish && getConditionFromVariant(v) === condition;
 	});
 }
 
@@ -145,8 +143,8 @@ export function VariantSelector({
 	// Get available finishes for this product
 	const availableFinishes = getAvailableFinishes(variants);
 	// Determine current finish and condition from selected variant
-	const currentFinish = selectedVariant ? getFinishFromVariant(selectedVariant.name) : availableFinishes[0] || "Nonfoil";
-	const currentCondition = selectedVariant ? getConditionFromVariant(selectedVariant.name) : null;
+	const currentFinish = selectedVariant ? getFinishFromVariant(selectedVariant) : availableFinishes[0] || "Non-Foil";
+	const currentCondition = selectedVariant ? getConditionFromVariant(selectedVariant) : null;
 
 	// Auto-select best available variant if none selected
 	if (!selectedVariant && variants.length >= 1) {
@@ -157,7 +155,7 @@ export function VariantSelector({
 	}
 
 	// Filter variants by selected finish for condition display
-	const variantsForFinish = variants.filter((v) => getFinishFromVariant(v.name) === currentFinish);
+	const variantsForFinish = variants.filter((v) => getFinishFromVariant(v) === currentFinish);
 	const sortedConditionVariants = sortVariantsByCondition(variantsForFinish);
 
 	// Common button styles
@@ -184,9 +182,8 @@ export function VariantSelector({
 					{sortedConditionVariants.map((variant) => {
 						const isDisabled = !variant.quantityAvailable;
 						const isCurrentVariant = selectedVariant?.id === variant.id;
-						const condition = getConditionFromVariant(variant.name);
-						const label = CONDITION_LABELS[condition] || condition;
-						const fullName = CONDITION_FULL_NAMES[condition] || condition;
+						const conditionFull = getConditionFromVariant(variant);
+						const label = CONDITION_ABBREVIATIONS[conditionFull] || conditionFull;
 
 						return (
 							<LinkWithChannel
@@ -205,7 +202,7 @@ export function VariantSelector({
 								tabIndex={isDisabled ? -1 : undefined}
 								aria-checked={isCurrentVariant}
 								aria-disabled={isDisabled}
-								title={fullName}
+								title={conditionFull}
 							>
 								{label}
 							</LinkWithChannel>
@@ -220,7 +217,7 @@ export function VariantSelector({
 				<div className="flex flex-wrap gap-2">
 					{availableFinishes.map((finish) => {
 						const isSelected = finish === currentFinish;
-						const finishVariants = variants.filter((v) => getFinishFromVariant(v.name) === finish);
+						const finishVariants = variants.filter((v) => getFinishFromVariant(v) === finish);
 
 						// Try to maintain current condition when switching finishes
 						let targetVariant: VariantDetailsFragment | undefined;
