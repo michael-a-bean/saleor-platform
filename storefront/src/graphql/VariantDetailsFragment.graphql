@@ -10,4 +10,14 @@ fragment VariantDetails on ProductVariant {
 			}
 		}
 	}
+	attributes {
+		attribute {
+			slug
+			name
+		}
+		values {
+			slug
+			name
+		}
+	}
 }
