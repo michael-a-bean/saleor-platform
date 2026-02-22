@@ -74,12 +74,34 @@ api_desired_count        = 1
 api_cpu                  = 1024
 api_memory               = 2048
 worker_desired_count     = 1
-worker_cpu               = 256  # Right-sized: 4.2 CPU units avg of 512 provisioned (0.8%)
+worker_cpu               = 256 # Right-sized: 4.2 CPU units avg of 512 provisioned (0.8%)
 worker_memory            = 1024
 storefront_desired_count = 1
-storefront_cpu           = 512   # Doubled: 0.25→0.5 vCPU for faster SSR
-storefront_memory        = 1024  # Doubled: headroom for Next.js data cache
+storefront_cpu           = 512  # Doubled: 0.25→0.5 vCPU for faster SSR
+storefront_memory        = 1024 # Doubled: headroom for Next.js data cache
 dashboard_desired_count  = 0    # Scale to 0: 0% CPU, 3MB memory. Scale up when needed.
+
+# =============================================================================
+# Scheduled Scaling (Off-Hours Cost Savings)
+# =============================================================================
+# All services scale to 0 at midnight and restore at 8 AM Pacific.
+# This saves ~$3-5/day on staging Fargate costs.
+# Services scale down at midnight PST, back up at 8 AM PST.
+# Dashboard and mtg-import are already at desired_count=0, so they're excluded.
+enable_scheduled_scaling = true
+# scale_down_schedule      = "cron(0 0 * * ? *)"  # midnight PST (default)
+# scale_up_schedule        = "cron(0 8 * * ? *)"  # 8 AM PST (default)
+# scheduled_scaling_timezone = "America/Los_Angeles" # (default)
+
+# Auto-scaling capacity limits (staging: minimal, 1 service instance each)
+api_min_capacity          = 0
+api_max_capacity          = 2
+worker_min_capacity       = 0
+worker_max_capacity       = 2
+storefront_min_capacity   = 0
+storefront_max_capacity   = 2
+beat_max_capacity         = 1 # Never more than 1 beat scheduler
+apps_scaling_max_capacity = 1 # 1 instance per app in staging
 
 # Images (pin by digest in production, use tags in staging)
 # Updated 2026-01-12: API 3.22.26, Dashboard 3.21.18
