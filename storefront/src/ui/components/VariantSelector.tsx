@@ -147,8 +147,6 @@ export function VariantSelector({
 }) {
 	// Get available finishes for this product
 	const availableFinishes = getAvailableFinishes(variants);
-	const hasMultipleFinishes = availableFinishes.length > 1;
-
 	// Determine current finish and condition from selected variant
 	const currentFinish = selectedVariant ? getFinishFromVariant(selectedVariant.name) : availableFinishes[0] || "Non-Foil";
 	const currentCondition = selectedVariant ? getConditionFromVariant(selectedVariant.name) : null;
@@ -182,109 +180,104 @@ export function VariantSelector({
 
 	return (
 		<div className="mt-6 space-y-4" data-testid="VariantSelector">
-			{/* Finish Selector - only show if multiple finishes available */}
-			{hasMultipleFinishes && (
-				<fieldset role="radiogroup">
-					<legend className="mb-3 text-sm font-medium text-neutral-700">Finish</legend>
-					<div className="flex flex-wrap gap-2">
-						{availableFinishes.map((finish) => {
-							const isSelected = finish === currentFinish;
-							// Find best variant in this finish to link to
-							const finishVariants = variants.filter((v) => getFinishFromVariant(v.name) === finish);
-
-							// Try to maintain current condition when switching finishes
-							let targetVariant: VariantDetailsFragment | undefined;
-							if (currentCondition) {
-								targetVariant = findVariantByFinishAndCondition(variants, finish, currentCondition);
-							}
-							// Fall back to best available in this finish
-							if (!targetVariant || !targetVariant.quantityAvailable) {
-								targetVariant = findBestAvailableVariant(finishVariants, finish);
-							}
-							// Final fallback to first variant in finish
-							if (!targetVariant) {
-								targetVariant = sortVariantsByCondition(finishVariants)[0];
-							}
-
-							const hasStock = finishVariants.some((v) => v.quantityAvailable && v.quantityAvailable > 0);
-							const isDisabled = !hasStock;
-
-							// Determine styling based on finish type
-							let activeStyle = buttonActiveStyles;
-							let inactiveStyle = buttonInactiveStyles;
-							if (finish === "Foil") {
-								activeStyle = foilActiveStyles;
-								inactiveStyle = foilInactiveStyles;
-							} else if (finish === "Etched") {
-								activeStyle = etchedActiveStyles;
-								inactiveStyle = etchedInactiveStyles;
-							}
-
-							return (
-								<LinkWithChannel
-									key={finish}
-									prefetch={true}
-									scroll={false}
-									href={
-										isDisabled || !targetVariant
-											? "#"
-											: getHrefForVariant({ productSlug: product.slug, variantId: targetVariant.id })
-									}
-									className={clsx(
-										buttonBaseStyles,
-										isSelected ? activeStyle : inactiveStyle,
-										isDisabled && buttonDisabledStyles,
-									)}
-									role="radio"
-									tabIndex={isDisabled ? -1 : undefined}
-									aria-checked={isSelected}
-									aria-disabled={isDisabled}
-								>
-									{finish}
-								</LinkWithChannel>
-							);
-						})}
-					</div>
-				</fieldset>
-			)}
-
 			{/* Condition Selector */}
-			{sortedConditionVariants.length > 1 && (
-				<fieldset role="radiogroup">
-					<legend className="mb-3 text-sm font-medium text-neutral-700">Condition</legend>
-					<div className="flex flex-wrap gap-2">
-						{sortedConditionVariants.map((variant) => {
-							const isDisabled = !variant.quantityAvailable;
-							const isCurrentVariant = selectedVariant?.id === variant.id;
-							const condition = getConditionFromVariant(variant.name);
-							const shortLabel = CONDITION_SHORT_LABELS[condition] || condition;
+			<fieldset role="radiogroup">
+				<legend className="mb-3 text-sm font-medium text-neutral-700">Condition</legend>
+				<div className="flex flex-wrap gap-2">
+					{sortedConditionVariants.map((variant) => {
+						const isDisabled = !variant.quantityAvailable;
+						const isCurrentVariant = selectedVariant?.id === variant.id;
+						const condition = getConditionFromVariant(variant.name);
+						const shortLabel = CONDITION_SHORT_LABELS[condition] || condition;
 
-							return (
-								<LinkWithChannel
-									key={variant.id}
-									prefetch={true}
-									scroll={false}
-									href={
-										isDisabled ? "#" : getHrefForVariant({ productSlug: product.slug, variantId: variant.id })
-									}
-									className={clsx(
-										buttonBaseStyles,
-										isCurrentVariant ? buttonActiveStyles : buttonInactiveStyles,
-										isDisabled && buttonDisabledStyles,
-									)}
-									role="radio"
-									tabIndex={isDisabled ? -1 : undefined}
-									aria-checked={isCurrentVariant}
-									aria-disabled={isDisabled}
-									title={condition}
-								>
-									{shortLabel}
-								</LinkWithChannel>
-							);
-						})}
-					</div>
-				</fieldset>
-			)}
+						return (
+							<LinkWithChannel
+								key={variant.id}
+								prefetch={true}
+								scroll={false}
+								href={
+									isDisabled ? "#" : getHrefForVariant({ productSlug: product.slug, variantId: variant.id })
+								}
+								className={clsx(
+									buttonBaseStyles,
+									isCurrentVariant ? buttonActiveStyles : buttonInactiveStyles,
+									isDisabled && buttonDisabledStyles,
+								)}
+								role="radio"
+								tabIndex={isDisabled ? -1 : undefined}
+								aria-checked={isCurrentVariant}
+								aria-disabled={isDisabled}
+								title={condition}
+							>
+								{shortLabel}
+							</LinkWithChannel>
+						);
+					})}
+				</div>
+			</fieldset>
+
+			{/* Finish Selector */}
+			<fieldset role="radiogroup">
+				<legend className="mb-3 text-sm font-medium text-neutral-700">Finish</legend>
+				<div className="flex flex-wrap gap-2">
+					{availableFinishes.map((finish) => {
+						const isSelected = finish === currentFinish;
+						const finishVariants = variants.filter((v) => getFinishFromVariant(v.name) === finish);
+
+						// Try to maintain current condition when switching finishes
+						let targetVariant: VariantDetailsFragment | undefined;
+						if (currentCondition) {
+							targetVariant = findVariantByFinishAndCondition(variants, finish, currentCondition);
+						}
+						// Fall back to best available in this finish
+						if (!targetVariant || !targetVariant.quantityAvailable) {
+							targetVariant = findBestAvailableVariant(finishVariants, finish);
+						}
+						// Final fallback to first variant in finish
+						if (!targetVariant) {
+							targetVariant = sortVariantsByCondition(finishVariants)[0];
+						}
+
+						const hasStock = finishVariants.some((v) => v.quantityAvailable && v.quantityAvailable > 0);
+						const isDisabled = !hasStock;
+
+						// Determine styling based on finish type
+						let activeStyle = buttonActiveStyles;
+						let inactiveStyle = buttonInactiveStyles;
+						if (finish === "Foil") {
+							activeStyle = foilActiveStyles;
+							inactiveStyle = foilInactiveStyles;
+						} else if (finish === "Etched") {
+							activeStyle = etchedActiveStyles;
+							inactiveStyle = etchedInactiveStyles;
+						}
+
+						return (
+							<LinkWithChannel
+								key={finish}
+								prefetch={true}
+								scroll={false}
+								href={
+									isDisabled || !targetVariant
+										? "#"
+										: getHrefForVariant({ productSlug: product.slug, variantId: targetVariant.id })
+								}
+								className={clsx(
+									buttonBaseStyles,
+									isSelected ? activeStyle : inactiveStyle,
+									isDisabled && buttonDisabledStyles,
+								)}
+								role="radio"
+								tabIndex={isDisabled ? -1 : undefined}
+								aria-checked={isSelected}
+								aria-disabled={isDisabled}
+							>
+								{finish}
+							</LinkWithChannel>
+						);
+					})}
+				</div>
+			</fieldset>
 		</div>
 	);
 }
