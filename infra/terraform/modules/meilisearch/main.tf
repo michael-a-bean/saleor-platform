@@ -288,3 +288,57 @@ resource "aws_ecs_service" "meilisearch" {
     ignore_changes = [desired_count]
   }
 }
+
+# =============================================================================
+# Scheduled Scaling (midnight shutdown / morning restore)
+# =============================================================================
+
+resource "aws_appautoscaling_target" "meilisearch" {
+  count = var.enable_scheduled_scaling ? 1 : 0
+
+  max_capacity       = 1
+  min_capacity       = 0
+  resource_id        = "service/${var.cluster_name}/${aws_ecs_service.meilisearch.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  tags = {
+    Name        = "${local.name_prefix}-meilisearch-scaling"
+    Service     = "meilisearch"
+    ManagedBy   = "terraform"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "meilisearch_scale_down" {
+  count = var.enable_scheduled_scaling ? 1 : 0
+
+  name               = "${local.name_prefix}-meilisearch-scale-down"
+  service_namespace  = "ecs"
+  resource_id        = aws_appautoscaling_target.meilisearch[0].resource_id
+  scalable_dimension = "ecs:service:DesiredCount"
+  schedule           = var.scale_down_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    min_capacity = 0
+    max_capacity = 0
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "meilisearch_scale_up" {
+  count = var.enable_scheduled_scaling ? 1 : 0
+
+  name               = "${local.name_prefix}-meilisearch-scale-up"
+  service_namespace  = "ecs"
+  resource_id        = aws_appautoscaling_target.meilisearch[0].resource_id
+  scalable_dimension = "ecs:service:DesiredCount"
+  schedule           = var.scale_up_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    min_capacity = 1
+    max_capacity = 1
+  }
+}

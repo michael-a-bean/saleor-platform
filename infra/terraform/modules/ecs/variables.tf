@@ -293,6 +293,58 @@ variable "storefront_max_capacity" {
   default     = 10
 }
 
+variable "worker_min_capacity" {
+  description = "Minimum number of worker tasks"
+  type        = number
+  default     = 0
+}
+
+variable "worker_max_capacity" {
+  description = "Maximum number of worker tasks"
+  type        = number
+  default     = 2
+}
+
+variable "beat_max_capacity" {
+  description = "Maximum number of beat tasks (should be 1 to prevent duplicate scheduling)"
+  type        = number
+  default     = 1
+}
+
+variable "apps_scaling_max_capacity" {
+  description = "Maximum number of tasks per app service for auto-scaling"
+  type        = number
+  default     = 1
+}
+
+# =============================================================================
+# Scheduled Scaling (Off-Hours Cost Savings)
+# =============================================================================
+
+variable "enable_scheduled_scaling" {
+  description = "Enable scheduled scale-down during off-hours to save costs"
+  type        = bool
+  default     = false
+}
+
+variable "scale_down_schedule" {
+  description = "Cron expression for scale-down (default: midnight)"
+  type        = string
+  default     = "cron(0 0 * * ? *)"
+}
+
+variable "scale_up_schedule" {
+  description = "Cron expression for scale-up (default: 8 AM)"
+  type        = string
+  default     = "cron(0 8 * * ? *)"
+}
+
+variable "scheduled_scaling_timezone" {
+  description = "IANA timezone for scheduled scaling actions"
+  type        = string
+  default     = "America/Los_Angeles"
+}
+
 variable "enable_https" {
   description = "Enable HTTPS upgrade in storefront CSP. Set to false for HTTP-only environments like staging without SSL."
   type        = bool

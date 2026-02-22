@@ -761,11 +761,22 @@ resource "aws_ecs_service" "apps" {
 }
 
 # =============================================================================
-# Auto-Scaling for API Service
+# Auto-Scaling Targets
 # =============================================================================
+# Targets are registered when EITHER CPU-based scaling or scheduled scaling is
+# enabled. CPU policies are gated separately by enable_autoscaling.
+
+locals {
+  enable_scaling = var.enable_autoscaling || var.enable_scheduled_scaling
+
+  # All apps participate in auto-scaling (including batch jobs like mtg-import).
+  # Batch jobs (desired_count=0) get scale-up min=0 so they don't auto-start,
+  # but their max is restored so they CAN be started manually during business hours.
+  scalable_apps = local.enable_scaling && var.apps_enabled ? var.apps : {}
+}
 
 resource "aws_appautoscaling_target" "api" {
-  count = var.enable_autoscaling ? 1 : 0
+  count = local.enable_scaling ? 1 : 0
 
   max_capacity       = var.api_max_capacity
   min_capacity       = var.api_min_capacity
@@ -773,6 +784,50 @@ resource "aws_appautoscaling_target" "api" {
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
+
+resource "aws_appautoscaling_target" "worker" {
+  count = local.enable_scaling ? 1 : 0
+
+  max_capacity       = var.worker_max_capacity
+  min_capacity       = var.worker_min_capacity
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.worker.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_target" "beat" {
+  count = local.enable_scaling ? 1 : 0
+
+  max_capacity       = var.beat_max_capacity
+  min_capacity       = 0
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.beat.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_target" "storefront" {
+  count = local.enable_scaling ? 1 : 0
+
+  max_capacity       = var.storefront_max_capacity
+  min_capacity       = var.storefront_min_capacity
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.storefront.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_target" "apps" {
+  for_each = local.scalable_apps
+
+  max_capacity       = var.apps_scaling_max_capacity
+  min_capacity       = 0
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.apps[each.key].name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+# =============================================================================
+# CPU-Based Scaling Policies (gated by enable_autoscaling)
+# =============================================================================
 
 resource "aws_appautoscaling_policy" "api_cpu" {
   count = var.enable_autoscaling ? 1 : 0
@@ -793,20 +848,6 @@ resource "aws_appautoscaling_policy" "api_cpu" {
   }
 }
 
-# =============================================================================
-# Auto-Scaling for Storefront Service
-# =============================================================================
-
-resource "aws_appautoscaling_target" "storefront" {
-  count = var.enable_autoscaling ? 1 : 0
-
-  max_capacity       = var.storefront_max_capacity
-  min_capacity       = var.storefront_min_capacity
-  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.storefront.name}"
-  scalable_dimension = "ecs:service:DesiredCount"
-  service_namespace  = "ecs"
-}
-
 resource "aws_appautoscaling_policy" "storefront_cpu" {
   count = var.enable_autoscaling ? 1 : 0
 
@@ -823,6 +864,180 @@ resource "aws_appautoscaling_policy" "storefront_cpu" {
     target_value       = 70
     scale_in_cooldown  = 300
     scale_out_cooldown = 60
+  }
+}
+
+# =============================================================================
+# Scheduled Scaling (Off-Hours Cost Savings)
+# =============================================================================
+# Scale down at midnight, scale up at 8 AM (configurable timezone).
+# Scale-down: min=0, max=0 → forces all tasks to stop.
+# Scale-up: min=1, max=configured → forces at least 1 task to start.
+
+# --- API ---
+resource "aws_appautoscaling_scheduled_action" "api_scale_down" {
+  count = var.enable_scheduled_scaling ? 1 : 0
+
+  name               = "${local.name_prefix}-api-scale-down"
+  service_namespace  = aws_appautoscaling_target.api[0].service_namespace
+  resource_id        = aws_appautoscaling_target.api[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.api[0].scalable_dimension
+  schedule           = var.scale_down_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    min_capacity = 0
+    max_capacity = 0
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "api_scale_up" {
+  count = var.enable_scheduled_scaling ? 1 : 0
+
+  name               = "${local.name_prefix}-api-scale-up"
+  service_namespace  = aws_appautoscaling_target.api[0].service_namespace
+  resource_id        = aws_appautoscaling_target.api[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.api[0].scalable_dimension
+  schedule           = var.scale_up_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    min_capacity = 1
+    max_capacity = var.api_max_capacity
+  }
+}
+
+# --- Worker ---
+resource "aws_appautoscaling_scheduled_action" "worker_scale_down" {
+  count = var.enable_scheduled_scaling ? 1 : 0
+
+  name               = "${local.name_prefix}-worker-scale-down"
+  service_namespace  = aws_appautoscaling_target.worker[0].service_namespace
+  resource_id        = aws_appautoscaling_target.worker[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.worker[0].scalable_dimension
+  schedule           = var.scale_down_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    min_capacity = 0
+    max_capacity = 0
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "worker_scale_up" {
+  count = var.enable_scheduled_scaling ? 1 : 0
+
+  name               = "${local.name_prefix}-worker-scale-up"
+  service_namespace  = aws_appautoscaling_target.worker[0].service_namespace
+  resource_id        = aws_appautoscaling_target.worker[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.worker[0].scalable_dimension
+  schedule           = var.scale_up_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    min_capacity = 1
+    max_capacity = var.worker_max_capacity
+  }
+}
+
+# --- Beat ---
+resource "aws_appautoscaling_scheduled_action" "beat_scale_down" {
+  count = var.enable_scheduled_scaling ? 1 : 0
+
+  name               = "${local.name_prefix}-beat-scale-down"
+  service_namespace  = aws_appautoscaling_target.beat[0].service_namespace
+  resource_id        = aws_appautoscaling_target.beat[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.beat[0].scalable_dimension
+  schedule           = var.scale_down_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    min_capacity = 0
+    max_capacity = 0
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "beat_scale_up" {
+  count = var.enable_scheduled_scaling ? 1 : 0
+
+  name               = "${local.name_prefix}-beat-scale-up"
+  service_namespace  = aws_appautoscaling_target.beat[0].service_namespace
+  resource_id        = aws_appautoscaling_target.beat[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.beat[0].scalable_dimension
+  schedule           = var.scale_up_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    min_capacity = 1
+    max_capacity = var.beat_max_capacity
+  }
+}
+
+# --- Storefront ---
+resource "aws_appautoscaling_scheduled_action" "storefront_scale_down" {
+  count = var.enable_scheduled_scaling ? 1 : 0
+
+  name               = "${local.name_prefix}-storefront-scale-down"
+  service_namespace  = aws_appautoscaling_target.storefront[0].service_namespace
+  resource_id        = aws_appautoscaling_target.storefront[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.storefront[0].scalable_dimension
+  schedule           = var.scale_down_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    min_capacity = 0
+    max_capacity = 0
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "storefront_scale_up" {
+  count = var.enable_scheduled_scaling ? 1 : 0
+
+  name               = "${local.name_prefix}-storefront-scale-up"
+  service_namespace  = aws_appautoscaling_target.storefront[0].service_namespace
+  resource_id        = aws_appautoscaling_target.storefront[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.storefront[0].scalable_dimension
+  schedule           = var.scale_up_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    min_capacity = 1
+    max_capacity = var.storefront_max_capacity
+  }
+}
+
+# --- Apps (for_each over scalable apps) ---
+resource "aws_appautoscaling_scheduled_action" "apps_scale_down" {
+  for_each = var.enable_scheduled_scaling ? local.scalable_apps : {}
+
+  name               = "${local.name_prefix}-${each.key}-scale-down"
+  service_namespace  = aws_appautoscaling_target.apps[each.key].service_namespace
+  resource_id        = aws_appautoscaling_target.apps[each.key].resource_id
+  scalable_dimension = aws_appautoscaling_target.apps[each.key].scalable_dimension
+  schedule           = var.scale_down_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    min_capacity = 0
+    max_capacity = 0
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "apps_scale_up" {
+  for_each = var.enable_scheduled_scaling ? local.scalable_apps : {}
+
+  name               = "${local.name_prefix}-${each.key}-scale-up"
+  service_namespace  = aws_appautoscaling_target.apps[each.key].service_namespace
+  resource_id        = aws_appautoscaling_target.apps[each.key].resource_id
+  scalable_dimension = aws_appautoscaling_target.apps[each.key].scalable_dimension
+  schedule           = var.scale_up_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    # Batch jobs (desired_count=0) get min=0 so they don't auto-start at 8 AM.
+    # Regular apps get min=1 to ensure they start running.
+    min_capacity = coalesce(each.value.desired_count, var.apps_desired_count) > 0 ? 1 : 0
+    max_capacity = var.apps_scaling_max_capacity
   }
 }
 
