@@ -191,11 +191,11 @@ resource "aws_ecs_task_definition" "meilisearch_sync_worker" {
         },
         {
           name      = "SALEOR_ADMIN_EMAIL"
-          valueFrom = "/saleor/${var.environment}/meilisearch-sync/SALEOR_ADMIN_EMAIL"
+          valueFrom = "arn:aws:ssm:${var.aws_region}:${local.account_id}:parameter/saleor/${var.environment}/meilisearch-sync/SALEOR_ADMIN_EMAIL"
         },
         {
           name      = "SALEOR_ADMIN_PASSWORD"
-          valueFrom = "/saleor/${var.environment}/meilisearch-sync/SALEOR_ADMIN_PASSWORD"
+          valueFrom = "arn:aws:ssm:${var.aws_region}:${local.account_id}:parameter/saleor/${var.environment}/meilisearch-sync/SALEOR_ADMIN_PASSWORD"
         }
       ]
 
