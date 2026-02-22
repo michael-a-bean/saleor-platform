@@ -330,6 +330,10 @@ module "ecs" {
           {
             name      = "DATABASE_URL"
             valueFrom = "/saleor/${var.environment}/apps/inventory-ops/DATABASE_URL"
+          },
+          {
+            name      = "CRON_SECRET"
+            valueFrom = "/saleor/${var.environment}/apps/inventory-ops/CRON_SECRET"
           }
         ],
         var.meilisearch_enabled ? [

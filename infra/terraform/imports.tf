@@ -574,6 +574,11 @@ import {
 }
 
 import {
+  to = module.secrets.aws_ssm_parameter.inventory_cron_secret
+  id = "/saleor/staging/apps/inventory-ops/CRON_SECRET"
+}
+
+import {
   to = module.secrets.aws_ssm_parameter.otel_headers
   id = "/saleor/staging/api/OTEL_EXPORTER_OTLP_HEADERS"
 }
