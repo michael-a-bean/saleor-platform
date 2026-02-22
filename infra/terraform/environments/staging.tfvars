@@ -79,7 +79,7 @@ worker_memory            = 1024
 storefront_desired_count = 1
 storefront_cpu           = 512  # Doubled: 0.25→0.5 vCPU for faster SSR
 storefront_memory        = 1024 # Doubled: headroom for Next.js data cache
-dashboard_desired_count  = 0    # Scale to 0: 0% CPU, 3MB memory. Scale up when needed.
+dashboard_desired_count  = 1    # Dashboard should be running during business hours
 
 # =============================================================================
 # Scheduled Scaling (Off-Hours Cost Savings)
