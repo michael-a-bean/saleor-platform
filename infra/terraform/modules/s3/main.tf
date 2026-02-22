@@ -11,7 +11,8 @@ locals {
 # =============================================================================
 
 resource "aws_s3_bucket" "media" {
-  bucket = local.bucket_name
+  bucket        = local.bucket_name
+  force_destroy = var.force_destroy
 
   tags = {
     Name    = local.bucket_name

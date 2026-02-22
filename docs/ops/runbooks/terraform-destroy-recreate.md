@@ -304,14 +304,18 @@ done
 
 Save these values securely — you will need them in Step 7c.
 
-### 4d. Empty S3 Buckets (required — no `force_destroy`)
+### 4d. Empty S3 Buckets (staging: skip — `force_destroy` enabled)
+
+**Staging:** Skip this step. Both media and config buckets have `force_destroy = true` and will be emptied automatically during destroy.
+
+**Production:** `force_destroy` is NOT enabled. Manually empty buckets before destroy:
 
 ```bash
 # Media bucket
-aws s3 rm s3://saleor-platform-media-staging-546464732019 --recursive --region us-west-1
+aws s3 rm s3://saleor-platform-media-production-546464732019 --recursive --region us-west-1
 
 # Config bucket (AWS Config delivery)
-aws s3 rm s3://saleor-platform-staging-config-546464732019 --recursive --region us-west-1
+aws s3 rm s3://saleor-platform-production-config-546464732019 --recursive --region us-west-1
 ```
 
 ### 4e. Verify Branch
@@ -415,7 +419,18 @@ After `terraform apply` completes, the following are ready:
 
 ## 7. Post-Creation Bootstrap
 
-Execute these steps in order. Each step depends on the previous.
+### Automated Bootstrap (recommended)
+
+After updating external secrets (Step 1 below), run the bootstrap script to automate Steps 3-7:
+
+```bash
+# From the project root
+./scripts/bootstrap-environment.sh staging
+```
+
+This creates the `inventory_ops` database, runs Django and Prisma migrations, creates the superuser, and force-restarts all ECS services. It outputs the remaining manual steps when complete.
+
+If you prefer manual control, follow all steps below.
 
 ### Step 1: Update External Secrets (~2 min)
 
@@ -514,6 +529,8 @@ Then set the password via Django shell or the Dashboard password reset flow.
 
 ### Step 5: Create inventory_ops Database (~3 min)
 
+> **Note:** The bootstrap script (`scripts/bootstrap-environment.sh`) handles this automatically. Only follow these manual steps if not using the bootstrap script.
+
 The RDS instance has only the `saleor` database. Create the inventory database:
 
 ```bash
@@ -579,7 +596,7 @@ done
 
 Wait for services to stabilize (2-3 minutes).
 
-### Step 8: Configure Saleor Channel (~5 min)
+### Step 8: Configure Saleor Channel (~10 min)
 
 Via the Dashboard at `https://dashboard.staging.michaelbean.org`:
 
@@ -591,9 +608,19 @@ Via the Dashboard at `https://dashboard.staging.michaelbean.org`:
    - Country: `US`
 3. Set as default channel
 4. **Configuration** → **Warehouses** → **Create Warehouse**
-5. **Configuration** → **Shipping** → set up shipping zones as needed
+   - Name: `Main Warehouse`
+   - Link to `Webstore` channel
+5. **Configuration** → **Shipping** → **Create Shipping Zone**
+   - Name: `US Domestic`
+   - Countries: `United States`
+   - Add shipping method (e.g., `Standard Shipping`, `$5.00`)
+   - Link to `Webstore` channel
+6. **Activate payment method in channel** (REQUIRED for checkout):
+   - After installing the Stripe app (Step 9), go to **Configuration** → **Channels** → **Webstore**
+   - In the **Payment methods** section, enable Stripe
+   - Without this, customers cannot complete checkout
 
-Or via GraphQL `channelCreate` mutation.
+Or via GraphQL `channelCreate` / `channelUpdate` mutations.
 
 ### Step 9: Install Saleor Apps (~15 min)
 
@@ -628,18 +655,31 @@ aws ecs run-task \
   --region us-west-1
 ```
 
-### Step 11: Rebuild Meilisearch Index (~10 min)
+### Step 11: Initial Price Sync (~10 min)
+
+After the MTG catalog import populates products, trigger the price sync to fetch market prices from Scryfall and write them to Saleor channel listings:
+
+```bash
+# Trigger via the inventory-ops cron endpoint (requires app to be installed first)
+curl -X POST https://apps.staging.michaelbean.org/apps/inventory/api/cron/price-sync \
+  -H "Content-Type: application/json" \
+  -d '{"mode": "full"}'
+```
+
+**IMPORTANT:** Products have no prices until this step runs. Without prices, the storefront shows `$0.00` and checkout fails with currency errors. Both `price_amount` and `discounted_price_amount` must be set (see database.md rule).
+
+### Step 12: Rebuild Meilisearch Index (~10 min)
 
 The daily EventBridge reconciliation rule will automatically trigger a full reindex at 6 AM UTC. To trigger immediately, run the sync worker with `SYNC_MODE=full` (or wait for the scheduled job).
 
-### Step 12: Reconfigure Stripe Webhooks (~5 min)
+### Step 13: Reconfigure Stripe Webhooks (~5 min)
 
 In the Stripe Dashboard:
 1. Go to **Developers** → **Webhooks**
 2. Update or create endpoint URL: `https://apps.staging.michaelbean.org/apps/stripe/api/webhooks/stripe`
 3. Verify webhook secret matches the SSM parameter
 
-### Step 13: Restore S3 Media (if backed up)
+### Step 14: Restore S3 Media (if backed up)
 
 ```bash
 aws s3 sync ./backups/media-YYYYMMDD/ \
@@ -651,7 +691,7 @@ aws s3 sync ./backups/media-YYYYMMDD/ \
 
 ## 8. Verification
 
-After completing all bootstrap steps:
+After completing all bootstrap steps, verify the environment is fully testable.
 
 ### Infrastructure Health
 
@@ -693,17 +733,52 @@ curl -sf -X POST \
   https://api.staging.michaelbean.org/graphql/ | jq '.data.apps.edges[].node'
 ```
 
+### Testable Store Checklist
+
+Use this checklist to confirm the environment is ready for full functionality testing:
+
+**Core Commerce:**
+- [ ] Dashboard login works with superuser credentials
+- [ ] Webstore channel exists with USD currency
+- [ ] At least one warehouse exists and is linked to the channel
+- [ ] At least one shipping zone and method are active
+- [ ] Stripe payment method is active in the Webstore channel
+- [ ] Storefront loads and displays products (requires MTG import)
+- [ ] Product pages show prices (requires price sync after import)
+
+**Checkout Flow:**
+- [ ] Add product to cart from storefront
+- [ ] Enter shipping address → shipping methods appear
+- [ ] Select payment → Stripe checkout form renders
+- [ ] Complete test payment (use Stripe test card `4242 4242 4242 4242`)
+- [ ] Order appears in Dashboard → Orders
+
+**Apps:**
+- [ ] Stripe app installed and active (Dashboard → Apps)
+- [ ] Inventory Ops app installed and active
+- [ ] Buylist app installed and active
+- [ ] POS app installed and active
+- [ ] MTG Import app installed (can be inactive after import)
+
+**Search:**
+- [ ] Meilisearch returns results for product queries
+- [ ] Storefront search bar works
+
+**Pricing:**
+- [ ] Products have non-zero prices on channel listings
+- [ ] No `discounted_price_amount IS NULL` entries (currency crash prevention)
+
+**Background Jobs:**
+- [ ] Celery Beat is running (check ECS service count)
+- [ ] Worker is processing tasks (check CloudWatch logs)
+
 ---
 
 ## 9. Known Issues & Blockers
 
-### S3 `force_destroy` Not Set
+### ~~S3 `force_destroy` Not Set~~ (FIXED)
 
-**Impact:** `terraform destroy` fails if S3 buckets contain objects.
-**Workaround:** Manually empty buckets before destroy (Step 4d).
-**Fix:** Add `force_destroy = true` to staging S3 module (NOT production).
-
-**Source:** `modules/s3/main.tf` — `aws_s3_bucket.media` has no `force_destroy` attribute.
+**Status:** Fixed. Both media and config S3 buckets now have `force_destroy = true` for staging environments. Step 4d (manual bucket emptying) is no longer required for staging.
 
 ### CloudFront Disable Delay
 
@@ -720,10 +795,9 @@ curl -sf -X POST \
 **Impact:** Three external secrets (Stripe x2, OTEL) are created with placeholder values.
 **Workaround:** Manual update per Step 7.1. This is by design — Terraform should not store real secrets in `.tfvars`.
 
-### No Automated Bootstrap Script
+### ~~No Automated Bootstrap Script~~ (IMPLEMENTED)
 
-**Impact:** Steps 3-12 are manual. A future improvement would be a single `scripts/bootstrap-environment.sh`.
-**Status:** Not yet implemented.
+**Status:** Implemented. `scripts/bootstrap-environment.sh` automates Steps 3-7 (database creation, migrations, superuser, service restart). Remaining steps (channel config, app installation, Stripe webhooks, catalog import, price sync) are inherently manual or UI-driven.
 
 ### ECS Services Crash-Loop on Fresh Deploy
 

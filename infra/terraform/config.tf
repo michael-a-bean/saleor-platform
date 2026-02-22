@@ -5,8 +5,9 @@
 
 # S3 bucket for AWS Config delivery
 resource "aws_s3_bucket" "config" {
-  count  = var.enable_config_rules ? 1 : 0
-  bucket = "${local.name_prefix}-config-${local.account_id}"
+  count         = var.enable_config_rules ? 1 : 0
+  bucket        = "${local.name_prefix}-config-${local.account_id}"
+  force_destroy = var.environment == "staging"
 
   tags = merge(local.common_tags, {
     Name    = "${local.name_prefix}-config"
