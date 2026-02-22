@@ -583,6 +583,16 @@ import {
   id = "/saleor/staging/api/OTEL_EXPORTER_OTLP_HEADERS"
 }
 
+import {
+  to = module.secrets.aws_ssm_parameter.meilisearch_sync_admin_email
+  id = "/saleor/staging/meilisearch-sync/SALEOR_ADMIN_EMAIL"
+}
+
+import {
+  to = module.secrets.aws_ssm_parameter.meilisearch_sync_admin_password
+  id = "/saleor/staging/meilisearch-sync/SALEOR_ADMIN_PASSWORD"
+}
+
 # MTG Import resources (created before Terraform adoption)
 import {
   to = module.ecr.aws_ecr_repository.repos["mtg-import-app"]

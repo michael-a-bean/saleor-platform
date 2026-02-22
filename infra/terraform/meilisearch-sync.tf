@@ -188,6 +188,14 @@ resource "aws_ecs_task_definition" "meilisearch_sync_worker" {
         {
           name      = "MEILISEARCH_API_KEY"
           valueFrom = aws_secretsmanager_secret.meilisearch_master_key[0].arn
+        },
+        {
+          name      = "SALEOR_ADMIN_EMAIL"
+          valueFrom = "/saleor/${var.environment}/meilisearch-sync/SALEOR_ADMIN_EMAIL"
+        },
+        {
+          name      = "SALEOR_ADMIN_PASSWORD"
+          valueFrom = "/saleor/${var.environment}/meilisearch-sync/SALEOR_ADMIN_PASSWORD"
         }
       ]
 

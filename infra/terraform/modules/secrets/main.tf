@@ -208,3 +208,37 @@ resource "aws_ssm_parameter" "inventory_cron_secret" {
     ignore_changes = [value]
   }
 }
+
+resource "aws_ssm_parameter" "meilisearch_sync_admin_email" {
+  name        = "${local.ssm_path_prefix}/meilisearch-sync/SALEOR_ADMIN_EMAIL"
+  type        = "SecureString"
+  value       = "placeholder-replaced-after-import"
+  description = "Saleor admin email for meilisearch sync worker authentication"
+
+  tags = {
+    Name        = "${local.name_prefix}-meilisearch-sync-admin-email"
+    Service     = "meilisearch-sync"
+    Environment = var.environment
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "meilisearch_sync_admin_password" {
+  name        = "${local.ssm_path_prefix}/meilisearch-sync/SALEOR_ADMIN_PASSWORD"
+  type        = "SecureString"
+  value       = "placeholder-replaced-after-import"
+  description = "Saleor admin password for meilisearch sync worker authentication"
+
+  tags = {
+    Name        = "${local.name_prefix}-meilisearch-sync-admin-password"
+    Service     = "meilisearch-sync"
+    Environment = var.environment
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
