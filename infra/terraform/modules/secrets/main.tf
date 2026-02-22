@@ -191,3 +191,20 @@ resource "aws_ssm_parameter" "inventory_database_url" {
     ignore_changes = [value]
   }
 }
+
+resource "aws_ssm_parameter" "inventory_cron_secret" {
+  name        = "${local.ssm_path_prefix}/apps/inventory-ops/CRON_SECRET"
+  type        = "SecureString"
+  value       = "placeholder-replaced-after-import"
+  description = "Bearer token for authenticating cron endpoint calls to inventory-ops"
+
+  tags = {
+    Name        = "${local.name_prefix}-inventory-cron-secret"
+    Service     = "inventory-ops"
+    Environment = var.environment
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
