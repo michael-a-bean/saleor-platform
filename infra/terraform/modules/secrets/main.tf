@@ -158,6 +158,23 @@ resource "aws_ssm_parameter" "stripe_webhook_secret" {
   }
 }
 
+resource "aws_ssm_parameter" "otel_headers" {
+  name        = "${local.ssm_path_prefix}/api/OTEL_EXPORTER_OTLP_HEADERS"
+  type        = "SecureString"
+  value       = var.otel_exporter_otlp_headers
+  description = "OpenTelemetry OTLP exporter authorization header (Grafana Cloud)"
+
+  tags = {
+    Name        = "${local.name_prefix}-otel-headers"
+    Service     = "api"
+    Environment = var.environment
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "aws_ssm_parameter" "inventory_database_url" {
   name        = "${local.ssm_path_prefix}/apps/inventory-ops/DATABASE_URL"
   type        = "SecureString"

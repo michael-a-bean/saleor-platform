@@ -40,6 +40,13 @@ variable "celery_broker_url" {
 # User-Provided Secrets (with placeholder defaults)
 # =============================================================================
 
+variable "otel_exporter_otlp_headers" {
+  description = "OpenTelemetry OTLP exporter auth header. Update via CLI after initial deploy."
+  type        = string
+  default     = "PLACEHOLDER_UPDATE_ME"
+  sensitive   = true
+}
+
 variable "stripe_secret_key" {
   description = "Stripe API secret key. Update via CLI after initial deploy."
   type        = string
