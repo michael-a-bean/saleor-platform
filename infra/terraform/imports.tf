@@ -655,5 +655,11 @@ import {
   id = "ecs/service/saleor-platform-staging/mtg-import/ecs:service:DesiredCount"
 }
 
+# Dashboard scaling target (previously unmanaged, now under Terraform)
+import {
+  to = module.ecs.aws_appautoscaling_target.dashboard[0]
+  id = "ecs/service/saleor-platform-staging/dashboard/ecs:service:DesiredCount"
+}
+
 # Meilisearch scaling target (managed by meilisearch module, not ECS module)
 # Note: target was deregistered during P0 cleanup — will be recreated by Terraform

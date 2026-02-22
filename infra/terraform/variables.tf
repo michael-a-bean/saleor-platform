@@ -253,6 +253,18 @@ variable "dashboard_desired_count" {
   default     = 1
 }
 
+variable "dashboard_min_capacity" {
+  description = "Minimum dashboard tasks for auto-scaling baseline"
+  type        = number
+  default     = 0
+}
+
+variable "dashboard_max_capacity" {
+  description = "Maximum dashboard tasks for auto-scaling"
+  type        = number
+  default     = 2
+}
+
 # =============================================================================
 # Auto-Scaling & Scheduled Scaling
 # =============================================================================

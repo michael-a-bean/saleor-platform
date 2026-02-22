@@ -262,6 +262,8 @@ module "ecs" {
   storefront_cpu           = var.storefront_cpu
   storefront_memory        = var.storefront_memory
   dashboard_desired_count  = var.dashboard_desired_count
+  dashboard_min_capacity   = var.dashboard_min_capacity
+  dashboard_max_capacity   = var.dashboard_max_capacity
 
   enable_container_insights = var.enable_container_insights
   log_retention_days        = var.log_retention_days

@@ -80,6 +80,8 @@ storefront_desired_count = 1
 storefront_cpu           = 512  # Doubled: 0.25→0.5 vCPU for faster SSR
 storefront_memory        = 1024 # Doubled: headroom for Next.js data cache
 dashboard_desired_count  = 1    # Dashboard should be running during business hours
+dashboard_min_capacity   = 1    # Baseline min=1 so terraform apply doesn't undo scheduled scale-up
+dashboard_max_capacity   = 2
 
 # =============================================================================
 # Scheduled Scaling (Off-Hours Cost Savings)
