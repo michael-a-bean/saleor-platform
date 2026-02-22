@@ -34,6 +34,11 @@ variable "cluster_id" {
   type        = string
 }
 
+variable "cluster_name" {
+  description = "ECS cluster name (for auto-scaling resource_id)"
+  type        = string
+}
+
 variable "execution_role_arn" {
   description = "ECS task execution role ARN"
   type        = string
@@ -95,4 +100,32 @@ variable "memory" {
     condition     = var.memory >= 512 && var.memory <= 30720
     error_message = "Memory must be between 512 and 30720 MB."
   }
+}
+
+# =============================================================================
+# Scheduled Scaling
+# =============================================================================
+
+variable "enable_scheduled_scaling" {
+  description = "Enable scheduled scale-down/up for Meilisearch"
+  type        = bool
+  default     = false
+}
+
+variable "scale_down_schedule" {
+  description = "Cron expression for scale-down"
+  type        = string
+  default     = "cron(0 0 * * ? *)"
+}
+
+variable "scale_up_schedule" {
+  description = "Cron expression for scale-up"
+  type        = string
+  default     = "cron(0 8 * * ? *)"
+}
+
+variable "scheduled_scaling_timezone" {
+  description = "IANA timezone for scheduled scaling"
+  type        = string
+  default     = "America/Los_Angeles"
 }
