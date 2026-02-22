@@ -176,6 +176,7 @@ resource "aws_ecs_task_definition" "meilisearch_sync_worker" {
       name      = "sync-worker"
       image     = "${module.ecr.repository_urls["price-sync-worker"]}:latest"
       essential = true
+      command   = ["python", "-u", "sync-meilisearch.py", "--channel", "webstore"]
 
       environment = [
         { name = "MEILISEARCH_URL", value = module.meilisearch[0].service_url },
@@ -311,15 +312,8 @@ resource "aws_cloudwatch_event_target" "meilisearch_catchup" {
     }
   }
 
-  input = jsonencode({
-    containerOverrides = [{
-      name = "sync-worker"
-      environment = [
-        { name = "SYNC_MODE", value = "delta" },
-        { name = "DELTA_MINUTES", value = "20" }
-      ]
-    }]
-  })
+  # Catchup uses default (incremental) sync - no command override needed
+  # The task definition command already runs: python -u sync-meilisearch.py --channel webstore
 }
 
 # Daily full reconciliation (6 AM UTC)
@@ -357,12 +351,11 @@ resource "aws_cloudwatch_event_target" "meilisearch_reconcile" {
     }
   }
 
+  # Full reconciliation overrides command to add --full flag
   input = jsonencode({
     containerOverrides = [{
-      name = "sync-worker"
-      environment = [
-        { name = "SYNC_MODE", value = "full" }
-      ]
+      name    = "sync-worker"
+      command = ["python", "-u", "sync-meilisearch.py", "--full", "--channel", "webstore"]
     }]
   })
 }
