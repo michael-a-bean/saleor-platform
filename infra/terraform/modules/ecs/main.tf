@@ -815,6 +815,16 @@ resource "aws_appautoscaling_target" "storefront" {
   service_namespace  = "ecs"
 }
 
+resource "aws_appautoscaling_target" "dashboard" {
+  count = local.enable_scaling ? 1 : 0
+
+  max_capacity       = var.dashboard_max_capacity
+  min_capacity       = var.dashboard_min_capacity
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.dashboard.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
 resource "aws_appautoscaling_target" "apps" {
   for_each = local.scalable_apps
 
@@ -1005,6 +1015,39 @@ resource "aws_appautoscaling_scheduled_action" "storefront_scale_up" {
   scalable_target_action {
     min_capacity = 1
     max_capacity = var.storefront_max_capacity
+  }
+}
+
+# --- Dashboard ---
+resource "aws_appautoscaling_scheduled_action" "dashboard_scale_down" {
+  count = var.enable_scheduled_scaling ? 1 : 0
+
+  name               = "${local.name_prefix}-dashboard-scale-down"
+  service_namespace  = aws_appautoscaling_target.dashboard[0].service_namespace
+  resource_id        = aws_appautoscaling_target.dashboard[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.dashboard[0].scalable_dimension
+  schedule           = var.scale_down_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    min_capacity = 0
+    max_capacity = 0
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "dashboard_scale_up" {
+  count = var.enable_scheduled_scaling ? 1 : 0
+
+  name               = "${local.name_prefix}-dashboard-scale-up"
+  service_namespace  = aws_appautoscaling_target.dashboard[0].service_namespace
+  resource_id        = aws_appautoscaling_target.dashboard[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.dashboard[0].scalable_dimension
+  schedule           = var.scale_up_schedule
+  timezone           = var.scheduled_scaling_timezone
+
+  scalable_target_action {
+    min_capacity = 1
+    max_capacity = var.dashboard_max_capacity
   }
 }
 
