@@ -485,7 +485,21 @@ resource "aws_route53_record" "cert_validation" {
   records         = [each.value.record]
   ttl             = 60
   type            = each.value.type
-  zone_id         = var.route53_zone_id
+  zone_id         = local.zone_id
+}
+
+# =============================================================================
+# Route53 Hosted Zone (data source — zone is shared across environments)
+# =============================================================================
+
+data "aws_route53_zone" "main" {
+  count = var.route53_zone_id != "" ? 1 : 0
+
+  zone_id = var.route53_zone_id
+}
+
+locals {
+  zone_id = var.route53_zone_id != "" ? data.aws_route53_zone.main[0].zone_id : ""
 }
 
 # =============================================================================
@@ -495,7 +509,7 @@ resource "aws_route53_record" "cert_validation" {
 resource "aws_route53_record" "api" {
   count = var.route53_zone_id != "" ? 1 : 0
 
-  zone_id = var.route53_zone_id
+  zone_id = local.zone_id
   name    = "api.${var.domain_name}"
   type    = "A"
 
@@ -509,7 +523,7 @@ resource "aws_route53_record" "api" {
 resource "aws_route53_record" "www" {
   count = var.route53_zone_id != "" ? 1 : 0
 
-  zone_id = var.route53_zone_id
+  zone_id = local.zone_id
   name    = "www.${var.domain_name}"
   type    = "A"
 
@@ -523,7 +537,7 @@ resource "aws_route53_record" "www" {
 resource "aws_route53_record" "dashboard" {
   count = var.route53_zone_id != "" ? 1 : 0
 
-  zone_id = var.route53_zone_id
+  zone_id = local.zone_id
   name    = "dashboard.${var.domain_name}"
   type    = "A"
 
@@ -537,7 +551,7 @@ resource "aws_route53_record" "dashboard" {
 resource "aws_route53_record" "apps" {
   count = var.route53_zone_id != "" ? 1 : 0
 
-  zone_id = var.route53_zone_id
+  zone_id = local.zone_id
   name    = "apps.${var.domain_name}"
   type    = "A"
 
@@ -553,7 +567,7 @@ resource "aws_route53_record" "apps" {
 resource "aws_route53_record" "apex" {
   count = var.route53_zone_id != "" ? 1 : 0
 
-  zone_id = var.route53_zone_id
+  zone_id = local.zone_id
   name    = var.domain_name
   type    = "A"
 
