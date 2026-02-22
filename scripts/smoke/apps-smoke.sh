@@ -38,6 +38,9 @@ APPS=(
   "mtg-import|/apps/mtg-import|3005"
 )
 
+# Apps that run on-demand (desired_count=0) — accept 503 as passing
+ON_DEMAND_APPS=("mtg-import")
+
 log_info() {
   echo -e "${GREEN}[INFO]${NC} $1"
 }
@@ -104,8 +107,21 @@ test_health() {
   status=$(echo "$response" | tail -n 2 | head -n 1)
   content_type=$(echo "$response" | tail -n 1)
 
+  # Check if this is an on-demand app (may be scaled to 0)
+  local is_on_demand=false
+  for od_app in "${ON_DEMAND_APPS[@]}"; do
+    if [[ "$app_name" == "$od_app" ]]; then
+      is_on_demand=true
+      break
+    fi
+  done
+
   # Check status code
   if [[ "$status" != "200" ]]; then
+    if [[ "$is_on_demand" == "true" && "$status" == "503" ]]; then
+      log_warn "Health check returned 503 (on-demand app, likely scaled to 0): $url"
+      return
+    fi
     log_fail "Health check returned status $status (expected 200): $url"
     print_diagnostics "$url" "$status" "$content_type" "$body"
     return
@@ -285,6 +301,24 @@ main() {
     echo ""
     log_info "Testing: $app_name (${base_path})"
     echo "----------------------------------------------"
+
+    # For on-demand apps, pre-check if service is reachable (may be scaled to 0)
+    local skip_remaining=false
+    for od_app in "${ON_DEMAND_APPS[@]}"; do
+      if [[ "$app_name" == "$od_app" ]]; then
+        local pre_status
+        pre_status=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$TIMEOUT" "${ALB_BASE_URL}${base_path}/api/health" 2>/dev/null || echo "000")
+        if [[ "$pre_status" == "503" ]]; then
+          log_warn "On-demand app '$app_name' returned 503 (likely scaled to 0) — skipping tests"
+          skip_remaining=true
+        fi
+        break
+      fi
+    done
+
+    if [[ "$skip_remaining" == "true" ]]; then
+      continue
+    fi
 
     test_health "$app_name" "$base_path"
     test_manifest "$app_name" "$base_path"
