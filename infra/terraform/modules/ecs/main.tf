@@ -451,7 +451,7 @@ resource "aws_ecs_service" "api" {
   }
 
   lifecycle {
-    ignore_changes = [task_definition] # Allow CI/CD to update
+    ignore_changes = [task_definition, desired_count] # CI/CD updates task def; auto-scaler manages desired count
   }
 }
 
@@ -479,7 +479,7 @@ resource "aws_ecs_service" "worker" {
   }
 
   lifecycle {
-    ignore_changes = [task_definition]
+    ignore_changes = [task_definition, desired_count]
   }
 }
 
@@ -508,7 +508,7 @@ resource "aws_ecs_service" "beat" {
   }
 
   lifecycle {
-    ignore_changes = [task_definition]
+    ignore_changes = [task_definition, desired_count]
   }
 }
 
@@ -542,7 +542,7 @@ resource "aws_ecs_service" "storefront" {
   }
 
   lifecycle {
-    ignore_changes = [task_definition]
+    ignore_changes = [task_definition, desired_count]
   }
 }
 
@@ -576,7 +576,7 @@ resource "aws_ecs_service" "dashboard" {
   }
 
   lifecycle {
-    ignore_changes = [task_definition]
+    ignore_changes = [task_definition, desired_count]
   }
 }
 
@@ -756,7 +756,7 @@ resource "aws_ecs_service" "apps" {
   }
 
   lifecycle {
-    ignore_changes = [task_definition] # Allow CI/CD to update
+    ignore_changes = [task_definition, desired_count] # Allow CI/CD to update
   }
 }
 
@@ -799,7 +799,7 @@ resource "aws_appautoscaling_target" "beat" {
   count = local.enable_scaling ? 1 : 0
 
   max_capacity       = var.beat_max_capacity
-  min_capacity       = 0
+  min_capacity       = var.beat_min_capacity
   resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.beat.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
@@ -819,7 +819,9 @@ resource "aws_appautoscaling_target" "apps" {
   for_each = local.scalable_apps
 
   max_capacity       = var.apps_scaling_max_capacity
-  min_capacity       = 0
+  # Batch jobs (desired_count=0) keep min=0 so they don't auto-start.
+  # Regular apps get the configured baseline so terraform apply doesn't undo scheduled scale-up.
+  min_capacity       = coalesce(each.value.desired_count, var.apps_desired_count) > 0 ? var.apps_scaling_min_capacity : 0
   resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.apps[each.key].name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"

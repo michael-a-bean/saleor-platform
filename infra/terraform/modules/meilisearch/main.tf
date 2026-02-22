@@ -297,7 +297,7 @@ resource "aws_appautoscaling_target" "meilisearch" {
   count = var.enable_scheduled_scaling ? 1 : 0
 
   max_capacity       = 1
-  min_capacity       = 0
+  min_capacity       = 1  # Baseline min=1 so terraform apply doesn't undo scheduled scale-up
   resource_id        = "service/${var.cluster_name}/${aws_ecs_service.meilisearch.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
