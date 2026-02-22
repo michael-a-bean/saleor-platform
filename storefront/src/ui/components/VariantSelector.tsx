@@ -4,50 +4,47 @@ import { LinkWithChannel } from "../atoms/LinkWithChannel";
 import { type ProductListItemFragment, type VariantDetailsFragment } from "@/gql/graphql";
 import { getHrefForVariant } from "@/lib/utils";
 
-// Condition order for MTG cards
-const CONDITION_ORDER = ["Near Mint", "Lightly Played", "Moderately Played", "Heavily Played", "Damaged"];
+// Condition order for MTG cards (short codes matching variant names)
+const CONDITION_ORDER = ["NM", "LP", "MP", "HP", "DMG"];
 
 // Finish order for MTG cards
-const FINISH_ORDER = ["Non-Foil", "Foil", "Etched", "Glossy"];
+const FINISH_ORDER = ["Nonfoil", "Foil", "Etched"];
 
-// Short labels for conditions
-const CONDITION_SHORT_LABELS: Record<string, string> = {
-	"Near Mint": "NM",
-	"Lightly Played": "LP",
-	"Moderately Played": "MP",
-	"Heavily Played": "HP",
-	"Damaged": "DMG",
+// Display labels for conditions
+const CONDITION_LABELS: Record<string, string> = {
+	"NM": "NM",
+	"LP": "LP",
+	"MP": "MP",
+	"HP": "HP",
+	"DMG": "DMG",
+};
+
+// Full names for condition tooltips
+const CONDITION_FULL_NAMES: Record<string, string> = {
+	"NM": "Near Mint",
+	"LP": "Lightly Played",
+	"MP": "Moderately Played",
+	"HP": "Heavily Played",
+	"DMG": "Damaged",
+};
+
+// Display labels for finishes
+const FINISH_LABELS: Record<string, string> = {
+	"Nonfoil": "Non-Foil",
+	"Foil": "Foil",
+	"Etched": "Etched",
 };
 
 /**
  * Parse variant name to extract condition and finish.
- * Variant names follow patterns:
- * - "Card Name - Near Mint" (legacy non-foil)
- * - "Card Name - Near Mint (Foil)"
- * - "Card Name - Near Mint (Etched)"
+ * Variant names follow the pattern: "NM - Nonfoil", "HP - Foil", "DMG - Etched"
  */
 function parseVariantName(variantName: string): { condition: string; finish: string } {
 	const parts = variantName.split(" - ");
-	if (parts.length < 2) {
-		return { condition: variantName, finish: "Non-Foil" };
+	if (parts.length >= 2) {
+		return { condition: parts[0].trim(), finish: parts[1].trim() };
 	}
-
-	const lastPart = parts[parts.length - 1];
-
-	// Check for finish in parentheses: "Near Mint (Foil)"
-	const finishMatch = lastPart.match(/^(.+?)\s*\((\w+)\)$/);
-	if (finishMatch) {
-		const condition = finishMatch[1].trim();
-		const finish = finishMatch[2];
-		return { condition, finish };
-	}
-
-	// Legacy format without finish - assume Non-Foil
-	if (CONDITION_ORDER.includes(lastPart)) {
-		return { condition: lastPart, finish: "Non-Foil" };
-	}
-
-	return { condition: lastPart, finish: "Non-Foil" };
+	return { condition: variantName, finish: "Nonfoil" };
 }
 
 /**
@@ -148,7 +145,7 @@ export function VariantSelector({
 	// Get available finishes for this product
 	const availableFinishes = getAvailableFinishes(variants);
 	// Determine current finish and condition from selected variant
-	const currentFinish = selectedVariant ? getFinishFromVariant(selectedVariant.name) : availableFinishes[0] || "Non-Foil";
+	const currentFinish = selectedVariant ? getFinishFromVariant(selectedVariant.name) : availableFinishes[0] || "Nonfoil";
 	const currentCondition = selectedVariant ? getConditionFromVariant(selectedVariant.name) : null;
 
 	// Auto-select best available variant if none selected
@@ -188,7 +185,8 @@ export function VariantSelector({
 						const isDisabled = !variant.quantityAvailable;
 						const isCurrentVariant = selectedVariant?.id === variant.id;
 						const condition = getConditionFromVariant(variant.name);
-						const shortLabel = CONDITION_SHORT_LABELS[condition] || condition;
+						const label = CONDITION_LABELS[condition] || condition;
+						const fullName = CONDITION_FULL_NAMES[condition] || condition;
 
 						return (
 							<LinkWithChannel
@@ -207,9 +205,9 @@ export function VariantSelector({
 								tabIndex={isDisabled ? -1 : undefined}
 								aria-checked={isCurrentVariant}
 								aria-disabled={isDisabled}
-								title={condition}
+								title={fullName}
 							>
-								{shortLabel}
+								{label}
 							</LinkWithChannel>
 						);
 					})}
@@ -272,7 +270,7 @@ export function VariantSelector({
 								aria-checked={isSelected}
 								aria-disabled={isDisabled}
 							>
-								{finish}
+								{FINISH_LABELS[finish] || finish}
 							</LinkWithChannel>
 						);
 					})}
