@@ -29,6 +29,7 @@ services:
       - ALLOWED_HOSTS=localhost,127.0.0.1,api,stripe-app,inventory-ops-app,buylist-app,pos-app,mtg-import-app,host.docker.internal
       - HTTP_IP_FILTER_ENABLED=False
       - RSA_PRIVATE_KEY=${RSA_PRIVATE_KEY:-}
+      - OTEL_EXPORTER_OTLP_HEADERS=${OTEL_EXPORTER_OTLP_HEADERS:-}
 
   dashboard:
     image: ghcr.io/saleor/saleor-dashboard:3.22
@@ -76,6 +77,7 @@ services:
       - DATABASE_URL=postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db/saleor
       - HTTP_IP_FILTER_ENABLED=False
       - RSA_PRIVATE_KEY=${RSA_PRIVATE_KEY:-}
+      - OTEL_EXPORTER_OTLP_HEADERS=${OTEL_EXPORTER_OTLP_HEADERS:-}
     depends_on:
       - cache
       - mailpit

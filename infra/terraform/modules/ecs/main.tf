@@ -79,24 +79,33 @@ resource "aws_ecs_task_definition" "api" {
         }
       ]
       essential = true
-      secrets = [
-        {
-          name      = "SECRET_KEY"
-          valueFrom = "${var.ssm_path_prefix}/api/SECRET_KEY"
-        },
-        {
-          name      = "DATABASE_URL"
-          valueFrom = "${var.ssm_path_prefix}/api/DATABASE_URL"
-        },
-        {
-          name      = "CELERY_BROKER_URL"
-          valueFrom = "${var.ssm_path_prefix}/api/CELERY_BROKER_URL"
-        },
-        {
-          name      = "RSA_PRIVATE_KEY"
-          valueFrom = "${var.ssm_path_prefix}/api/RSA_PRIVATE_KEY"
-        }
-      ]
+      secrets = concat(
+        [
+          {
+            name      = "SECRET_KEY"
+            valueFrom = "${var.ssm_path_prefix}/api/SECRET_KEY"
+          },
+          {
+            name      = "DATABASE_URL"
+            valueFrom = "${var.ssm_path_prefix}/api/DATABASE_URL"
+          },
+          {
+            name      = "CELERY_BROKER_URL"
+            valueFrom = "${var.ssm_path_prefix}/api/CELERY_BROKER_URL"
+          },
+          {
+            name      = "RSA_PRIVATE_KEY"
+            valueFrom = "${var.ssm_path_prefix}/api/RSA_PRIVATE_KEY"
+          }
+        ],
+        # OpenTelemetry auth header (Grafana Cloud Basic auth)
+        var.otel_exporter_endpoint != "" ? [
+          {
+            name      = "OTEL_EXPORTER_OTLP_HEADERS"
+            valueFrom = "${var.ssm_path_prefix}/api/OTEL_EXPORTER_OTLP_HEADERS"
+          }
+        ] : []
+      )
       environment = concat(
         [
           { name = "DEBUG", value = "false" },
@@ -115,6 +124,14 @@ resource "aws_ecs_task_definition" "api" {
         # CloudFront CDN for media - sets custom domain for media URLs in GraphQL responses
         var.media_cdn_url != "" ? [
           { name = "AWS_MEDIA_CUSTOM_DOMAIN", value = var.media_cdn_url }
+        ] : [],
+        # OpenTelemetry → Grafana Cloud
+        var.otel_exporter_endpoint != "" ? [
+          { name = "OTEL_SERVICE_NAME", value = "saleor-api" },
+          { name = "OTEL_TRACES_EXPORTER", value = "otlp" },
+          { name = "OTEL_METRICS_EXPORTER", value = "otlp" },
+          { name = "OTEL_EXPORTER_OTLP_PROTOCOL", value = "http/protobuf" },
+          { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = var.otel_exporter_endpoint }
         ] : []
       )
       logConfiguration = {
@@ -162,24 +179,33 @@ resource "aws_ecs_task_definition" "worker" {
         "--concurrency=2"
       ]
       essential = true
-      secrets = [
-        {
-          name      = "SECRET_KEY"
-          valueFrom = "${var.ssm_path_prefix}/api/SECRET_KEY"
-        },
-        {
-          name      = "DATABASE_URL"
-          valueFrom = "${var.ssm_path_prefix}/api/DATABASE_URL"
-        },
-        {
-          name      = "CELERY_BROKER_URL"
-          valueFrom = "${var.ssm_path_prefix}/api/CELERY_BROKER_URL"
-        },
-        {
-          name      = "RSA_PRIVATE_KEY"
-          valueFrom = "${var.ssm_path_prefix}/api/RSA_PRIVATE_KEY"
-        }
-      ]
+      secrets = concat(
+        [
+          {
+            name      = "SECRET_KEY"
+            valueFrom = "${var.ssm_path_prefix}/api/SECRET_KEY"
+          },
+          {
+            name      = "DATABASE_URL"
+            valueFrom = "${var.ssm_path_prefix}/api/DATABASE_URL"
+          },
+          {
+            name      = "CELERY_BROKER_URL"
+            valueFrom = "${var.ssm_path_prefix}/api/CELERY_BROKER_URL"
+          },
+          {
+            name      = "RSA_PRIVATE_KEY"
+            valueFrom = "${var.ssm_path_prefix}/api/RSA_PRIVATE_KEY"
+          }
+        ],
+        # OpenTelemetry auth header (Grafana Cloud Basic auth)
+        var.otel_exporter_endpoint != "" ? [
+          {
+            name      = "OTEL_EXPORTER_OTLP_HEADERS"
+            valueFrom = "${var.ssm_path_prefix}/api/OTEL_EXPORTER_OTLP_HEADERS"
+          }
+        ] : []
+      )
       environment = concat(
         [
           { name = "DEBUG", value = "false" },
@@ -194,6 +220,14 @@ resource "aws_ecs_task_definition" "worker" {
         # CloudFront CDN for media
         var.media_cdn_url != "" ? [
           { name = "AWS_MEDIA_CUSTOM_DOMAIN", value = var.media_cdn_url }
+        ] : [],
+        # OpenTelemetry → Grafana Cloud
+        var.otel_exporter_endpoint != "" ? [
+          { name = "OTEL_SERVICE_NAME", value = "saleor-worker" },
+          { name = "OTEL_TRACES_EXPORTER", value = "otlp" },
+          { name = "OTEL_METRICS_EXPORTER", value = "otlp" },
+          { name = "OTEL_EXPORTER_OTLP_PROTOCOL", value = "http/protobuf" },
+          { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = var.otel_exporter_endpoint }
         ] : []
       )
       logConfiguration = {

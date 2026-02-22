@@ -366,6 +366,16 @@ variable "enable_https" {
 }
 
 # =============================================================================
+# OpenTelemetry Configuration
+# =============================================================================
+
+variable "otel_exporter_endpoint" {
+  description = "OTLP exporter endpoint (e.g., https://otlp-gateway-prod-us-east-0.grafana.net/otlp). Empty string disables OTEL."
+  type        = string
+  default     = ""
+}
+
+# =============================================================================
 # GitHub Actions OIDC
 # =============================================================================
 

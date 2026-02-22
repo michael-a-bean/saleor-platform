@@ -50,11 +50,11 @@ module "vpc" {
   source = "./modules/vpc"
   count  = var.create_vpc ? 1 : 0
 
-  project_name         = var.project_name
-  environment          = var.environment
-  aws_region           = var.aws_region
-  vpc_cidr             = var.vpc_cidr
-  availability_zones   = var.availability_zones
+  project_name               = var.project_name
+  environment                = var.environment
+  aws_region                 = var.aws_region
+  vpc_cidr                   = var.vpc_cidr
+  availability_zones         = var.availability_zones
   single_nat_gateway         = var.environment == "staging"
   create_vpc_endpoints       = true
   create_interface_endpoints = var.create_interface_endpoints
@@ -264,6 +264,9 @@ module "ecs" {
   log_retention_days        = var.log_retention_days
   enable_https              = var.enable_https
 
+  # OpenTelemetry → Grafana Cloud
+  otel_exporter_endpoint = var.otel_exporter_endpoint
+
   # ==========================================================================
   # Saleor Apps Configuration
   # ==========================================================================
@@ -321,7 +324,7 @@ module "ecs" {
       environment = {
         APL             = "redis"
         REDIS_URL       = module.elasticache.cache_url
-        MEILISEARCH_URL = local.meilisearch_url
+        MEILISEARCH_URL = var.meilisearch_enabled ? module.meilisearch[0].service_url : "http://meilisearch.${local.name_prefix}.local:7700"
       }
     }
 
