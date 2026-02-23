@@ -29,6 +29,21 @@ const CONDITION_ABBREVIATIONS: Record<string, string> = {
 	"Damaged": "DMG",
 };
 
+// Short condition codes from variant names -> full names for normalization
+const CONDITION_SHORT_TO_FULL: Record<string, string> = {
+	NM: "Near Mint",
+	LP: "Lightly Played",
+	MP: "Moderately Played",
+	HP: "Heavily Played",
+	DMG: "Damaged",
+};
+
+// Normalize finish variants (e.g. "Nonfoil" -> "Non-Foil")
+const FINISH_NORMALIZE: Record<string, string> = {
+	Nonfoil: "Non-Foil",
+	nonfoil: "Non-Foil",
+};
+
 // Finish display labels (attribute value -> display string)
 const FINISH_LABELS: Record<string, string> = {
 	"Non-Foil": "Non-Foil",
@@ -39,32 +54,36 @@ const FINISH_LABELS: Record<string, string> = {
 
 /**
  * Extract condition from variant attributes.
- * Falls back to parsing variant name ("Near Mint - Non-Foil" format).
+ * Only trusts attribute values that match known conditions (rejects base64 IDs).
+ * Falls back to parsing variant name ("NM - Foil" or "Near Mint - Non-Foil" format).
  */
 function getConditionFromVariant(variant: VariantDetailsFragment): string {
 	const value = variant.attributes
 		?.find((a) => a.attribute.slug === CONDITION_SLUG)
 		?.values[0]?.name;
-	if (value) return value;
+	if (value && value in CONDITION_ORDER) return value;
 
-	// Fallback: parse variant name
+	// Fallback: parse variant name and normalize short codes
 	const parts = variant.name.split(" - ");
-	return parts[0]?.trim() || variant.name;
+	const raw = parts[0]?.trim() || variant.name;
+	return CONDITION_SHORT_TO_FULL[raw] || (raw in CONDITION_ORDER ? raw : raw);
 }
 
 /**
  * Extract finish from variant attributes.
- * Falls back to parsing variant name ("Near Mint - Non-Foil" format).
+ * Only trusts attribute values that match known finishes (rejects base64 IDs).
+ * Falls back to parsing variant name ("NM - Foil" or "Near Mint - Non-Foil" format).
  */
 function getFinishFromVariant(variant: VariantDetailsFragment): string {
 	const value = variant.attributes
 		?.find((a) => a.attribute.slug === FINISH_SLUG)
 		?.values[0]?.name;
-	if (value) return value;
+	if (value && FINISH_ORDER.includes(value)) return value;
 
-	// Fallback: parse variant name
+	// Fallback: parse variant name and normalize finish variants
 	const parts = variant.name.split(" - ");
-	return parts[1]?.trim() || "Non-Foil";
+	const raw = parts[1]?.trim() || "Non-Foil";
+	return FINISH_NORMALIZE[raw] || raw;
 }
 
 /**
