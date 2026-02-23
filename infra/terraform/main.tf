@@ -396,7 +396,7 @@ module "ecs" {
       port             = 3005
       cpu              = 512
       memory           = 2048
-      desired_count    = 0 # Batch importer — run on-demand via ECS RunTask, not 24/7
+      desired_count    = 1 # Always-on service for catalog management
       base_path        = "/apps/mtg-import"
       image            = "${module.ecr.mtg_import_app_repository_url}:${var.mtg_import_app_image_tag}"
       target_group_arn = module.alb.mtg_import_app_target_group_arn
