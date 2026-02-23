@@ -176,7 +176,7 @@ resource "aws_ecs_task_definition" "meilisearch_sync_worker" {
       name      = "sync-worker"
       image     = "${module.ecr.repository_urls["price-sync-worker"]}:latest"
       essential = true
-      command   = ["python", "-u", "sync-meilisearch.py", "--channel", "webstore"]
+      command   = ["bash", "-c", "python -u sync-meilisearch.py --channel webstore && python -u sync-meilisearch.py --channel singles-builder"]
 
       environment = [
         { name = "MEILISEARCH_URL", value = module.meilisearch[0].service_url },
