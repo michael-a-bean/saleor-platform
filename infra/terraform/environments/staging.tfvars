@@ -89,7 +89,7 @@ dashboard_max_capacity   = 2
 # All services scale to 0 at midnight and restore at 8 AM Pacific.
 # This saves ~$3-5/day on staging Fargate costs.
 # Services scale down at midnight PST, back up at 8 AM PST.
-# Dashboard and mtg-import are already at desired_count=0, so they're excluded.
+# All core services participate in scheduled scaling.
 enable_scheduled_scaling = true
 # scale_down_schedule      = "cron(0 0 * * ? *)"  # midnight PST (default)
 # scale_up_schedule        = "cron(0 8 * * ? *)"  # 8 AM PST (default)
