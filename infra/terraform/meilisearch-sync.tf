@@ -277,12 +277,14 @@ resource "aws_iam_role_policy" "eventbridge_ecs" {
   })
 }
 
-# 15-minute catchup sync (Council recommendation: MTG price sensitivity)
+# 15-minute delta catchup sync for both channels (webstore + singles-builder)
+# Uses meilisearch-delta-sync.py which only syncs products changed since last run.
+# Full sync (sync-meilisearch.py) takes 90+ min for 90k products and causes pile-up.
 resource "aws_cloudwatch_event_rule" "meilisearch_catchup" {
   count = var.meilisearch_enabled ? 1 : 0
 
   name                = "${local.name_prefix}-meilisearch-catchup"
-  description         = "Meilisearch 15-minute catchup sync for missed events"
+  description         = "Meilisearch 15-minute delta catchup sync for missed webhook events"
   schedule_expression = "rate(15 minutes)"
 
   tags = {
@@ -312,8 +314,14 @@ resource "aws_cloudwatch_event_target" "meilisearch_catchup" {
     }
   }
 
-  # Catchup uses default (incremental) sync - no command override needed
-  # The task definition command already runs: python -u sync-meilisearch.py --channel webstore
+  # Catchup uses delta sync for both channels — fast (seconds, not 90 min)
+  # Delta sync auto-detects last sync time and only fetches changed products
+  input = jsonencode({
+    containerOverrides = [{
+      name    = "sync-worker"
+      command = ["bash", "-c", "python -u meilisearch-delta-sync.py --channel webstore && python -u meilisearch-delta-sync.py --channel singles-builder"]
+    }]
+  })
 }
 
 # Daily full reconciliation (6 AM UTC)
@@ -351,11 +359,11 @@ resource "aws_cloudwatch_event_target" "meilisearch_reconcile" {
     }
   }
 
-  # Full reconciliation overrides command to add --full flag
+  # Full reconciliation for both channels — nightly consistency check
   input = jsonencode({
     containerOverrides = [{
       name    = "sync-worker"
-      command = ["python", "-u", "sync-meilisearch.py", "--full", "--channel", "webstore"]
+      command = ["bash", "-c", "python -u sync-meilisearch.py --full --channel webstore && python -u sync-meilisearch.py --full --channel singles-builder"]
     }]
   })
 }
