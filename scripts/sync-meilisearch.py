@@ -242,8 +242,17 @@ def transform_product(product: dict) -> dict:
 
     for variant in product.get("variants", []):
         var_attrs = variant.get("attributes", [])
-        condition = get_attribute_value(var_attrs, "mtg-condition") or "Near Mint"
-        finish = get_attribute_value(var_attrs, "mtg-finish") or "Non-Foil"
+        condition = get_attribute_value(var_attrs, "mtg-condition")
+        finish = get_attribute_value(var_attrs, "mtg-finish")
+
+        # Fallback: parse variant name "Near Mint - Non-Foil" when attributes are empty
+        if not condition or not finish:
+            variant_name = variant.get("name", "")
+            parts = variant_name.split(" - ", 1)
+            if not condition:
+                condition = parts[0].strip() if parts else "Near Mint"
+            if not finish:
+                finish = parts[1].strip() if len(parts) > 1 else "Non-Foil"
         stock = variant.get("quantityAvailable", 0) or 0
         price_data = variant.get("pricing", {}).get("price", {}).get("gross", {})
         price = price_data.get("amount")
