@@ -605,61 +605,21 @@ import {
 # ECS service imported via CLI (TF 1.5 import blocks don't support for_each service resources)
 # terraform import 'module.ecs.aws_ecs_service.apps["mtg-import"]' 'saleor-platform-staging/mtg-import'
 
-# =============================================================================
-# Application Auto Scaling Targets - Added 2026-02-21
-# Previously managed via AWS CLI; now IaC-managed with scheduled scaling.
-# =============================================================================
-
-import {
-  to = module.ecs.aws_appautoscaling_target.api[0]
-  id = "ecs/service/saleor-platform-staging/api/ecs:service:DesiredCount"
-}
-
-import {
-  to = module.ecs.aws_appautoscaling_target.worker[0]
-  id = "ecs/service/saleor-platform-staging/worker/ecs:service:DesiredCount"
-}
-
-import {
-  to = module.ecs.aws_appautoscaling_target.beat[0]
-  id = "ecs/service/saleor-platform-staging/beat/ecs:service:DesiredCount"
-}
-
-import {
-  to = module.ecs.aws_appautoscaling_target.storefront[0]
-  id = "ecs/service/saleor-platform-staging/storefront/ecs:service:DesiredCount"
-}
-
-import {
-  to = module.ecs.aws_appautoscaling_target.apps["stripe"]
-  id = "ecs/service/saleor-platform-staging/stripe/ecs:service:DesiredCount"
-}
-
-import {
-  to = module.ecs.aws_appautoscaling_target.apps["inventory-ops"]
-  id = "ecs/service/saleor-platform-staging/inventory-ops/ecs:service:DesiredCount"
-}
-
-import {
-  to = module.ecs.aws_appautoscaling_target.apps["buylist"]
-  id = "ecs/service/saleor-platform-staging/buylist/ecs:service:DesiredCount"
-}
-
-import {
-  to = module.ecs.aws_appautoscaling_target.apps["pos"]
-  id = "ecs/service/saleor-platform-staging/pos/ecs:service:DesiredCount"
-}
-
-import {
-  to = module.ecs.aws_appautoscaling_target.apps["mtg-import"]
-  id = "ecs/service/saleor-platform-staging/mtg-import/ecs:service:DesiredCount"
-}
-
-# Dashboard scaling target (previously unmanaged, now under Terraform)
-import {
-  to = module.ecs.aws_appautoscaling_target.dashboard[0]
-  id = "ecs/service/saleor-platform-staging/dashboard/ecs:service:DesiredCount"
-}
-
-# Meilisearch scaling target (managed by meilisearch module, not ECS module)
-# Note: target was deregistered during P0 cleanup — will be recreated by Terraform
+# Application Auto Scaling Targets — originally added 2026-02-21
+# Import blocks removed 2026-02-23: they errored with "does not exist in
+# configuration" during targeted plans (TF 1.5 import blocks can't resolve
+# for_each/count resources when targeting unrelated resources). Resources are
+# already in state from prior CLI imports. If not, terraform plan will show
+# them as "to create" and the next apply will create them.
+#
+# Original resources imported:
+#   - module.ecs.aws_appautoscaling_target.api[0]
+#   - module.ecs.aws_appautoscaling_target.worker[0]
+#   - module.ecs.aws_appautoscaling_target.beat[0]
+#   - module.ecs.aws_appautoscaling_target.storefront[0]
+#   - module.ecs.aws_appautoscaling_target.dashboard[0]
+#   - module.ecs.aws_appautoscaling_target.apps["stripe"]
+#   - module.ecs.aws_appautoscaling_target.apps["inventory-ops"]
+#   - module.ecs.aws_appautoscaling_target.apps["buylist"]
+#   - module.ecs.aws_appautoscaling_target.apps["pos"]
+#   - module.ecs.aws_appautoscaling_target.apps["mtg-import"]
