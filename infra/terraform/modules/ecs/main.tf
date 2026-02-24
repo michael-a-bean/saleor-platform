@@ -828,7 +828,7 @@ resource "aws_appautoscaling_target" "dashboard" {
 resource "aws_appautoscaling_target" "apps" {
   for_each = local.scalable_apps
 
-  max_capacity       = var.apps_scaling_max_capacity
+  max_capacity = var.apps_scaling_max_capacity
   # Batch jobs (desired_count=0) keep min=0 so they don't auto-start.
   # Regular apps get the configured baseline so terraform apply doesn't undo scheduled scale-up.
   min_capacity       = coalesce(each.value.desired_count, var.apps_desired_count) > 0 ? var.apps_scaling_min_capacity : 0

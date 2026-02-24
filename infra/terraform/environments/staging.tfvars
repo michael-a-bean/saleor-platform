@@ -96,16 +96,16 @@ enable_scheduled_scaling = true
 # scheduled_scaling_timezone = "America/Los_Angeles" # (default)
 
 # Auto-scaling capacity limits (staging: minimal, 1 service instance each)
-api_min_capacity          = 1  # Baseline min=1 prevents terraform apply from undoing 8 AM scheduled scale-up
+api_min_capacity          = 1 # Baseline min=1 prevents terraform apply from undoing 8 AM scheduled scale-up
 api_max_capacity          = 2
 worker_min_capacity       = 1
 worker_max_capacity       = 2
 storefront_min_capacity   = 1
 storefront_max_capacity   = 2
 beat_min_capacity         = 1
-beat_max_capacity         = 1  # Never more than 1 beat scheduler
-apps_scaling_min_capacity = 1  # Always-on apps stay running; batch jobs (desired_count=0) are excluded in Terraform
-apps_scaling_max_capacity = 1  # 1 instance per app in staging
+beat_max_capacity         = 1 # Never more than 1 beat scheduler
+apps_scaling_min_capacity = 1 # Always-on apps stay running; batch jobs (desired_count=0) are excluded in Terraform
+apps_scaling_max_capacity = 1 # 1 instance per app in staging
 
 # Images (pin by digest in production, use tags in staging)
 # Updated 2026-01-12: API 3.22.26, Dashboard 3.21.18
