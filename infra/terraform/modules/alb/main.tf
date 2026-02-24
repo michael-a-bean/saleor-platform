@@ -178,6 +178,7 @@ resource "aws_lb" "main" {
   subnets            = var.public_subnet_ids
 
   enable_deletion_protection = var.enable_deletion_protection
+  idle_timeout               = 120
 
   tags = {
     Name = "${local.name_prefix}-alb"
