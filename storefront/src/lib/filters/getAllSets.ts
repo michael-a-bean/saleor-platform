@@ -5,6 +5,7 @@ interface ScryfallSet {
 	name: string;
 	released_at: string;
 	set_type: string;
+	digital: boolean;
 	icon_svg_uri: string;
 	card_count: number;
 }
@@ -59,6 +60,7 @@ export async function getAllSets(): Promise<MtgSet[]> {
 		const sets = data.data
 			.filter(
 				(s) =>
+					!s.digital &&
 					s.released_at &&
 					s.released_at <= today &&
 					validTypes.includes(s.set_type) &&
