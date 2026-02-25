@@ -43,3 +43,4 @@ infra/terraform/.terraform/
 infra/terraform/*.tfplan
 infra/terraform/tfplan
 infra/terraform/.terraform.lock.hcl
+.claude/worktrees/
