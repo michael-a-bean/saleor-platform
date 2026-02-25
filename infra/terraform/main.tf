@@ -394,9 +394,9 @@ module "ecs" {
 
     mtg-import = {
       port             = 3005
-      cpu              = 512
-      memory           = 2048
-      desired_count    = 1 # Always-on service for catalog management
+      cpu              = 256  # Right-sized: 2.8% avg CPU, I/O-bound workload
+      memory           = 1024 # Right-sized: 39% peak of 2048 = ~800 MB fits in 1024
+      desired_count    = 1    # Always-on service for catalog management
       base_path        = "/apps/mtg-import"
       image            = "${module.ecr.mtg_import_app_repository_url}:${var.mtg_import_app_image_tag}"
       target_group_arn = module.alb.mtg_import_app_target_group_arn
