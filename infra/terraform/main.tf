@@ -411,7 +411,8 @@ module "ecs" {
         REDIS_URL          = module.elasticache.cache_url
         SCRYFALL_CACHE_DIR = "/tmp/scryfall-cache"
         DEFAULT_CURRENCY   = "USD"
-        IMPORT_BATCH_SIZE  = "100"
+        IMPORT_BATCH_SIZE  = "50" # Doubled from default 25; RDS db.t3.medium handles larger batches
+        IMPORT_CONCURRENCY = "5"  # Up from default 3; more DB RAM = more parallel writes
       }
     }
   }
