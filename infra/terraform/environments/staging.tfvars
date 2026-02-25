@@ -48,8 +48,9 @@ create_interface_endpoints = false
 # =============================================================================
 # Database (right-sized for staging)
 # =============================================================================
-# Downgraded from db.t3.medium: 5.3% avg CPU, 0.55 avg connections, 55% memory free
-db_instance_class        = "db.t3.small"
+# Upgraded from db.t3.small: 2 GB RAM insufficient for 100k product catalog (2-3 GB).
+# t3.medium (4 GB) keeps full working set in memory, benefits all services.
+db_instance_class        = "db.t3.medium"
 db_allocated_storage     = 100
 db_multi_az              = false
 db_backup_retention_days = 7
@@ -74,13 +75,13 @@ api_desired_count        = 1
 api_cpu                  = 1024
 api_memory               = 2048
 worker_desired_count     = 1
-worker_cpu               = 256 # Right-sized: 4.2 CPU units avg of 512 provisioned (0.8%)
-worker_memory            = 1024
+worker_cpu               = 256  # Right-sized: 4.2 CPU units avg of 512 provisioned (0.8%)
+worker_memory            = 2048 # Upgraded: 91% peak memory risked OOM
 storefront_desired_count = 1
-storefront_cpu           = 512  # Doubled: 0.25→0.5 vCPU for faster SSR
-storefront_memory        = 1024 # Doubled: headroom for Next.js data cache
-dashboard_desired_count  = 1    # Dashboard should be running during business hours
-dashboard_min_capacity   = 1    # Baseline min=1 so terraform apply doesn't undo scheduled scale-up
+storefront_cpu           = 256 # Right-sized: 8% avg CPU, 26% peak mem
+storefront_memory        = 512
+dashboard_desired_count  = 1 # Dashboard should be running during business hours
+dashboard_min_capacity   = 1 # Baseline min=1 so terraform apply doesn't undo scheduled scale-up
 dashboard_max_capacity   = 2
 
 # =============================================================================
