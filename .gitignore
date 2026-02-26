@@ -44,3 +44,20 @@ infra/terraform/*.tfplan
 infra/terraform/tfplan
 infra/terraform/.terraform.lock.hcl
 .claude/worktrees/
+
+# Private docs (migrated to docs-private submodule)
+docs/reports/
+docs/ops/audits/
+docs/ops/investigations/
+docs/ops/diagnostics/
+docs/ops/completed/
+docs/ops/issues/
+docs/analysis/
+docs/plans/
+docs/legacy/
+docs/debug/
+docs/CURRENT-STATE-OF-DEVELOPMENT.md
+.claude/plans/
+.claude/issues/
+.claude/sessions/
+.claude/prompts/
