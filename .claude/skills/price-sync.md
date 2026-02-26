@@ -118,7 +118,7 @@ Each pending update includes trend data:
 
 - `.claude/skills/inventory-ops.md` - Parent app overview
 - `docs/reference/sync-contracts.md` - Contract 2: Price Sync
-- `.claude/plans/mvp-completion-plan.md` - Original implementation context
+- `docs-private/.claude/plans/mvp-completion-plan.md` - Original implementation context
 - `docs/SCRYFALL_SYNC_STATUS.md` - Scryfall data sync status
 
 ## Verification Commands

@@ -75,7 +75,7 @@ This file stays intentionally lean. Detailed procedures live elsewhere and shoul
 - `.claude/rules/` — Critical gotchas (database, storefront, git, **infrastructure**)
 
 ### Legacy Material
-- `docs/legacy/` — Historical context only; do not auto-apply
+- `docs-private/docs/legacy/` — Historical context only; do not auto-apply
 
 **Before starting work, decide which of these are relevant and read only those.**
 
