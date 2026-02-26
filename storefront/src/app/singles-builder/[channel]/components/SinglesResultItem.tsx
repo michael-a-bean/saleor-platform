@@ -25,8 +25,19 @@ const CONDITION_ORDER: Record<string, number> = {
 	"Damaged": 4,
 };
 
+// Finish sort order (Non-Foil first, Etched last)
+const FINISH_ORDER: Record<string, number> = {
+	"Non-Foil": 0,
+	"Foil": 1,
+	"Etched": 2,
+};
+
 function getConditionFromVariant(variant: SinglesBuilderVariantFragment): string {
 	return variant.attributes?.find((a) => a.attribute.slug === "mtg-condition")?.values[0]?.name || "Near Mint";
+}
+
+function getFinishFromVariant(variant: SinglesBuilderVariantFragment): string {
+	return variant.attributes?.find((a) => a.attribute.slug === "mtg-finish")?.values[0]?.name || "Non-Foil";
 }
 
 // Cart line info for a variant
@@ -312,6 +323,19 @@ export function SinglesResultItem({ product, onQuickAdd, onUpdateQuantity, onRem
 			return condition === "Near Mint" || inStock || isInCart;
 		});
 
+	// Group filtered variants by finish
+	const variantsByFinish = new Map<string, typeof sortedAndFilteredVariants>();
+	for (const variant of sortedAndFilteredVariants) {
+		const finish = getFinishFromVariant(variant);
+		if (!variantsByFinish.has(finish)) {
+			variantsByFinish.set(finish, []);
+		}
+		variantsByFinish.get(finish)!.push(variant);
+	}
+	const finishGroups = [...variantsByFinish.entries()].sort(
+		([a], [b]) => (FINISH_ORDER[a] ?? 99) - (FINISH_ORDER[b] ?? 99)
+	);
+
 	// Rarity color
 	const rarityColor = rarity === "mythic"
 		? "text-orange-600"
@@ -360,17 +384,29 @@ export function SinglesResultItem({ product, onQuickAdd, onUpdateQuantity, onRem
 						</span>
 					</div>
 
-					{/* Variants - stacked vertically, to the right */}
-					<div className="flex flex-col gap-1 ml-auto">
-						{sortedAndFilteredVariants.map((variant) => (
-							<VariantRow
-								key={variant.id}
-								variant={variant}
-								onQuickAdd={onQuickAdd}
-								onUpdateQuantity={onUpdateQuantity}
-								onRemoveLine={onRemoveLine}
-								cartLine={cartLines?.get(variant.id)}
-							/>
+					{/* Variants - grouped by finish, stacked vertically, to the right */}
+					<div className="flex flex-col gap-2 ml-auto">
+						{finishGroups.map(([finish, finishVariants]) => (
+							<div key={finish} className="flex flex-col gap-1">
+								{/* Finish group label — only show if multiple finish groups */}
+								{finishGroups.length > 1 && (
+									<div className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
+										{finish === "Foil" && <span className="text-purple-500">✦ </span>}
+										{finish === "Etched" && <span className="text-amber-500">✦ </span>}
+										{finish}
+									</div>
+								)}
+								{finishVariants.map((variant) => (
+									<VariantRow
+										key={variant.id}
+										variant={variant}
+										onQuickAdd={onQuickAdd}
+										onUpdateQuantity={onUpdateQuantity}
+										onRemoveLine={onRemoveLine}
+										cartLine={cartLines?.get(variant.id)}
+									/>
+								))}
+							</div>
 						))}
 						{sortedAndFilteredVariants.length === 0 && (
 							<span className="text-xs text-gray-400">No variants</span>
