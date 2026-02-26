@@ -76,6 +76,7 @@ export default async function MagicLandingPage(props: { params: Promise<{ channe
 								src={section.image}
 								alt={section.name}
 								fill
+								sizes="(max-width: 768px) 100vw, 33vw"
 								className="object-contain p-4 transition-transform group-hover:scale-105"
 							/>
 						</div>

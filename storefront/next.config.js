@@ -2,7 +2,7 @@
 const config = {
 	images: {
 		remotePatterns: [
-			// Scryfall card images - enable full optimization
+			// Scryfall card images and SVGs (mana symbols, set icons)
 			{
 				protocol: "https",
 				hostname: "cards.scryfall.io",
@@ -11,9 +11,28 @@ const config = {
 				protocol: "https",
 				hostname: "*.scryfall.io",
 			},
-			// Fallback for other sources (Saleor media, etc.)
+			// CloudFront CDN for Saleor product media and thumbnails
 			{
-				hostname: "*",
+				protocol: "https",
+				hostname: "*.cloudfront.net",
+			},
+			// S3 direct access (staging — will be removed when CloudFront-only enforced)
+			{
+				protocol: "https",
+				hostname: "*.s3.amazonaws.com",
+			},
+			{
+				protocol: "https",
+				hostname: "*.s3.*.amazonaws.com",
+			},
+			// Saleor API media/thumbnail endpoint (local and deployed)
+			{
+				protocol: "http",
+				hostname: "localhost",
+			},
+			{
+				protocol: "https",
+				hostname: "*.saleor.cloud",
 			},
 		],
 		// Enable WebP and AVIF for modern browsers

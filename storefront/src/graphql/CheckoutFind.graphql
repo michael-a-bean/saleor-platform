@@ -16,7 +16,7 @@ query CheckoutFind($id: ID!) {
 					id
 					name
 					slug
-					thumbnail {
+					thumbnail(size: 256, format: WEBP) {
 						url
 						alt
 					}

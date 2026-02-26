@@ -109,6 +109,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 						src="/images/sets/ecl/ECL_sma_key_1640x680_en.jpg"
 						alt="Lorwyn Eclipsed"
 						fill
+						sizes="100vw"
 						className="object-cover object-left opacity-95"
 						priority
 					/>
@@ -169,6 +170,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 										src={product.image}
 										alt={product.name}
 										fill
+										sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 256px"
 										className="object-contain transition-transform group-hover:scale-105"
 									/>
 								</div>

@@ -72,6 +72,7 @@ export const OrderListItem = ({ order }: Props) => {
 																alt={imageAlt}
 																width={200}
 																height={200}
+																sizes="(max-width: 768px) 64px, 96px"
 																className="h-full w-full object-contain object-center"
 															/>
 														</div>

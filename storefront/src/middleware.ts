@@ -25,12 +25,7 @@ const TRUSTED_IMAGE_DOMAINS = [
   "https://svgs.scryfall.io",
   // Saleor API for uploaded media (thumbnail endpoint)
   process.env.NEXT_PUBLIC_SALEOR_API_URL?.replace('/graphql/', '') || "http://localhost:8000",
-  // AWS S3 media bucket for product images
-  "https://saleor-platform-media-staging-546464732019.s3.amazonaws.com",
-  // Support S3 global and regional formats (double-wildcard like *.s3.*.amazonaws.com is invalid CSP)
-  "https://*.s3.amazonaws.com",
-  "https://*.s3.us-west-1.amazonaws.com",
-  // CloudFront CDN for thumbnails
+  // CloudFront CDN for product media and thumbnails (all S3 access goes through CloudFront)
   "https://d30pbahsk8hi4i.cloudfront.net",
 ];
 

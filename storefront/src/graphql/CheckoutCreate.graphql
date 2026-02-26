@@ -17,7 +17,7 @@ mutation CheckoutCreate($channel: String!) {
 						id
 						name
 						slug
-						thumbnail {
+						thumbnail(size: 256, format: WEBP) {
 							url
 							alt
 						}
