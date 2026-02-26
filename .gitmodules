@@ -1,3 +1,6 @@
 [submodule "saleor-apps"]
 	path = saleor-apps
 	url = https://github.com/michael-a-bean/saleor-apps.git
+[submodule "docs-private"]
+	path = docs-private
+	url = https://github.com/michael-a-bean/saleor-platform-docs.git
