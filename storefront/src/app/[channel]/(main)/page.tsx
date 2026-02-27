@@ -105,14 +105,30 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 			<section className="relative overflow-hidden bg-gradient-to-br from-[#1a3a2f] via-[#2d4a3f] to-[#1f2f3a]">
 				{/* Background Image */}
 				<div className="absolute inset-0">
-					<Image
-						src="/images/sets/ecl/ECL_sma_key_1640x680_en.jpg"
-						alt="Lorwyn Eclipsed"
-						fill
-						sizes="100vw"
-						className="object-cover object-left opacity-95"
-						priority
-					/>
+					<picture>
+						<source
+							media="(max-width: 767px)"
+							srcSet="/images/sets/ecl/ECL_sma_key_1080x1080_en.webp"
+							type="image/webp"
+							width={1080}
+							height={1080}
+						/>
+						<source
+							media="(min-width: 768px)"
+							srcSet="/images/sets/ecl/ECL_sma_key_1640x680_en.webp"
+							type="image/webp"
+							width={1640}
+							height={680}
+						/>
+						{/* eslint-disable-next-line @next/next/no-img-element */}
+						<img
+							src="/images/sets/ecl/ECL_sma_key_1640x680_en.webp"
+							alt="Lorwyn Eclipsed"
+							fetchPriority="high"
+							decoding="async"
+							className="h-full w-full object-cover object-left opacity-95"
+						/>
+					</picture>
 					<div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
 				</div>
 
