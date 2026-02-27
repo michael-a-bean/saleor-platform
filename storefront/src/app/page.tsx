@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 import { DefaultChannelSlug } from "@/app/config";
 
-// Force dynamic rendering since redirect() is a dynamic function
-export const dynamic = "force-dynamic";
-
-export default function EmptyPage() {
+// Fallback redirect — middleware rewrites "/" to the default channel before this
+// runs, so this only fires if middleware is bypassed (e.g., static export).
+export default function RootPage() {
 	redirect(`/${DefaultChannelSlug}`);
 }

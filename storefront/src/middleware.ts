@@ -67,8 +67,25 @@ const DYNAMIC_PATHS = ["/checkout", "/login", "/orders", "/cart", "/singles-buil
  * - Sets Cache-Control on cacheable catalog pages
  * - Protects /singles-builder/* routes (staff check in layout)
  */
+const DEFAULT_CHANNEL = process.env.NEXT_PUBLIC_DEFAULT_CHANNEL ?? "webstore";
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Rewrite bare "/" to the default channel — avoids a 307 redirect round trip
+  // that costs ~1s on mobile (Lighthouse "Avoid multiple page redirects")
+  if (pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${DEFAULT_CHANNEL}`;
+    const response = NextResponse.rewrite(url);
+    const securityHeaders = getSecurityHeaders();
+    Object.entries(securityHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+    return response;
+  }
+
   const response = NextResponse.next();
 
   // Apply security headers to all routes
