@@ -36,8 +36,10 @@ export function ProductElement({
 	loading = "lazy",
 	priority,
 }: { product: ProductListItemFragment } & { loading?: "eager" | "lazy"; priority?: boolean }) {
-	// Prefer media URL (external images) over thumbnail URL (Saleor-generated)
-	const imageUrl = product?.media?.[0]?.url || product?.thumbnail?.url;
+	// Primary: external media URL (Scryfall). Fallback: Saleor-generated thumbnail (CloudFront).
+	const primaryUrl = product?.media?.[0]?.url;
+	const fallbackUrl = product?.thumbnail?.url;
+	const imageUrl = primaryUrl || fallbackUrl;
 	const imageAlt = product?.media?.[0]?.alt || product?.thumbnail?.alt || "";
 
 	const setCode = getAttributeValue(product, "mtg-set-code");
@@ -54,6 +56,7 @@ export function ProductElement({
 						<ProductImageWrapper
 							loading={loading}
 							src={imageUrl}
+							fallbackSrc={primaryUrl ? fallbackUrl : undefined}
 							alt={imageAlt}
 							width={488}
 							height={680}

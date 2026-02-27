@@ -286,6 +286,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 											style={{ filter: "brightness(0)" }}
 											fetchPriority="low"
 											loading="lazy"
+											onError={(e) => { e.currentTarget.style.display = "none"; }}
 										/>
 									</div>
 									<div className="min-w-0 flex-1">

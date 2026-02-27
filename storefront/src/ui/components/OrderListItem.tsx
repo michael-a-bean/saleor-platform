@@ -1,8 +1,29 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 import { LinkWithChannel } from "../atoms/LinkWithChannel";
 import { formatDate, formatMoney, getHrefForVariant } from "@/lib/utils";
 import { type OrderDetailsFragment } from "@/gql/graphql";
 import { PaymentStatus } from "@/ui/components/PaymentStatus";
+
+function OrderImage({ src, alt }: { src: string; alt: string }) {
+	const [hidden, setHidden] = useState(false);
+	if (hidden) return null;
+	return (
+		<div className="mr-3 aspect-square h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border bg-neutral-50 md:mr-6 md:h-24 md:w-24">
+			<Image
+				src={src}
+				alt={alt}
+				width={200}
+				height={200}
+				sizes="(max-width: 768px) 64px, 96px"
+				className="h-full w-full object-contain object-center"
+				onError={() => setHidden(true)}
+			/>
+		</div>
+	);
+}
 
 type Props = {
 	order: OrderDetailsFragment;
@@ -66,16 +87,7 @@ export const OrderListItem = ({ order }: Props) => {
 											<td className="py-6 pr-6 md:w-[60%] lg:w-[70%]">
 												<div className="flex flex-row items-center">
 													{imageUrl && (
-														<div className="mr-3 aspect-square h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border bg-neutral-50 md:mr-6 md:h-24 md:w-24">
-															<Image
-																src={imageUrl}
-																alt={imageAlt}
-																width={200}
-																height={200}
-																sizes="(max-width: 768px) 64px, 96px"
-																className="h-full w-full object-contain object-center"
-															/>
-														</div>
+														<OrderImage src={imageUrl} alt={imageAlt} />
 													)}
 													<div>
 														<LinkWithChannel

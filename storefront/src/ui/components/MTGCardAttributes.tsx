@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { Disclosure, Transition } from "@headlessui/react";
 import { ChevronDown } from "lucide-react";
@@ -52,8 +53,21 @@ const COLOR_TO_SYMBOL: Record<string, string> = {
 	"mtg-color-g": "G",
 };
 
-// Mana symbol component using Scryfall SVGs
+// Mana symbol component using Scryfall SVGs with graceful fallback
 function ManaSymbol({ symbol, size = 16 }: { symbol: string; size?: number }) {
+	const [failed, setFailed] = useState(false);
+
+	if (failed) {
+		return (
+			<span
+				className="inline-flex items-center justify-center rounded-full bg-neutral-200 text-xs font-mono font-bold text-neutral-600"
+				style={{ width: size, height: size, fontSize: size * 0.6 }}
+			>
+				{symbol}
+			</span>
+		);
+	}
+
 	return (
 		<Image
 			src={`https://svgs.scryfall.io/card-symbols/${encodeURIComponent(symbol)}.svg`}
@@ -62,6 +76,7 @@ function ManaSymbol({ symbol, size = 16 }: { symbol: string; size?: number }) {
 			height={size}
 			className="inline-block"
 			unoptimized
+			onError={() => setFailed(true)}
 		/>
 	);
 }

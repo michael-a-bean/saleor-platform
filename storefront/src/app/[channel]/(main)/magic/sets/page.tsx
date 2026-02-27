@@ -84,6 +84,7 @@ export default async function SetsPage(props: { params: Promise<{ channel: strin
 										alt={`${set.name} set icon`}
 										className="h-8 w-8 object-contain"
 										style={{ filter: "brightness(0)" }}
+										onError={(e) => { e.currentTarget.style.display = "none"; }}
 									/>
 								</div>
 								<div className="min-w-0 flex-1">

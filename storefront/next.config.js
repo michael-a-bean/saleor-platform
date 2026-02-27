@@ -53,6 +53,19 @@ const config = {
 		// while localhost URLs will fall through unoptimized
 		unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === "true",
 	},
+	async headers() {
+		return [
+			{
+				source: "/images/:path*",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "public, max-age=31536000, immutable",
+					},
+				],
+			},
+		];
+	},
 	typedRoutes: false,
 	// used in the Dockerfile
 	output:
