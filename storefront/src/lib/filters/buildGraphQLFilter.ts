@@ -54,6 +54,17 @@ export function buildProductFilter(filters: MTGFilterState): ProductFilterInput 
 		});
 	}
 
+	// Mana value filter (numeric attribute — uses valuesRange for IntRangeInput)
+	if (filters.manaValue.min !== undefined || filters.manaValue.max !== undefined) {
+		attributeFilters.push({
+			slug: ATTRIBUTE_SLUGS.manaValue,
+			valuesRange: {
+				gte: filters.manaValue.min,
+				lte: filters.manaValue.max,
+			},
+		});
+	}
+
 	// Build the filter object
 	const filter: ProductFilterInput = {};
 
@@ -64,14 +75,14 @@ export function buildProductFilter(filters: MTGFilterState): ProductFilterInput 
 
 	// Add price range filter
 	if (filters.price.min !== undefined || filters.price.max !== undefined) {
-		filter.minimalPrice = {
+		filter.price = {
 			gte: filters.price.min,
 			lte: filters.price.max,
 		};
 	}
 
 	// Add search terms for type line and set name
-	// These are combined into a search string since exact attribute matching doesn't work for plain-text fields
+	// Plain-text attributes can only be filtered via free-text search
 	const searchTerms: string[] = [];
 	if (filters.typeLine) {
 		searchTerms.push(filters.typeLine);
@@ -106,7 +117,6 @@ export function getFilterSearchTerms(filters: MTGFilterState): string {
 export function hasActiveFilters(filter: ProductFilterInput): boolean {
 	return !!(
 		filter.attributes?.length ||
-		filter.minimalPrice ||
 		filter.price ||
 		filter.search ||
 		filter.categories?.length ||

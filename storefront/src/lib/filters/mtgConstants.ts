@@ -1,13 +1,13 @@
 import type { FilterOption } from "./types";
 
-// Rarity options with slugs matching Saleor attribute values
+// Rarity options — values must match Saleor dropdown choice slugs exactly
 export const RARITY_OPTIONS: FilterOption[] = [
-	{ value: "mtg-rarity-common", label: "Common", color: "#1a1a1a" },
-	{ value: "mtg-rarity-uncommon", label: "Uncommon", color: "#707883" },
-	{ value: "mtg-rarity-rare", label: "Rare", color: "#a58e4a" },
-	{ value: "mtg-rarity-mythic", label: "Mythic Rare", color: "#bf4427" },
-	{ value: "mtg-rarity-special", label: "Special", color: "#905d98" },
-	{ value: "mtg-rarity-bonus", label: "Bonus", color: "#6b5b95" },
+	{ value: "common", label: "Common", color: "#1a1a1a" },
+	{ value: "uncommon", label: "Uncommon", color: "#707883" },
+	{ value: "rare", label: "Rare", color: "#a58e4a" },
+	{ value: "mythic", label: "Mythic Rare", color: "#bf4427" },
+	{ value: "special", label: "Special", color: "#905d98" },
+	{ value: "bonus", label: "Bonus", color: "#6b5b95" },
 ];
 
 // Color identity options (WUBRG)
@@ -36,32 +36,33 @@ export const BOOLEAN_FILTER_OPTIONS = [
 	{ value: "false", label: "No" },
 ];
 
-// Finish options (variant-level attribute for foil/non-foil)
+// Finish options — values must match Saleor dropdown choice slugs exactly
 export const FINISH_OPTIONS: FilterOption[] = [
-	{ value: "mtg-finish-nf", label: "Non-Foil" },
-	{ value: "mtg-finish-f", label: "Foil", color: "#FFD700" },
-	{ value: "mtg-finish-e", label: "Etched", color: "#C0C0C0" },
-	{ value: "mtg-finish-g", label: "Glossy", color: "#E8E8E8" },
+	{ value: "non-foil", label: "Non-Foil" },
+	{ value: "foil", label: "Foil", color: "#FFD700" },
+	{ value: "etched", label: "Etched", color: "#C0C0C0" },
 ];
 
-// Condition options (variant-level attribute)
+// Condition options — values must match Saleor dropdown choice slugs exactly
 export const CONDITION_OPTIONS: FilterOption[] = [
-	{ value: "mtg-condition-nm", label: "Near Mint" },
-	{ value: "mtg-condition-lp", label: "Lightly Played" },
-	{ value: "mtg-condition-mp", label: "Moderately Played" },
-	{ value: "mtg-condition-hp", label: "Heavily Played" },
-	{ value: "mtg-condition-dmg", label: "Damaged" },
+	{ value: "near-mint", label: "Near Mint" },
+	{ value: "lightly-played", label: "Lightly Played" },
+	{ value: "moderately-played", label: "Moderately Played" },
+	{ value: "heavily-played", label: "Heavily Played" },
+	{ value: "damaged", label: "Damaged" },
 ];
 
-// Attribute slugs as defined in Saleor (with mtg- prefix)
+// Attribute slugs as defined in Saleor (must match attribute-map.ts in mtg-import)
 export const ATTRIBUTE_SLUGS = {
 	rarity: "mtg-rarity",
 	colorIdentity: "mtg-color-identity",
-	reservedList: "mtg-reserved",
-	isPromo: "mtg-is-promo",
-	isFullArt: "mtg-is-full-art",
+	reservedList: "reserved-list",
+	isPromo: "is-promo",
+	isFullArt: "is-full-art",
 	finish: "mtg-finish",
 	condition: "mtg-condition",
+	typeLine: "mtg-type-line",
+	manaValue: "mtg-mana-value",
 } as const;
 
 // URL parameter names
