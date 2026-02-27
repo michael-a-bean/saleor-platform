@@ -34,6 +34,11 @@ const config = {
 				protocol: "https",
 				hostname: "*.saleor.cloud",
 			},
+			// Saleor API thumbnail proxy (staging/production — returns 302 to CloudFront)
+			{
+				protocol: "https",
+				hostname: "*.michaelbean.org",
+			},
 		],
 		// Enable WebP and AVIF for modern browsers
 		formats: ["image/avif", "image/webp"],

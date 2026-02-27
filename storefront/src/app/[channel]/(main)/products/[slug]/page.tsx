@@ -136,6 +136,10 @@ export default async function Page(props: {
 
 	// Prefer media URL (external images) over thumbnail URL (Saleor-generated)
 	const firstImage = product.media?.[0] || product.thumbnail;
+	// Fallback: if media URL fails, try thumbnail (different CDN path)
+	const fallbackImageUrl = product.media?.[0]?.url
+		? product.thumbnail?.url
+		: undefined;
 
 	const variants = product.variants;
 	const selectedVariantID = searchParams.variant;
@@ -257,6 +261,7 @@ export default async function Page(props: {
 							height={936}
 							sizes="(max-width: 1024px) 100vw, 45vw"
 							src={firstImage.url}
+							fallbackSrc={fallbackImageUrl}
 						/>
 					)}
 				</div>
