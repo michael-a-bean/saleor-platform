@@ -43,6 +43,10 @@ const config = {
 		imageSizes: [64, 96, 128, 256, 384],
 		// Cache optimized images for 24 hours
 		minimumCacheTTL: 86400,
+		// RISK ACCEPTANCE: dangerouslyAllowSVG enables SVG optimization through Next.js
+		// Image. This is safe because remotePatterns above restrict sources to trusted
+		// domains only (Scryfall for mana/set SVGs). XSS risk is mitigated by source
+		// restriction — no user-uploaded SVGs are processed through this path.
 		dangerouslyAllowSVG: true,
 		// Enable optimization for Scryfall (external HTTPS), disable for localhost/Saleor
 		// The remotePatterns above allow Next.js to optimize Scryfall images

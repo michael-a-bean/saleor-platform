@@ -104,7 +104,7 @@ resource "aws_s3_bucket_cors_configuration" "media" {
   bucket = aws_s3_bucket.media.id
 
   cors_rule {
-    allowed_headers = ["*"]
+    allowed_headers = ["Content-Type", "Content-Length", "Authorization", "x-amz-content-sha256"]
     allowed_methods = ["GET", "PUT", "POST", "DELETE", "HEAD"]
     allowed_origins = var.cors_allowed_origins
     expose_headers  = ["ETag"]

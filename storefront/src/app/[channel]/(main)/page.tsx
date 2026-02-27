@@ -18,37 +18,37 @@ export const metadata = {
 const ECL_PREORDER_PRODUCTS = [
 	{
 		name: "Play Booster Box",
-		image: "/images/sets/ecl/MTGECL_EN_DspBx_Play_01_01.png",
+		image: "/images/sets/ecl/MTGECL_EN_DspBx_Play_01_01.webp",
 		description: "36 Play Boosters",
 		href: (channel: string) => `/${channel}/products/ecl-lorwyn-eclipsed-play-booster-box`,
 	},
 	{
 		name: "Collector Booster Box",
-		image: "/images/sets/ecl/MTGECL_EN_DspBx_Clctr_01_01.png",
+		image: "/images/sets/ecl/MTGECL_EN_DspBx_Clctr_01_01.webp",
 		description: "12 Collector Boosters",
 		href: (channel: string) => `/${channel}/products/ecl-lorwyn-eclipsed-collector-booster-box`,
 	},
 	{
 		name: "Bundle",
-		image: "/images/sets/ecl/MTGECL_EN_OtrBx_Bndl_01_01.png",
+		image: "/images/sets/ecl/MTGECL_EN_OtrBx_Bndl_01_01.webp",
 		description: "8 Play Boosters + Accessories",
 		href: (channel: string) => `/${channel}/products/ecl-lorwyn-eclipsed-bundle`,
 	},
 	{
 		name: "Prerelease Kit",
-		image: "/images/sets/ecl/MTGECL_EN_OtrBx_Prrls_01_01.png",
+		image: "/images/sets/ecl/MTGECL_EN_OtrBx_Prrls_01_01.webp",
 		description: "6 Play Boosters + Promo",
 		href: (channel: string) => `/${channel}/products/ecl-lorwyn-eclipsed-prerelease-pack`,
 	},
 	{
 		name: "Commander: Dance of Elements",
-		image: "/images/sets/ecl/MTGECL_EN_OtrBx_Cmndr_01_01.png",
+		image: "/images/sets/ecl/MTGECL_EN_OtrBx_Cmndr_01_01.webp",
 		description: "100-Card Commander Deck",
 		href: (channel: string) => `/${channel}/products/lorwyn-eclipsed-commander-deck-dance-of-the-elements`,
 	},
 	{
 		name: "Commander: Blight Curse",
-		image: "/images/sets/ecl/MTGECL_EN_OtrBx_Cmndr_02_01.png",
+		image: "/images/sets/ecl/MTGECL_EN_OtrBx_Cmndr_02_01.webp",
 		description: "100-Card Commander Deck",
 		href: (channel: string) => `/${channel}/products/lorwyn-eclipsed-commander-deck-blight-curse`,
 	},
@@ -159,7 +159,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 						<p className="mt-2 text-neutral-600">Secure your preorder today—releases Spring 2026</p>
 					</div>
 					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-						{ECL_PREORDER_PRODUCTS.map((product) => (
+						{ECL_PREORDER_PRODUCTS.map((product, index) => (
 							<Link
 								key={product.name}
 								href={product.href(params.channel)}
@@ -172,6 +172,8 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 										fill
 										sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 256px"
 										className="object-contain transition-transform group-hover:scale-105"
+										loading="eager"
+										priority={index < 4}
 									/>
 								</div>
 								<h3 className="text-center text-sm font-semibold text-neutral-900 group-hover:text-brand-bright-blue">
@@ -266,6 +268,8 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 											alt={`${set.name} set icon`}
 											className="h-8 w-8 object-contain"
 											style={{ filter: "brightness(0)" }}
+											fetchPriority="low"
+											loading="lazy"
 										/>
 									</div>
 									<div className="min-w-0 flex-1">
