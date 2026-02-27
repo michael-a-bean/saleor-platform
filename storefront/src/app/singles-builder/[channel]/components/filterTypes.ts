@@ -47,6 +47,7 @@ export const RARITY_OPTIONS = [
 	{ value: "rare", label: "Rare", color: "#a58e4a" },
 	{ value: "mythic", label: "Mythic", color: "#bf4427" },
 	{ value: "special", label: "Special", color: "#905d98" },
+	{ value: "bonus", label: "Bonus", color: "#6b5b95" },
 ];
 
 // URL parameter names for filter state

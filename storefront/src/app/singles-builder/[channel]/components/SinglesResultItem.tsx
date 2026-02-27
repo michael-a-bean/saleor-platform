@@ -62,9 +62,10 @@ interface VariantRowProps {
 	onUpdateQuantity: (lineId: string, quantity: number) => Promise<void>;
 	onRemoveLine: (lineId: string) => Promise<void>;
 	cartLine?: CartLineInfo; // Cart line info if this variant is in cart
+	showFinishLabel?: boolean; // Show finish text inline with condition
 }
 
-function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartLine }: VariantRowProps) {
+function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartLine, showFinishLabel }: VariantRowProps) {
 	const [addQuantity, setAddQuantity] = useState(1);
 	const [isPending, setIsPending] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -177,7 +178,7 @@ function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartL
 
 	return (
 		<div
-			className={`grid grid-cols-[3rem_2rem_5rem_1fr] items-center gap-1 rounded border px-2 py-1 text-xs ${
+			className={`grid ${showFinishLabel ? "grid-cols-[6.5rem_2rem_5rem_1fr]" : "grid-cols-[3rem_2rem_5rem_1fr]"} items-center gap-1 rounded border px-2 py-1 text-xs ${
 				isInCart
 					? "border-blue-300 bg-blue-50"
 					: inStock
@@ -185,9 +186,15 @@ function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartL
 						: "border-gray-100 bg-gray-50 opacity-60"
 			}`}
 		>
-			{/* Condition badge - fixed width */}
-			<span className={`rounded px-1 py-0.5 font-medium text-center ${conditionColor} ${conditionBgColor}`}>
-				{isFoil && <span className="text-purple-600 mr-0.5">✦</span>}
+			{/* Condition badge (with optional finish label) */}
+			<span className={`rounded px-1 py-0.5 font-medium ${showFinishLabel ? "text-left" : "text-center"} ${conditionColor} ${conditionBgColor}`}>
+				{showFinishLabel && (
+					<span className="text-gray-400 font-normal mr-1">
+						{isFoil && <span className="text-purple-500">✦</span>}
+						{finish}
+					</span>
+				)}
+				{!showFinishLabel && isFoil && <span className="text-purple-600 mr-0.5">✦</span>}
 				{condition}
 			</span>
 
@@ -388,14 +395,6 @@ export function SinglesResultItem({ product, onQuickAdd, onUpdateQuantity, onRem
 					<div className="flex flex-col gap-2 ml-auto">
 						{finishGroups.map(([finish, finishVariants]) => (
 							<div key={finish} className="flex flex-col gap-1">
-								{/* Finish group label — only show if multiple finish groups */}
-								{finishGroups.length > 1 && (
-									<div className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
-										{finish === "Foil" && <span className="text-purple-500">✦ </span>}
-										{finish === "Etched" && <span className="text-amber-500">✦ </span>}
-										{finish}
-									</div>
-								)}
 								{finishVariants.map((variant) => (
 									<VariantRow
 										key={variant.id}
@@ -404,6 +403,7 @@ export function SinglesResultItem({ product, onQuickAdd, onUpdateQuantity, onRem
 										onUpdateQuantity={onUpdateQuantity}
 										onRemoveLine={onRemoveLine}
 										cartLine={cartLines?.get(variant.id)}
+										showFinishLabel={finishGroups.length > 1}
 									/>
 								))}
 							</div>
