@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getAllSets } from "@/lib/filters";
 import { Breadcrumb } from "@/ui/components/Breadcrumb";
 import { MagicSubNav } from "@/ui/components/MagicSubNav";
+import { SetIconImage } from "@/ui/components/SetIconImage";
 
 export const revalidate = 60;
 
@@ -78,13 +79,10 @@ export default async function SetsPage(props: { params: Promise<{ channel: strin
 							>
 								{/* Set Icon */}
 								<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-neutral-100 p-2 group-hover:bg-neutral-200">
-									{/* eslint-disable-next-line @next/next/no-img-element */}
-									<img
+									<SetIconImage
 										src={set.iconUri}
 										alt={`${set.name} set icon`}
 										className="h-8 w-8 object-contain"
-										style={{ filter: "brightness(0)" }}
-										onError={(e) => { e.currentTarget.style.display = "none"; }}
 									/>
 								</div>
 								<div className="min-w-0 flex-1">

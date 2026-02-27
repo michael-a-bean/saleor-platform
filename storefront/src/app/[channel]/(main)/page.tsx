@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { SearchIcon, Package, Sparkles, Users, Calendar } from "lucide-react";
 import { ProductList } from "@/ui/components/ProductList";
+import { SetIconImage } from "@/ui/components/SetIconImage";
 import { getLatestSets, getTrendingProducts } from "@/lib/filters";
 
 // ISR: serve cached page, revalidate in background every 60s
@@ -278,15 +279,12 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 								>
 									{/* Set Icon */}
 									<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-neutral-100 p-2 group-hover:bg-neutral-200">
-										{/* eslint-disable-next-line @next/next/no-img-element */}
-										<img
+										<SetIconImage
 											src={set.iconUri}
 											alt={`${set.name} set icon`}
 											className="h-8 w-8 object-contain"
-											style={{ filter: "brightness(0)" }}
 											fetchPriority="low"
 											loading="lazy"
-											onError={(e) => { e.currentTarget.style.display = "none"; }}
 										/>
 									</div>
 									<div className="min-w-0 flex-1">
