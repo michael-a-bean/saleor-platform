@@ -1,3 +1,5 @@
+"use client";
+
 import NextImage, { type ImageProps } from "next/image";
 
 export const ProductImageWrapper = (props: ImageProps) => {
