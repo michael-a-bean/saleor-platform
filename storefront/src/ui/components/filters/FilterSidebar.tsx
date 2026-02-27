@@ -30,9 +30,8 @@ export const FilterSidebar = () => {
 			<FilterSection title="Card Type">
 				<MultiSelectFilter
 					options={CARD_TYPE_OPTIONS}
-					value={filters.typeLine ? [filters.typeLine] : []}
-					onChange={(v) => updateFilter("typeLine", v[0] || "")}
-					singleSelect
+					value={filters.cardType}
+					onChange={(v) => updateFilter("cardType", v)}
 				/>
 			</FilterSection>
 

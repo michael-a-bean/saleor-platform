@@ -8,6 +8,7 @@ export function parseFiltersFromURL(searchParams: URLSearchParams): MTGFilterSta
 	return {
 		rarity: parseArrayParam(searchParams.get(URL_PARAMS.rarity)),
 		colorIdentity: parseArrayParam(searchParams.get(URL_PARAMS.colorIdentity)),
+		cardType: parseArrayParam(searchParams.get(URL_PARAMS.cardType)),
 		finish: parseArrayParam(searchParams.get(URL_PARAMS.finish)),
 		manaValue: {
 			min: parseNumberParam(searchParams.get(URL_PARAMS.manaValueMin)),
@@ -43,6 +44,9 @@ export function serializeFiltersToURL(
 	}
 	if (filters.colorIdentity.length > 0) {
 		params.set(URL_PARAMS.colorIdentity, filters.colorIdentity.join(","));
+	}
+	if (filters.cardType.length > 0) {
+		params.set(URL_PARAMS.cardType, filters.cardType.join(","));
 	}
 	if (filters.finish.length > 0) {
 		params.set(URL_PARAMS.finish, filters.finish.join(","));
@@ -92,6 +96,7 @@ export function getActiveFilterCount(filters: MTGFilterState): number {
 
 	if (filters.rarity.length > 0) count++;
 	if (filters.colorIdentity.length > 0) count++;
+	if (filters.cardType.length > 0) count++;
 	if (filters.finish.length > 0) count++;
 	if (filters.typeLine) count++;
 	if (filters.setName) count++;

@@ -24,6 +24,14 @@ export function buildProductFilter(filters: MTGFilterState): ProductFilterInput 
 		});
 	}
 
+	// Card type filter (multiselect attribute — exact match, not search-based)
+	if (filters.cardType.length > 0) {
+		attributeFilters.push({
+			slug: ATTRIBUTE_SLUGS.cardType,
+			values: filters.cardType,
+		});
+	}
+
 	// Finish filter (variant attribute for foil/non-foil)
 	if (filters.finish.length > 0) {
 		attributeFilters.push({

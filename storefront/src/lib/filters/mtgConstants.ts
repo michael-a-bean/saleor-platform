@@ -10,16 +10,16 @@ export const RARITY_OPTIONS: FilterOption[] = [
 	{ value: "bonus", label: "Bonus", color: "#6b5b95" },
 ];
 
-// Color identity options (WUBRG)
+// Color identity options (WUBRG) — values must match Scryfall color letters
 export const COLOR_IDENTITY_OPTIONS: FilterOption[] = [
-	{ value: "mtg-color-w", label: "White", color: "#F9FAF4" },
-	{ value: "mtg-color-u", label: "Blue", color: "#0E68AB" },
-	{ value: "mtg-color-b", label: "Black", color: "#150B00" },
-	{ value: "mtg-color-r", label: "Red", color: "#D3202A" },
-	{ value: "mtg-color-g", label: "Green", color: "#00733E" },
+	{ value: "W", label: "White", color: "#F9FAF4" },
+	{ value: "U", label: "Blue", color: "#0E68AB" },
+	{ value: "B", label: "Black", color: "#150B00" },
+	{ value: "R", label: "Red", color: "#D3202A" },
+	{ value: "G", label: "Green", color: "#00733E" },
 ];
 
-// Common card type options (used for search filtering)
+// Card type options — values must match mtg-card-type MULTISELECT values from import
 export const CARD_TYPE_OPTIONS: FilterOption[] = [
 	{ value: "Creature", label: "Creature" },
 	{ value: "Instant", label: "Instant" },
@@ -29,6 +29,7 @@ export const CARD_TYPE_OPTIONS: FilterOption[] = [
 	{ value: "Planeswalker", label: "Planeswalker" },
 	{ value: "Land", label: "Land" },
 	{ value: "Battle", label: "Battle" },
+	{ value: "Legendary", label: "Legendary" },
 ];
 
 export const BOOLEAN_FILTER_OPTIONS = [
@@ -56,6 +57,7 @@ export const CONDITION_OPTIONS: FilterOption[] = [
 export const ATTRIBUTE_SLUGS = {
 	rarity: "mtg-rarity",
 	colorIdentity: "mtg-color-identity",
+	cardType: "mtg-card-type",
 	reservedList: "reserved-list",
 	isPromo: "is-promo",
 	isFullArt: "is-full-art",
@@ -69,6 +71,7 @@ export const ATTRIBUTE_SLUGS = {
 export const URL_PARAMS = {
 	rarity: "rarity",
 	colorIdentity: "color",
+	cardType: "card_type",
 	setName: "set",
 	manaValueMin: "cmc_min",
 	manaValueMax: "cmc_max",

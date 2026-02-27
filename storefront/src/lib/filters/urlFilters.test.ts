@@ -351,6 +351,7 @@ describe("urlFilters", () => {
 			const filters: MTGFilterState = {
 				rarity: ["mtg-rarity-rare", "mtg-rarity-mythic"],
 				colorIdentity: ["mtg-color-u"],
+				cardType: [],
 				finish: [],
 				manaValue: { min: 3, max: 5 },
 				price: { min: 10, max: 100 },
@@ -392,6 +393,7 @@ describe("urlFilters", () => {
 			const original: MTGFilterState = {
 				rarity: ["mtg-rarity-rare", "mtg-rarity-mythic"],
 				colorIdentity: ["mtg-color-w", "mtg-color-u", "mtg-color-b"],
+				cardType: [],
 				finish: [],
 				manaValue: { min: 2, max: 6 },
 				price: { min: 5.5, max: 50 },
@@ -502,6 +504,7 @@ describe("urlFilters", () => {
 			const filters: MTGFilterState = {
 				rarity: ["mtg-rarity-rare"],
 				colorIdentity: ["mtg-color-u", "mtg-color-b"],
+				cardType: ["Creature"],
 				finish: [],
 				manaValue: { min: 3, max: 5 },
 				price: { min: 10 },
@@ -511,8 +514,8 @@ describe("urlFilters", () => {
 				isPromo: false,
 				isFullArt: true,
 			};
-			// rarity=1, colorIdentity=1, manaValue=1, price=1, typeLine=1, setName=1, reserved=1, promo=1, fullart=1
-			expect(getActiveFilterCount(filters)).toBe(9);
+			// rarity=1, colorIdentity=1, cardType=1, manaValue=1, price=1, typeLine=1, setName=1, reserved=1, promo=1, fullart=1
+			expect(getActiveFilterCount(filters)).toBe(10);
 		});
 	});
 
@@ -525,6 +528,7 @@ describe("urlFilters", () => {
 			const filters: MTGFilterState = {
 				rarity: [],
 				colorIdentity: [],
+				cardType: [],
 				finish: [],
 				manaValue: {},
 				price: {},

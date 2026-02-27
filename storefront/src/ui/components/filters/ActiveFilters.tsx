@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 import { useFilters } from "./useFilters";
-import { RARITY_OPTIONS, COLOR_IDENTITY_OPTIONS } from "@/lib/filters";
+import { RARITY_OPTIONS, COLOR_IDENTITY_OPTIONS, CARD_TYPE_OPTIONS } from "@/lib/filters";
 
 export const ActiveFilters = () => {
 	const { filters, removeFilterValue, clearAllFilters, activeCount } = useFilters();
@@ -16,6 +16,9 @@ export const ActiveFilters = () => {
 		if (key === "colorIdentity") {
 			return COLOR_IDENTITY_OPTIONS.find((o) => o.value === value)?.label || value;
 		}
+		if (key === "cardType") {
+			return CARD_TYPE_OPTIONS.find((o) => o.value === value)?.label || value;
+		}
 		return value;
 	};
 
@@ -23,13 +26,14 @@ export const ActiveFilters = () => {
 		<div className="mb-4 flex flex-wrap items-center gap-2">
 			<span className="text-sm text-neutral-500">Active filters:</span>
 
-			{/* Card Type filter */}
-			{filters.typeLine && (
+			{/* Card Type filters */}
+			{filters.cardType.map((v) => (
 				<FilterTag
-					label={`Type: ${filters.typeLine}`}
-					onRemove={() => removeFilterValue("typeLine", "")}
+					key={`type-${v}`}
+					label={`Type: ${getLabel("cardType", v)}`}
+					onRemove={() => removeFilterValue("cardType", v)}
 				/>
-			)}
+			))}
 
 			{/* Rarity filters */}
 			{filters.rarity.map((v) => (
