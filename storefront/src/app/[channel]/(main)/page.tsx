@@ -101,6 +101,22 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 	}
 
 	return (
+		<>
+			{/* Preload hero banner — browser fetches before component tree renders */}
+			<link
+				rel="preload"
+				as="image"
+				type="image/webp"
+				href="/images/sets/ecl/ECL_sma_key_1640x680_en.webp"
+				media="(min-width: 768px)"
+			/>
+			<link
+				rel="preload"
+				as="image"
+				type="image/webp"
+				href="/images/sets/ecl/ECL_sma_key_1080x1080_en.webp"
+				media="(max-width: 767px)"
+			/>
 		<div className="min-h-screen">
 			{/* Lorwyn Eclipsed Hero Banner */}
 			<section className="relative overflow-hidden bg-gradient-to-br from-[#1a3a2f] via-[#2d4a3f] to-[#1f2f3a]">
@@ -320,5 +336,6 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 				</section>
 			)}
 		</div>
+		</>
 	);
 }

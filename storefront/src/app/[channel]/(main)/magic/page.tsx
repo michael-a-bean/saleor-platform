@@ -19,7 +19,7 @@ const MAGIC_SECTIONS = [
 		href: (channel: string) => `/${channel}/magic/sealed`,
 		description: "Factory-sealed booster boxes, bundles, commander decks, and more.",
 		stats: "1,800+ products",
-		image: "/images/categories/mtg-sealed.png",
+		image: "/images/categories/mtg-sealed.webp",
 	},
 	{
 		name: "Singles",
@@ -27,7 +27,7 @@ const MAGIC_SECTIONS = [
 		href: (channel: string) => `/${channel}/magic/singles`,
 		description: "Individual cards from all sets. Near Mint to Heavily Played conditions available.",
 		stats: "100,000+ cards",
-		image: "/images/categories/mtg-singles.png",
+		image: "/images/categories/mtg-singles.webp",
 	},
 	{
 		name: "Browse by Set",
@@ -35,7 +35,7 @@ const MAGIC_SECTIONS = [
 		href: (channel: string) => `/${channel}/magic/sets`,
 		description: "Find cards and sealed products organized by expansion set.",
 		stats: "264 sets",
-		image: "/images/categories/mtg-sets.png",
+		image: "/images/categories/mtg-sets.webp",
 	},
 ];
 

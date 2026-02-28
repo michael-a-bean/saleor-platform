@@ -23,6 +23,7 @@ export const ProductImageWrapper = ({ src, fallbackSrc, ...props }: ProductImage
 					<NextImage
 						{...props}
 						src={resolvedSrc}
+						unoptimized
 						className="h-full w-full object-contain object-center p-4"
 						onLoad={(e) => {
 							const target = e.currentTarget;
