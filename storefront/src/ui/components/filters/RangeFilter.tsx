@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import { useState, useEffect } from "react";
 import type { RangeValue } from "@/lib/filters";
 
@@ -90,7 +91,3 @@ export const RangeFilter = ({
 		</div>
 	);
 };
-
-function clsx(...classes: (string | boolean | undefined)[]) {
-	return classes.filter(Boolean).join(" ");
-}

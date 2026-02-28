@@ -86,26 +86,3 @@ export function EnvBanner() {
 		</div>
 	);
 }
-
-/**
- * Environment Logger Component
- *
- * Logs environment information to the console on mount.
- * Useful for debugging without a visual banner.
- */
-export function EnvLogger() {
-	useEffect(() => {
-		if (!isProduction()) {
-			const env = getEnvironment();
-			const apiUrl = getApiUrl();
-
-			console.log(
-				`%c[${env.toUpperCase()}]%c API: ${apiUrl}`,
-				`background: ${env === "staging" ? "#f59e0b" : "#3b82f6"}; color: white; padding: 2px 6px; border-radius: 3px;`,
-				"color: inherit;",
-			);
-		}
-	}, []);
-
-	return null;
-}

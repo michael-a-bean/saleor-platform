@@ -52,7 +52,6 @@ const makeUrqlClient = () => {
 	return createClient({
 		url: saleorApiUrl,
 		suspense: true,
-		// requestPolicy: "cache-first",
 		fetch: (input, init) => safeFetchWithAuth(input as RequestInfo, init),
 		exchanges: [dedupExchange, cacheExchange, fetchExchange],
 	});

@@ -61,7 +61,6 @@ export async function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
 					Log In
 				</button>
 			</form>
-			<div></div>
 		</div>
 	);
 }
