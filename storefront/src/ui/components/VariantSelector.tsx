@@ -165,9 +165,9 @@ export function VariantSelector({
 	const currentFinish = selectedVariant ? getFinishFromVariant(selectedVariant) : availableFinishes[0] || "Non-Foil";
 	const currentCondition = selectedVariant ? getConditionFromVariant(selectedVariant) : null;
 
-	// Auto-select best available variant if none selected
+	// Auto-select best available variant if none selected (prefer NM, fall back to first by condition order)
 	if (!selectedVariant && variants.length >= 1) {
-		const bestVariant = findBestAvailableVariant(variants);
+		const bestVariant = findBestAvailableVariant(variants) ?? sortVariantsByCondition(variants)[0];
 		if (bestVariant) {
 			redirect("/" + channel + getHrefForVariant({ productSlug: product.slug, variantId: bestVariant.id }));
 		}
