@@ -26,10 +26,6 @@ fragment ProductListItem on Product {
 		url
 		alt
 	}
-	media {
-		url
-		alt
-	}
 	variants {
 		quantityAvailable
 	}

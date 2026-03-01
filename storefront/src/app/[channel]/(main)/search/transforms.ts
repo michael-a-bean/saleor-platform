@@ -22,15 +22,6 @@ export function transformToProductListItem(
 					alt: product.name,
 				}
 			: null,
-		// Use media array for external images (preferred in ProductElement)
-		media: product.thumbnail
-			? [
-					{
-						url: product.thumbnail,
-						alt: product.name,
-					},
-				]
-			: [],
 		pricing: {
 			priceRange: {
 				start: {

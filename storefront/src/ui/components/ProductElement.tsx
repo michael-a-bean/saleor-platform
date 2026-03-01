@@ -36,11 +36,9 @@ export function ProductElement({
 	loading = "lazy",
 	priority,
 }: { product: ProductListItemFragment } & { loading?: "eager" | "lazy"; priority?: boolean }) {
-	// Primary: Saleor CDN thumbnail (CloudFront, already optimized WebP). Fallback: external media URL (Scryfall).
-	const thumbnailUrl = product?.thumbnail?.url;
-	const mediaUrl = product?.media?.[0]?.url;
-	const imageUrl = thumbnailUrl || mediaUrl;
-	const imageAlt = product?.media?.[0]?.alt || product?.thumbnail?.alt || "";
+	// Saleor CDN thumbnail (CloudFront, pre-warmed WebP). Media field removed from list queries to reduce payload.
+	const imageUrl = product?.thumbnail?.url;
+	const imageAlt = product?.thumbnail?.alt || "";
 
 	const setCode = getAttributeValue(product, "mtg-set-code");
 	const setName = getAttributeValue(product, "mtg-set-name");
@@ -56,7 +54,6 @@ export function ProductElement({
 						<ProductImageWrapper
 							loading={loading}
 							src={imageUrl}
-							fallbackSrc={thumbnailUrl ? mediaUrl : undefined}
 							alt={imageAlt}
 							width={488}
 							height={680}
