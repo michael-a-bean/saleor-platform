@@ -212,7 +212,15 @@ export function CheckoutForm() {
 				safeSessionStorage.removeItem("transactionId");
 				safeSessionStorage.removeItem("clientSecret");
 
-				await onCheckoutComplete();
+				const completeResult = await onCheckoutComplete();
+
+				if (completeResult?.hasErrors) {
+					const errorMessage =
+						completeResult.apiErrors?.[0]?.message ||
+						"Payment was successful but order could not be placed. Please contact support.";
+					showCustomErrors([{ message: errorMessage }]);
+					setIsLoading(false);
+				}
 			}
 
 			// Note: If Stripe requires redirect (3DS, etc.), it will redirect to the return_url

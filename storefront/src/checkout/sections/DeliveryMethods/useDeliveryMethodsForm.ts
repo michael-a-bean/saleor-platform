@@ -76,8 +76,11 @@ export const useDeliveryMethodsForm = (): UseFormReturn<DeliveryMethodsFormData>
 	} = form;
 
 	useEffect(() => {
+		// Set loading state before debounced submit to gate the payment section.
+		// Without this, the 2s debounce window allows payment with a stale (pre-shipping) total.
+		setCheckoutUpdateState("loading");
 		handleSubmit();
-	}, [handleSubmit, selectedMethodId]);
+	}, [handleSubmit, selectedMethodId, setCheckoutUpdateState]);
 
 	useEffect(() => {
 		const hasShippingCountryChanged = shippingAddress?.country?.code !== previousShippingCountry.current;
