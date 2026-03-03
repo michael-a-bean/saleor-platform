@@ -1,0 +1,162 @@
+# Inventory Ops Scheduled Cron Jobs
+# Calls inventory-ops HTTP cron endpoints on a schedule.
+# These endpoints require Bearer token auth (CRON_SECRET from SSM).
+#
+# Cron endpoints:
+#   - /api/cron/reconcile    — Daily WAC reconciliation (02:00 UTC)
+#   - /api/cron/snapshot     — Monthly cost snapshot (04:00 UTC, 1st of month)
+#   - /api/cron/webhook-health — Webhook failure monitoring (every 15 min)
+
+name: Inventory Ops Crons
+
+on:
+  schedule:
+    # Webhook health: every 15 minutes
+    - cron: '*/15 * * * *'
+    # WAC reconciliation: daily at 02:00 UTC (6 PM PST)
+    - cron: '0 2 * * *'
+    # Cost snapshot: 1st of month at 04:00 UTC (8 PM PST)
+    - cron: '0 4 1 * *'
+  workflow_dispatch:
+    inputs:
+      endpoint:
+        description: 'Cron endpoint to call'
+        required: true
+        type: choice
+        options:
+          - webhook-health
+          - reconcile
+          - snapshot
+          - all
+
+env:
+  INVENTORY_OPS_BASE_URL: https://apps.staging.michaelbean.org/apps/inventory
+
+jobs:
+  webhook-health:
+    name: Webhook Health Check
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.schedule == '*/15 * * * *' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.endpoint == 'webhook-health' || inputs.endpoint == 'all'))
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-1
+
+      - name: Get CRON_SECRET from SSM
+        id: secret
+        run: |
+          CRON_SECRET=$(aws ssm get-parameter \
+            --name "/saleor/staging/apps/inventory-ops/CRON_SECRET" \
+            --with-decryption \
+            --query "Parameter.Value" \
+            --output text)
+          echo "::add-mask::$CRON_SECRET"
+          echo "cron_secret=$CRON_SECRET" >> "$GITHUB_OUTPUT"
+
+      - name: Call webhook-health endpoint
+        run: |
+          RESPONSE=$(curl -sf -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ steps.secret.outputs.cron_secret }}" \
+            "${{ env.INVENTORY_OPS_BASE_URL }}/api/cron/webhook-health" \
+            --max-time 90)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "HTTP Status: $HTTP_CODE"
+          echo "$BODY" | jq . 2>/dev/null || echo "$BODY"
+
+          # Extract failure count for summary
+          FAILURES=$(echo "$BODY" | jq -r '.totalFailedDeliveries // 0' 2>/dev/null || echo "unknown")
+          RETRIED=$(echo "$BODY" | jq -r '.totalAutoRetried // 0' 2>/dev/null || echo "unknown")
+          echo "### Webhook Health Check" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Failed deliveries: **$FAILURES**" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Auto-retried: **$RETRIED**" >> "$GITHUB_STEP_SUMMARY"
+
+  reconcile:
+    name: WAC Reconciliation
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.schedule == '0 2 * * *' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.endpoint == 'reconcile' || inputs.endpoint == 'all'))
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-1
+
+      - name: Get CRON_SECRET from SSM
+        id: secret
+        run: |
+          CRON_SECRET=$(aws ssm get-parameter \
+            --name "/saleor/staging/apps/inventory-ops/CRON_SECRET" \
+            --with-decryption \
+            --query "Parameter.Value" \
+            --output text)
+          echo "::add-mask::$CRON_SECRET"
+          echo "cron_secret=$CRON_SECRET" >> "$GITHUB_OUTPUT"
+
+      - name: Call reconcile endpoint
+        run: |
+          RESPONSE=$(curl -sf -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ steps.secret.outputs.cron_secret }}" \
+            "${{ env.INVENTORY_OPS_BASE_URL }}/api/cron/reconcile" \
+            --max-time 300)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "HTTP Status: $HTTP_CODE"
+          echo "$BODY" | jq . 2>/dev/null || echo "$BODY"
+
+          DISCREPANCIES=$(echo "$BODY" | jq -r '.totalDiscrepancies // 0' 2>/dev/null || echo "unknown")
+          echo "### WAC Reconciliation" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Discrepancies: **$DISCREPANCIES**" >> "$GITHUB_STEP_SUMMARY"
+
+  snapshot:
+    name: Cost Snapshot
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.schedule == '0 4 1 * *' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.endpoint == 'snapshot' || inputs.endpoint == 'all'))
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-1
+
+      - name: Get CRON_SECRET from SSM
+        id: secret
+        run: |
+          CRON_SECRET=$(aws ssm get-parameter \
+            --name "/saleor/staging/apps/inventory-ops/CRON_SECRET" \
+            --with-decryption \
+            --query "Parameter.Value" \
+            --output text)
+          echo "::add-mask::$CRON_SECRET"
+          echo "cron_secret=$CRON_SECRET" >> "$GITHUB_OUTPUT"
+
+      - name: Call snapshot endpoint
+        run: |
+          RESPONSE=$(curl -sf -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ steps.secret.outputs.cron_secret }}" \
+            "${{ env.INVENTORY_OPS_BASE_URL }}/api/cron/snapshot" \
+            --max-time 300)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "HTTP Status: $HTTP_CODE"
+          echo "$BODY" | jq . 2>/dev/null || echo "$BODY"
+
+          echo "### Cost Snapshot" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Status: **completed**" >> "$GITHUB_STEP_SUMMARY"
