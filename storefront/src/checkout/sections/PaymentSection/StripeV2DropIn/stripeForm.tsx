@@ -9,7 +9,7 @@ import { useAlerts } from "@/checkout/hooks/useAlerts";
 import { useEvent } from "@/checkout/hooks/useEvent";
 import { useTransactionInitializeMutation, useTransactionProcessMutation } from "@/checkout/graphql";
 import { useCheckoutComplete } from "@/checkout/hooks/useCheckoutComplete";
-import { useCheckoutUpdateStateActions } from "@/checkout/state/updateStateStore";
+import { useCheckoutUpdateState, useCheckoutUpdateStateActions } from "@/checkout/state/updateStateStore";
 
 // Safe sessionStorage access for environments where it may not be available
 const safeSessionStorage = {
@@ -55,6 +55,10 @@ export function CheckoutForm() {
 	const [, transactionInitialize] = useTransactionInitializeMutation();
 	const [, transactionProcess] = useTransactionProcessMutation();
 	const { setShouldRegisterUser } = useCheckoutUpdateStateActions();
+	const {
+		updateState: { checkoutDeliveryMethodUpdate },
+	} = useCheckoutUpdateState();
+	const isDeliveryUpdating = checkoutDeliveryMethodUpdate === "loading";
 
 	// Check if checkout amount meets Stripe minimum
 	const checkoutAmount = checkout?.totalPrice?.gross?.amount ?? 0;
@@ -70,6 +74,10 @@ export function CheckoutForm() {
 
 		if (!stripe || !elements) {
 			showCustomErrors([{ message: "Payment system is not available. Please try again later." }]);
+			return;
+		}
+
+		if (isDeliveryUpdating) {
 			return;
 		}
 
@@ -104,9 +112,10 @@ export function CheckoutForm() {
 			const selectedPaymentMethod = "card";
 
 			// Initialize transaction with Saleor
+			// Omit amount so Saleor uses the server-side checkout remaining balance,
+			// which always includes shipping. Client-side totalPrice can be stale.
 			const initializeResult = await transactionInitialize({
 				checkoutId: checkout.id,
-				amount: checkout.totalPrice.gross.amount,
 				paymentGateway: {
 					id: stripeV2GatewayId,
 					data: {
@@ -227,12 +236,14 @@ export function CheckoutForm() {
 			<PaymentElement className="payment-element" options={paymentElementOptions} />
 			<button
 				className="h-12 items-center rounded-md bg-neutral-900 px-6 py-3 text-base font-medium leading-6 text-white shadow hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70 hover:disabled:bg-neutral-700 aria-disabled:cursor-not-allowed aria-disabled:opacity-70 hover:aria-disabled:bg-neutral-700"
-				aria-disabled={isLoading || !stripe || !elements || isBelowMinimum}
-				disabled={isBelowMinimum}
+				aria-disabled={isLoading || !stripe || !elements || isBelowMinimum || isDeliveryUpdating}
+				disabled={isBelowMinimum || isDeliveryUpdating}
 				id="submit"
 				type="submit"
 			>
-				<span className="button-text">{isLoading ? <Loader /> : "Pay now"}</span>
+				<span className="button-text">
+					{isLoading ? <Loader /> : isDeliveryUpdating ? "Updating..." : "Pay now"}
+				</span>
 			</button>
 		</form>
 	);

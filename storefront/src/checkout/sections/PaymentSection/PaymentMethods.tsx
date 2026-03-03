@@ -2,13 +2,15 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { paymentMethodToComponent } from "./supportedPaymentApps";
 import { PaymentSectionSkeleton } from "@/checkout/sections/PaymentSection/PaymentSectionSkeleton";
 import { usePayments } from "@/checkout/sections/PaymentSection/usePayments";
+import { useCheckout } from "@/checkout/hooks/useCheckout";
 import { useCheckoutUpdateState } from "@/checkout/state/updateStateStore";
 
 export const PaymentMethods = () => {
 	const { availablePaymentGateways, fetching } = usePayments();
+	const { checkout } = useCheckout();
 	const {
 		changingBillingCountry,
-		updateState: { checkoutDeliveryMethodUpdate, paymentGatewaysInitialize },
+		updateState: { paymentGatewaysInitialize },
 	} = useCheckoutUpdateState();
 
 	const gatewaysWithDefinedComponent = useMemo(
@@ -37,18 +39,29 @@ export const PaymentMethods = () => {
 		}
 	}, [paymentGatewaysInitialize, fetching]);
 
-	// Show skeleton during:
-	// - Initial gateway initialization
-	// - Active fetch in progress
-	// - During billing country change
-	// - During delivery method update
-	// - Before first successful load with gateways available
+	// Don't show payment until a delivery method is selected (when shipping is required).
+	// This prevents Stripe from appearing before shipping loads, then flickering when
+	// the delivery method auto-selects.
+	const awaitingDeliveryMethod = checkout?.isShippingRequired && !checkout?.deliveryMethod;
+
+	// Show skeleton during initial gateway loading or billing country change.
+	// Note: checkoutDeliveryMethodUpdate is intentionally NOT included here.
+	// Once payment is visible, delivery method changes should not cause it to
+	// unmount/remount (which destroys Stripe Elements and causes flickering).
+	// Instead, the pay button is disabled during delivery method updates.
 	const showSkeleton =
 		isInitializing ||
 		changingBillingCountry ||
 		fetching ||
-		paymentGatewaysInitialize === "loading" ||
-		checkoutDeliveryMethodUpdate === "loading";
+		paymentGatewaysInitialize === "loading";
+
+	if (awaitingDeliveryMethod) {
+		return (
+			<p className="text-sm text-neutral-500">
+				Please select a shipping method above to continue to payment.
+			</p>
+		);
+	}
 
 	if (showSkeleton) {
 		return <PaymentSectionSkeleton />;

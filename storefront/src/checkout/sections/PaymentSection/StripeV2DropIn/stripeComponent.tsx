@@ -2,7 +2,7 @@
 
 import { loadStripe, type Stripe, type StripeElementsOptions } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckoutForm } from "./stripeForm";
 import { useCheckout } from "@/checkout/hooks/useCheckout";
 
@@ -34,24 +34,13 @@ export const StripeComponent = ({ config }: { config: StripeConfig }) => {
 	const currency = checkout?.totalPrice?.gross?.currency?.toLowerCase() || "usd";
 	const hasValidAmount = amount > 0;
 
-	// Track the amount we initialized with to prevent unnecessary re-renders
-	const initializedAmountRef = useRef<number | null>(null);
-
-	// Memoize stripe options - only create once we have valid data
+	// Memoize stripe options - updates whenever checkout total changes
 	const stripeOptions: StripeElementsOptions | null = useMemo(() => {
 		if (!hasValidAmount) return null;
 
-		// Use the first valid amount, or update if it changed significantly
-		if (initializedAmountRef.current === null) {
-			initializedAmountRef.current = amount;
-		} else if (Math.abs(amount - initializedAmountRef.current) > 100) {
-			// Only update for significant changes (> $1)
-			initializedAmountRef.current = amount;
-		}
-
 		return {
 			mode: "payment" as const,
-			amount: initializedAmountRef.current,
+			amount,
 			appearance: { theme: "stripe" as const },
 			currency,
 		};
