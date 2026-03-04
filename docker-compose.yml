@@ -319,7 +319,7 @@ services:
     volumes:
       - mtg-import-apl:/app/apps/mtg-import/data
     environment:
-      - SECRET_KEY=${MTG_IMPORT_SECRET_KEY:-a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2}
+      - SECRET_KEY=${MTG_IMPORT_SECRET_KEY:?MTG_IMPORT_SECRET_KEY is required}
       - DATABASE_URL=${INVENTORY_DATABASE_URL:?INVENTORY_DATABASE_URL is required}
       - ALLOWED_DOMAIN_PATTERN=/.*/
       - APP_IFRAME_BASE_URL=http://localhost:3005
