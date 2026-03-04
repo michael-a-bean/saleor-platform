@@ -131,3 +131,21 @@ export function hasActiveFilters(filter: ProductFilterInput): boolean {
 		filter.collections?.length
 	);
 }
+
+/**
+ * Check if any active filters require Saleor GraphQL (not supported by Meilisearch).
+ * Meilisearch supports: rarity, typeLine, setName, and priceRange.
+ * Everything else needs GraphQL attribute filtering.
+ */
+export function requiresGraphQLFiltering(filters: MTGFilterState): boolean {
+	return (
+		filters.colorIdentity.length > 0 ||
+		filters.cardType.length > 0 ||
+		filters.finish.length > 0 ||
+		filters.reservedList !== null ||
+		filters.isPromo !== null ||
+		filters.isFullArt !== null ||
+		filters.manaValue.min !== undefined ||
+		filters.manaValue.max !== undefined
+	);
+}

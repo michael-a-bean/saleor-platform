@@ -7,7 +7,7 @@ import { ProductList } from "@/ui/components/ProductList";
 import { getPaginatedListVariables } from "@/lib/utils";
 import { SortBy } from "@/ui/components/SortBy";
 import { FilterSidebar, MobileFilterModal, ActiveFilters } from "@/ui/components/filters";
-import { parseFiltersFromURL, buildProductFilter, getActiveFilterCount } from "@/lib/filters";
+import { parseFiltersFromURL, buildProductFilter, getActiveFilterCount, requiresGraphQLFiltering } from "@/lib/filters";
 import { searchWebstore, checkMeilisearchHealth } from "./actions";
 import { transformMeilisearchResults, createMeilisearchPageInfo } from "./transforms";
 
@@ -108,8 +108,10 @@ export default async function Page(props: {
 	const productFilter = buildProductFilter(filters);
 	const activeFilterCount = getActiveFilterCount(filters);
 
-	// Check if Meilisearch is available
-	const meilisearchHealthy = await checkMeilisearchHealth();
+	// Meilisearch only supports rarity, typeLine, setName, and priceRange filters.
+	// If any other filters are active, skip the health check and go straight to GraphQL.
+	const needsGraphQL = requiresGraphQLFiltering(filters);
+	const useMeilisearch = !needsGraphQL && (await checkMeilisearchHealth());
 
 	// Variables for rendering
 	let productList: ReturnType<typeof transformMeilisearchResults> = [];
@@ -123,7 +125,7 @@ export default async function Page(props: {
 	let usedMeilisearch = false;
 	let processingTimeMs = 0;
 
-	if (meilisearchHealthy) {
+	if (useMeilisearch) {
 		// Use Meilisearch for search
 		usedMeilisearch = true;
 

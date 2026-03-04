@@ -7,29 +7,41 @@ export const RARITY_OPTIONS: FilterOption[] = [
 	{ value: "rare", label: "Rare", color: "#a58e4a" },
 	{ value: "mythic", label: "Mythic Rare", color: "#bf4427" },
 	{ value: "special", label: "Special", color: "#905d98" },
-	{ value: "bonus", label: "Bonus", color: "#6b5b95" },
 ];
 
-// Color identity options (WUBRG) — values must match Scryfall color letters
+// Color identity options (WUBRG) — values must match Saleor attribute value slugs (lowercase)
 export const COLOR_IDENTITY_OPTIONS: FilterOption[] = [
-	{ value: "W", label: "White", color: "#F9FAF4" },
-	{ value: "U", label: "Blue", color: "#0E68AB" },
-	{ value: "B", label: "Black", color: "#150B00" },
-	{ value: "R", label: "Red", color: "#D3202A" },
-	{ value: "G", label: "Green", color: "#00733E" },
+	{ value: "w", label: "White", color: "#F9FAF4" },
+	{ value: "u", label: "Blue", color: "#0E68AB" },
+	{ value: "b", label: "Black", color: "#150B00" },
+	{ value: "r", label: "Red", color: "#D3202A" },
+	{ value: "g", label: "Green", color: "#00733E" },
 ];
 
-// Card type options — values must match mtg-card-type MULTISELECT values from import
+// Card type options — values must match Saleor attribute value slugs (lowercase)
+// Main types shown by default; less common types available but not cluttering the UI
 export const CARD_TYPE_OPTIONS: FilterOption[] = [
-	{ value: "Creature", label: "Creature" },
-	{ value: "Instant", label: "Instant" },
-	{ value: "Sorcery", label: "Sorcery" },
-	{ value: "Artifact", label: "Artifact" },
-	{ value: "Enchantment", label: "Enchantment" },
-	{ value: "Planeswalker", label: "Planeswalker" },
-	{ value: "Land", label: "Land" },
-	{ value: "Battle", label: "Battle" },
-	{ value: "Legendary", label: "Legendary" },
+	{ value: "creature", label: "Creature" },
+	{ value: "instant", label: "Instant" },
+	{ value: "sorcery", label: "Sorcery" },
+	{ value: "artifact", label: "Artifact" },
+	{ value: "enchantment", label: "Enchantment" },
+	{ value: "planeswalker", label: "Planeswalker" },
+	{ value: "land", label: "Land" },
+	{ value: "battle", label: "Battle" },
+	{ value: "legendary", label: "Legendary" },
+	{ value: "kindred", label: "Kindred" },
+	{ value: "snow", label: "Snow" },
+	{ value: "basic", label: "Basic" },
+	{ value: "token", label: "Token" },
+	{ value: "conspiracy", label: "Conspiracy" },
+	{ value: "emblem", label: "Emblem" },
+	{ value: "phenomenon", label: "Phenomenon" },
+	{ value: "plane", label: "Plane" },
+	{ value: "scheme", label: "Scheme" },
+	{ value: "vanguard", label: "Vanguard" },
+	{ value: "world", label: "World" },
+	{ value: "ongoing", label: "Ongoing" },
 ];
 
 export const BOOLEAN_FILTER_OPTIONS = [
