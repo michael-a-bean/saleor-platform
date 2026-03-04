@@ -109,11 +109,9 @@ apps_scaling_min_capacity = 1 # Always-on apps stay running; batch jobs (desired
 apps_scaling_max_capacity = 1 # 1 instance per app in staging
 
 # Images (pin by digest in production, use tags in staging)
-# Updated 2026-01-12: API 3.22.26, Dashboard 3.21.18
-# Note: Dashboard 3.22.9+ uses AppExtension fields (mountName, targetName, settings)
-#       that don't exist in API 3.22.x. Use Dashboard 3.21.x for compatibility.
-saleor_api_image       = "ghcr.io/saleor/saleor:3.22.26"
-saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.21.18"
+# Updated 2026-03-03: API 3.22.39, Dashboard 3.22.34
+saleor_api_image       = "ghcr.io/saleor/saleor:3.22.39"
+saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.22.34"
 
 # Saleor Apps image tags
 stripe_app_image_tag     = "document-polyfill-v1"
