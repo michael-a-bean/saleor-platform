@@ -205,12 +205,18 @@ export function CheckoutForm() {
 				const processResult = await transactionProcess({ id: transactionId });
 
 				if (processResult.error || processResult.data?.transactionProcess?.errors?.length) {
+					const errDetail = processResult.error?.message
+						|| processResult.data?.transactionProcess?.errors?.[0]?.message
+						|| "unknown";
+					console.error("[checkout] transactionProcess failed:", errDetail, processResult);
 					showCustomErrors([
 						{ message: "Payment was successful but order processing failed. Please contact support." },
 					]);
 					setIsLoading(false);
 					return;
 				}
+
+				console.info("[checkout] transactionProcess succeeded, completing checkout...");
 
 				// Clear session storage since we're not going through redirect
 				safeSessionStorage.removeItem("transactionId");
@@ -222,8 +228,11 @@ export function CheckoutForm() {
 					const errorMessage =
 						completeResult.apiErrors?.[0]?.message ||
 						"Payment was successful but order could not be placed. Please contact support.";
+					console.error("[checkout] checkoutComplete failed:", completeResult.apiErrors, completeResult);
 					showCustomErrors([{ message: errorMessage }]);
 					setIsLoading(false);
+				} else {
+					console.info("[checkout] checkoutComplete succeeded");
 				}
 			}
 

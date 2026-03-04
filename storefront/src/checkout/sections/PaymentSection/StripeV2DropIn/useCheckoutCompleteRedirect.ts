@@ -68,10 +68,13 @@ export const useCheckoutCompleteRedirect = () => {
 
 		const processAndComplete = async () => {
 			try {
+				console.info("[checkout-redirect] Processing transaction:", resolvedTransactionId);
+
 				// First, sync Saleor with Stripe's payment status via transactionProcess
 				const processResult = await transactionProcess({ id: resolvedTransactionId });
 
 				if (processResult.error) {
+					console.error("[checkout-redirect] transactionProcess error:", processResult.error);
 					clearPaymentParams();
 					showCustomErrors([{ message: "Failed to process payment. Please try again." }]);
 					isProcessingRef.current = false;
@@ -80,6 +83,7 @@ export const useCheckoutCompleteRedirect = () => {
 
 				const processErrors = processResult.data?.transactionProcess?.errors;
 				if (processErrors?.length) {
+					console.error("[checkout-redirect] transactionProcess API errors:", processErrors);
 					clearPaymentParams();
 					const errorMessage = processErrors[0]?.message || "Payment processing failed";
 					showCustomErrors([{ message: errorMessage }]);
@@ -107,20 +111,26 @@ export const useCheckoutCompleteRedirect = () => {
 				// Clear transaction identifier once we finalize
 				safeSessionStorage.removeItem("transactionId");
 
+				console.info("[checkout-redirect] transactionProcess succeeded, completing checkout...");
+
 				// Now complete the checkout
 				const result = await onCheckoutComplete();
 
 				// If checkout completion failed (no redirect happened), show error
 				if (result?.hasErrors) {
+					console.error("[checkout-redirect] checkoutComplete failed:", result.apiErrors, result);
 					clearPaymentParams();
 					const errorMessage =
 						result.apiErrors?.[0]?.message || "Failed to complete checkout. Please try again.";
 					showCustomErrors([{ message: errorMessage }]);
 					isProcessingRef.current = false;
+				} else {
+					console.info("[checkout-redirect] checkoutComplete succeeded");
 				}
 				// Note: If successful, onCheckoutComplete triggers a redirect via window.location.href
 				// so we don't need to handle the success case here
-			} catch {
+			} catch (err) {
+				console.error("[checkout-redirect] unexpected error:", err);
 				clearPaymentParams();
 				showCustomErrors([{ message: "An unexpected error occurred. Please try again." }]);
 				isProcessingRef.current = false;
