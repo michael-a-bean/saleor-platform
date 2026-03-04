@@ -266,6 +266,7 @@ services:
       - APP_LOG_LEVEL=debug
       - DEFAULT_CURRENCY=USD
       - DEFAULT_CHANNEL_SLUG=webstore
+      - MEILISEARCH_URL=http://meilisearch:7700
       - SCRYFALL_API_BASE_URL=https://api.scryfall.com
       - SCRYFALL_RATE_LIMIT_MS=100
 
