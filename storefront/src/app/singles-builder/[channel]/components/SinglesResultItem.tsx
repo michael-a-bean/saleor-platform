@@ -62,10 +62,9 @@ interface VariantRowProps {
 	onUpdateQuantity: (lineId: string, quantity: number) => Promise<void>;
 	onRemoveLine: (lineId: string) => Promise<void>;
 	cartLine?: CartLineInfo; // Cart line info if this variant is in cart
-	showFinishLabel?: boolean; // Show finish text inline with condition
 }
 
-function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartLine, showFinishLabel }: VariantRowProps) {
+function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartLine }: VariantRowProps) {
 	const [addQuantity, setAddQuantity] = useState(1);
 	const [isPending, setIsPending] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -178,7 +177,7 @@ function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartL
 
 	return (
 		<div
-			className={`grid ${showFinishLabel ? "grid-cols-[4.5rem_3rem_2rem_5rem_1fr]" : "grid-cols-[3rem_2rem_5rem_1fr]"} items-center gap-1 rounded border px-2 py-1 text-xs ${
+			className={`grid grid-cols-[4.5rem_3rem_2rem_5rem_1fr] items-center gap-1 rounded border px-2 py-1 text-xs ${
 				isInCart
 					? "border-blue-300 bg-blue-50"
 					: inStock
@@ -186,17 +185,13 @@ function VariantRow({ variant, onQuickAdd, onUpdateQuantity, onRemoveLine, cartL
 						: "border-gray-100 bg-gray-50 opacity-60"
 			}`}
 		>
-			{/* Finish label (own column when multiple finishes) */}
-			{showFinishLabel && (
-				<span className="text-gray-500 font-normal text-left truncate">
-					{isFoil && <span className="text-purple-500">✦ </span>}
-					{finish}
-				</span>
-			)}
+			{/* Finish label */}
+			<span className="text-gray-500 font-normal text-left truncate">
+				{finish}{isFoil && <span className="text-purple-500"> ✦</span>}
+			</span>
 
 			{/* Condition badge */}
 			<span className={`rounded px-1 py-0.5 font-medium text-center ${conditionColor} ${conditionBgColor}`}>
-				{!showFinishLabel && isFoil && <span className="text-purple-600 mr-0.5">✦</span>}
 				{condition}
 			</span>
 
@@ -405,7 +400,6 @@ export function SinglesResultItem({ product, onQuickAdd, onUpdateQuantity, onRem
 										onUpdateQuantity={onUpdateQuantity}
 										onRemoveLine={onRemoveLine}
 										cartLine={cartLines?.get(variant.id)}
-										showFinishLabel={finishGroups.length > 1}
 									/>
 								))}
 							</div>
