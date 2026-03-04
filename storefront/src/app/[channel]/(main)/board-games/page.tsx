@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Breadcrumb } from "@/ui/components/Breadcrumb";
 import { BoardGamesSubNav } from "@/ui/components/BoardGamesSubNav";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
 	title: "Board Games",

@@ -7,7 +7,7 @@ import { MiniaturesSubNav } from "@/ui/components/MiniaturesSubNav";
 import { ProductList } from "@/ui/components/ProductList";
 import { Clock, ArrowLeft } from "lucide-react";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 // Same categories as in miniatures/page.tsx for consistency
 const MINIATURE_CATEGORIES = [

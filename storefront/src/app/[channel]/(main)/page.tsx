@@ -6,8 +6,7 @@ import { ProductList } from "@/ui/components/ProductList";
 import { SetIconImage } from "@/ui/components/SetIconImage";
 import { getLatestSets, getTrendingProducts } from "@/lib/filters";
 
-// ISR: serve cached page, revalidate in background every 60s
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export const metadata = {
 	title: "Shuffle and Cut Games - Magic: The Gathering & More",

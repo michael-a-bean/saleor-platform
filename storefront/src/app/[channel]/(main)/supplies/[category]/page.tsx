@@ -7,7 +7,7 @@ import { SuppliesSubNav } from "@/ui/components/SuppliesSubNav";
 import { ProductList } from "@/ui/components/ProductList";
 import { Clock, ArrowLeft } from "lucide-react";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 // Same categories as in supplies/page.tsx for consistency
 const SUPPLY_CATEGORIES = [

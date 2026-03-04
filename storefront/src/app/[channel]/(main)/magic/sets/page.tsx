@@ -5,7 +5,7 @@ import { Breadcrumb } from "@/ui/components/Breadcrumb";
 import { MagicSubNav } from "@/ui/components/MagicSubNav";
 import { SetIconImage } from "@/ui/components/SetIconImage";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
 	title: "Magic: The Gathering Sets",
