@@ -166,9 +166,13 @@ export function CheckoutForm() {
 			});
 
 			// Confirm the payment with Stripe
+			// redirect: "if_required" — only redirect for payment methods that need it (e.g. 3DS).
+			// Without this, Stripe defaults to "always" and redirects even for simple card payments,
+			// which means the inline transactionProcess → checkoutComplete below would never execute.
 			const { error: confirmError } = await stripe.confirmPayment({
 				elements,
 				clientSecret,
+				redirect: "if_required",
 				confirmParams: {
 					return_url: returnUrl,
 					payment_method_data: {
