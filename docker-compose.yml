@@ -355,50 +355,6 @@ services:
       # Store in .env: MEILISEARCH_MASTER_KEY=<generated-key>
       # ============================================
 
-  # Price Sync CLI - for manual sync commands
-  price-sync:
-    build:
-      context: ./saleor-apps
-      dockerfile: apps/price-sync/Dockerfile
-    networks:
-      - saleor-backend-tier
-    depends_on:
-      - db
-      - inventory-ops-db
-    environment:
-      - DATABASE_URL=${INVENTORY_DATABASE_URL:?INVENTORY_DATABASE_URL is required}
-      - SALEOR_DATABASE_URL=${SALEOR_DATABASE_URL:?SALEOR_DATABASE_URL is required}
-      - INSTALLATION_ID=${INSTALLATION_ID:-}
-      - SALEOR_CHANNEL_ID=${SALEOR_CHANNEL_ID:-webstore}
-      - SCRYFALL_RATE_LIMIT_MS=${SCRYFALL_RATE_LIMIT_MS:-100}
-      - BATCH_SIZE=${BATCH_SIZE:-100}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-    profiles:
-      - tools
-
-  # Price Sync Worker Daemon - processes jobs from dashboard queue
-  price-sync-worker:
-    build:
-      context: ./saleor-apps
-      dockerfile: apps/price-sync/Dockerfile
-    command: ["node", "dist/index.mjs", "process", "--daemon"]
-    networks:
-      - saleor-backend-tier
-    depends_on:
-      - db
-      - inventory-ops-db
-    environment:
-      - DATABASE_URL=${INVENTORY_DATABASE_URL:?INVENTORY_DATABASE_URL is required}
-      - SALEOR_DATABASE_URL=${SALEOR_DATABASE_URL:?SALEOR_DATABASE_URL is required}
-      - INSTALLATION_ID=${INSTALLATION_ID:-}
-      - SALEOR_CHANNEL_ID=${SALEOR_CHANNEL_ID:-webstore}
-      - SCRYFALL_RATE_LIMIT_MS=${SCRYFALL_RATE_LIMIT_MS:-100}
-      - BATCH_SIZE=${BATCH_SIZE:-100}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-    restart: unless-stopped
-    profiles:
-      - workers
-
   # =========================================================================
   # Local ALB Proxy (mimics staging ALB routing)
   # Access at http://localhost:8080 for path-based routing parity with staging
