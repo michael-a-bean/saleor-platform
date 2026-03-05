@@ -34,6 +34,7 @@ jobs:
           INVENTORY_OPS_SECRET_KEY=ci-inventory-key
           BUYLIST_SECRET_KEY=ci-buylist-key
           POS_SECRET_KEY=ci-pos-key
+          MTG_IMPORT_SECRET_KEY=ci-mtg-import-key
           INVENTORY_DATABASE_URL=postgresql://inventory:inventory@inventory-ops-db:5432/inventory_ops
           INVENTORY_POSTGRES_USER=inventory
           INVENTORY_POSTGRES_PASSWORD=inventory
@@ -123,13 +124,11 @@ jobs:
           # Upstream apps (avatax, cms, klaviyo, etc.) have pre-existing lint issues
           pnpm turbo run lint --filter=saleor-app-inventory-ops --filter=saleor-app-buylist --filter=saleor-app-pos
 
-      # Type check skipped for custom apps
-      # All three apps (inventory-ops, buylist, pos) have pre-existing
-      # TypeScript strictness issues that need dedicated cleanup work.
-      # TODO: Re-enable type check after addressing:
-      # - Prisma type generation in CI
-      # - Implicit any types in reduce callbacks
-      # - Test file type assertions
+      # Type check (tsc --noEmit) skipped for custom apps
+      # Source code compiles clean — remaining errors are in test files only:
+      # - Implicit any types in reduce callbacks (price-sync-router.test.ts)
+      # - Stale mock types in test files (purchase-orders-router.test.ts, goods-receipts-router.test.ts)
+      # TODO: Re-enable after fixing test file types (no source code blockers remain)
 
       - name: Generate Prisma client for inventory-ops
         working-directory: ./saleor-apps/apps/inventory-ops
@@ -333,6 +332,7 @@ jobs:
           INVENTORY_OPS_SECRET_KEY=ci-inventory-key
           BUYLIST_SECRET_KEY=ci-buylist-key
           POS_SECRET_KEY=ci-pos-key
+          MTG_IMPORT_SECRET_KEY=ci-mtg-import-key
           INVENTORY_DATABASE_URL=postgresql://inventory:inventory@inventory-ops-db:5432/inventory_ops
           INVENTORY_POSTGRES_USER=inventory
           INVENTORY_POSTGRES_PASSWORD=inventory
