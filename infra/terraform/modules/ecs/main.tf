@@ -28,9 +28,9 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
   capacity_providers = ["FARGATE", "FARGATE_SPOT"]
 
   default_capacity_provider_strategy {
-    base              = 1
+    base              = 0
     weight            = 100
-    capacity_provider = "FARGATE"
+    capacity_provider = var.use_fargate_spot ? "FARGATE_SPOT" : "FARGATE"
   }
 }
 
@@ -178,7 +178,8 @@ resource "aws_ecs_task_definition" "worker" {
         "worker", "--loglevel=info",
         "--concurrency=2"
       ]
-      essential = true
+      essential   = true
+      stopTimeout = 120
       secrets = concat(
         [
           {
@@ -269,7 +270,8 @@ resource "aws_ecs_task_definition" "beat" {
         "beat", "--loglevel=info",
         "--scheduler=django_celery_beat.schedulers:DatabaseScheduler"
       ]
-      essential = true
+      essential   = true
+      stopTimeout = 120
       secrets = [
         {
           name      = "SECRET_KEY"
@@ -423,7 +425,10 @@ resource "aws_ecs_service" "api" {
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.api.arn
   desired_count   = var.api_desired_count
-  launch_type     = "FARGATE"
+  capacity_provider_strategy {
+    capacity_provider = var.use_fargate_spot ? "FARGATE_SPOT" : "FARGATE"
+    weight            = 100
+  }
 
   network_configuration {
     subnets          = var.private_subnet_ids
@@ -460,7 +465,10 @@ resource "aws_ecs_service" "worker" {
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.worker.arn
   desired_count   = var.worker_desired_count
-  launch_type     = "FARGATE"
+  capacity_provider_strategy {
+    capacity_provider = var.use_fargate_spot ? "FARGATE_SPOT" : "FARGATE"
+    weight            = 100
+  }
 
   network_configuration {
     subnets          = var.private_subnet_ids
@@ -489,7 +497,10 @@ resource "aws_ecs_service" "beat" {
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.beat.arn
   desired_count   = 1 # Must be exactly 1 to avoid duplicate task scheduling
-  launch_type     = "FARGATE"
+  capacity_provider_strategy {
+    capacity_provider = var.use_fargate_spot ? "FARGATE_SPOT" : "FARGATE"
+    weight            = 100
+  }
 
   network_configuration {
     subnets          = var.private_subnet_ids
@@ -517,7 +528,10 @@ resource "aws_ecs_service" "storefront" {
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.storefront.arn
   desired_count   = var.storefront_desired_count
-  launch_type     = "FARGATE"
+  capacity_provider_strategy {
+    capacity_provider = var.use_fargate_spot ? "FARGATE_SPOT" : "FARGATE"
+    weight            = 100
+  }
 
   network_configuration {
     subnets          = var.private_subnet_ids
@@ -551,7 +565,10 @@ resource "aws_ecs_service" "dashboard" {
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.dashboard.arn
   desired_count   = var.dashboard_desired_count
-  launch_type     = "FARGATE"
+  capacity_provider_strategy {
+    capacity_provider = var.use_fargate_spot ? "FARGATE_SPOT" : "FARGATE"
+    weight            = 100
+  }
 
   network_configuration {
     subnets          = var.private_subnet_ids
@@ -728,7 +745,10 @@ resource "aws_ecs_service" "apps" {
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.apps[each.key].arn
   desired_count   = coalesce(each.value.desired_count, var.apps_desired_count)
-  launch_type     = "FARGATE"
+  capacity_provider_strategy {
+    capacity_provider = var.use_fargate_spot ? "FARGATE_SPOT" : "FARGATE"
+    weight            = 100
+  }
 
   network_configuration {
     subnets          = var.private_subnet_ids
