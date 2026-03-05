@@ -363,25 +363,69 @@ jobs:
             --db-snapshot-identifier "${SNAPSHOT_ID}" || true
           echo "Snapshot creation initiated (async - not waiting for completion)"
 
-      - name: Run Django migrations
+      - name: Run all migrations (Django + Prisma)
+        id: migrations
         run: |
-          ./scripts/deploy/aws/run-migrations.sh staging django
-        env:
-          SHA: ${{ needs.validate.outputs.sha_short }}
-          ECS_TASK_SUBNETS: ${{ vars.STAGING_ECS_TASK_SUBNETS }}
-          ECS_TASK_SECURITY_GROUPS: ${{ vars.STAGING_ECS_TASK_SECURITY_GROUPS }}
+          MIGRATION_STATUS=""
+          FAILED=false
 
-      - name: Run Prisma migrations (inventory-ops)
-        run: |
-          ./scripts/deploy/aws/run-migrations.sh staging prisma inventory-ops
-        env:
-          SHA: ${{ needs.validate.outputs.sha_short }}
-          ECS_TASK_SUBNETS: ${{ vars.STAGING_ECS_TASK_SUBNETS }}
-          ECS_TASK_SECURITY_GROUPS: ${{ vars.STAGING_ECS_TASK_SECURITY_GROUPS }}
+          echo "::group::Django migrations"
+          if ./scripts/deploy/aws/run-migrations.sh staging django; then
+            echo "✅ Django migrations succeeded"
+            MIGRATION_STATUS="django:success"
+          else
+            echo "❌ Django migrations FAILED"
+            MIGRATION_STATUS="django:FAILED"
+            FAILED=true
+          fi
+          echo "::endgroup::"
 
-      - name: Run Prisma migrations (mtg-import)
-        run: |
-          ./scripts/deploy/aws/run-migrations.sh staging prisma mtg-import
+          if [[ "$FAILED" == "true" ]]; then
+            echo "::error::Django migrations failed — skipping Prisma migrations"
+            echo "::warning::PARTIAL MIGRATION STATE: ${MIGRATION_STATUS}"
+            echo "::warning::The database may have partial Django schema changes applied."
+            echo "::warning::Review the migration output above and consider restoring from the pre-migration RDS snapshot."
+            exit 1
+          fi
+
+          echo "::group::Prisma migrations (inventory-ops)"
+          if ./scripts/deploy/aws/run-migrations.sh staging prisma inventory-ops; then
+            echo "✅ Prisma inventory-ops migrations succeeded"
+            MIGRATION_STATUS="${MIGRATION_STATUS},prisma-inventory-ops:success"
+          else
+            echo "❌ Prisma inventory-ops migrations FAILED"
+            MIGRATION_STATUS="${MIGRATION_STATUS},prisma-inventory-ops:FAILED"
+            FAILED=true
+          fi
+          echo "::endgroup::"
+
+          if [[ "$FAILED" == "true" ]]; then
+            echo "::error::Prisma inventory-ops migrations failed — skipping remaining migrations"
+            echo "::warning::PARTIAL MIGRATION STATE: ${MIGRATION_STATUS}"
+            echo "::warning::Django migrations succeeded but Prisma failed. Old app images are still running against the new Django schema."
+            echo "::warning::This is usually safe, but destructive Django migrations (column renames, drops) may cause issues."
+            exit 1
+          fi
+
+          echo "::group::Prisma migrations (mtg-import)"
+          if ./scripts/deploy/aws/run-migrations.sh staging prisma mtg-import; then
+            echo "✅ Prisma mtg-import migrations succeeded"
+            MIGRATION_STATUS="${MIGRATION_STATUS},prisma-mtg-import:success"
+          else
+            echo "❌ Prisma mtg-import migrations FAILED"
+            MIGRATION_STATUS="${MIGRATION_STATUS},prisma-mtg-import:FAILED"
+            FAILED=true
+          fi
+          echo "::endgroup::"
+
+          if [[ "$FAILED" == "true" ]]; then
+            echo "::error::Prisma mtg-import migrations failed"
+            echo "::warning::PARTIAL MIGRATION STATE: ${MIGRATION_STATUS}"
+            echo "::warning::Django + inventory-ops Prisma succeeded, but mtg-import Prisma failed."
+            exit 1
+          fi
+
+          echo "✅ All migrations succeeded: ${MIGRATION_STATUS}"
         env:
           SHA: ${{ needs.validate.outputs.sha_short }}
           ECS_TASK_SUBNETS: ${{ vars.STAGING_ECS_TASK_SUBNETS }}
