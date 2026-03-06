@@ -28,6 +28,7 @@ export const useAddressListForm = ({
 	defaultAddress,
 	checkAddressAvailability = false,
 }: UseAddressListProps) => {
+	"use no memo";
 	const { user } = useUser();
 
 	const { isAvailable } = useAddressAvailability(!checkAddressAvailability);

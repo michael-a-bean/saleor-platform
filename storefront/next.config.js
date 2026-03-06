@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const config = {
+	reactCompiler: true,
 	images: {
 		remotePatterns: [
 			// Scryfall card images and SVGs (mana symbols, set icons)

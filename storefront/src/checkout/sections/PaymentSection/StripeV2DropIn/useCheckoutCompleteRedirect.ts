@@ -25,6 +25,7 @@ const safeSessionStorage = {
 };
 
 export const useCheckoutCompleteRedirect = () => {
+	"use no memo";
 	const stripe = useStripe();
 	const { completingCheckout, onCheckoutComplete } = useCheckoutComplete();
 	const [{ fetching: processingTransaction }, transactionProcess] = useTransactionProcessMutation();
