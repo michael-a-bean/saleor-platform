@@ -1,25 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 
 const CONSENT_KEY = "cookie-consent";
 
-export function CookieConsent({ channel }: { channel: string }) {
-	const [showBanner, setShowBanner] = useState(false);
+const noop = () => () => {};
+function getHasConsent() {
+	try {
+		return !!localStorage.getItem(CONSENT_KEY);
+	} catch {
+		return false;
+	}
+}
 
-	useEffect(() => {
-		// Check if user has already consented
-		try {
-			const consent = localStorage.getItem(CONSENT_KEY);
-			if (!consent) {
-				setShowBanner(true);
-			}
-		} catch {
-			// localStorage might not be available (private browsing)
-			setShowBanner(true);
-		}
-	}, []);
+export function CookieConsent({ channel }: { channel: string }) {
+	// Read localStorage via useSyncExternalStore to avoid setState-in-effect
+	// Server snapshot: true (assume consent → don't render banner during SSR)
+	const hasConsent = useSyncExternalStore(noop, getHasConsent, () => true);
+	const [dismissed, setDismissed] = useState(false);
 
 	const handleAccept = () => {
 		try {
@@ -27,7 +26,7 @@ export function CookieConsent({ channel }: { channel: string }) {
 		} catch {
 			// Ignore if localStorage is not available
 		}
-		setShowBanner(false);
+		setDismissed(true);
 	};
 
 	const handleDecline = () => {
@@ -36,10 +35,10 @@ export function CookieConsent({ channel }: { channel: string }) {
 		} catch {
 			// Ignore if localStorage is not available
 		}
-		setShowBanner(false);
+		setDismissed(true);
 	};
 
-	if (!showBanner) {
+	if (hasConsent || dismissed) {
 		return null;
 	}
 

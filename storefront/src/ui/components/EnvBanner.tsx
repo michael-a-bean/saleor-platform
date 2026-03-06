@@ -20,16 +20,14 @@
  *   }
  */
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { getEnvironment, getApiUrl, isProduction } from "@/lib/env";
 
-export function EnvBanner() {
-	const [mounted, setMounted] = useState(false);
+const noop = () => () => {};
 
-	// Only render after hydration to avoid SSR mismatch
-	useEffect(() => {
-		setMounted(true);
-	}, []);
+export function EnvBanner() {
+	// useSyncExternalStore with differing server/client snapshots handles hydration safely
+	const mounted = useSyncExternalStore(noop, () => true, () => false);
 
 	// Don't render anything in production
 	if (isProduction()) {
