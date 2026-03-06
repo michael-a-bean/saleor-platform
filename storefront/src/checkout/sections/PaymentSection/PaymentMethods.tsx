@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef } from "react";
 import { paymentMethodToComponent } from "./supportedPaymentApps";
 import { PaymentSectionSkeleton } from "@/checkout/sections/PaymentSection/PaymentSectionSkeleton";
 import { usePayments } from "@/checkout/sections/PaymentSection/usePayments";
@@ -20,24 +20,13 @@ export const PaymentMethods = () => {
 
 	// Track if we've ever successfully loaded gateways
 	const hasLoadedRef = useRef(false);
-	const [isInitializing, setIsInitializing] = useState(true);
+	if (gatewaysWithDefinedComponent.length > 0) {
+		hasLoadedRef.current = true;
+	}
 
-	// Once we have gateways, mark as loaded and not initializing
-	useEffect(() => {
-		if (gatewaysWithDefinedComponent.length > 0) {
-			hasLoadedRef.current = true;
-			setIsInitializing(false);
-		}
-	}, [gatewaysWithDefinedComponent.length]);
-
-	// Also stop initializing if the gateway fetch completed (even with no results)
-	useEffect(() => {
-		if (paymentGatewaysInitialize === "success" && !fetching) {
-			// Give a small delay to ensure state is stable
-			const timer = setTimeout(() => setIsInitializing(false), 100);
-			return () => clearTimeout(timer);
-		}
-	}, [paymentGatewaysInitialize, fetching]);
+	// Derive initializing state from fetch status instead of useState+useEffect
+	const isInitializing = !hasLoadedRef.current &&
+		(paymentGatewaysInitialize !== "success" || fetching);
 
 	// Don't show payment until a delivery method is selected (when shipping is required).
 	// This prevents Stripe from appearing before shipping loads, then flickering when

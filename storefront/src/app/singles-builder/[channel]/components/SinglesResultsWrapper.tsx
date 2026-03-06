@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useTransition, useMemo, useEffect } from "react";
+import { useState, useCallback, useTransition, useMemo, useRef } from "react";
 import { toast } from "react-toastify";
 import type { SinglesBuilderProductFragment, SinglesBuilderSearchQuery } from "@/gql/graphql";
 import { SinglesResults } from "./SinglesResults";
@@ -53,11 +53,13 @@ export function SinglesResultsWrapper({
 	const [pageInfo, setPageInfo] = useState(initialData?.pageInfo);
 	const [isPending, startTransition] = useTransition();
 
-	// Sync products state when initialData changes (e.g., when filters are applied)
-	useEffect(() => {
+	// Sync products when initialData changes (e.g., filters applied) — render-time adjustment
+	const prevInitialDataRef = useRef(initialData);
+	if (initialData !== prevInitialDataRef.current) {
+		prevInitialDataRef.current = initialData;
 		setProducts(initialData?.edges.map((e) => e.node) || []);
 		setPageInfo(initialData?.pageInfo);
-	}, [initialData]);
+	}
 
 	// Check if we have variant-level filters active
 	const hasVariantFilters = filterState && (filterState.condition.length > 0 || filterState.finish.length > 0);
@@ -120,9 +122,10 @@ export function SinglesResultsWrapper({
 
 	// Build a map of variantId -> cart line info for quick lookup
 	const cartLines = useMemo(() => {
+		const lines = cart?.lines;
 		const map = new Map<string, CartLineInfo>();
-		if (cart?.lines) {
-			for (const line of cart.lines) {
+		if (lines) {
+			for (const line of lines) {
 				map.set(line.variant.id, {
 					lineId: line.id,
 					quantity: line.quantity,
@@ -130,7 +133,7 @@ export function SinglesResultsWrapper({
 			}
 		}
 		return map;
-	}, [cart?.lines]);
+	}, [cart]);
 
 	// Helper to update cart state from action result
 	const handleCartResult = useCallback((result: CartActionResult, successMessage?: string) => {

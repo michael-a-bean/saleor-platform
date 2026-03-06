@@ -15,19 +15,23 @@ export function SinglesSearch() {
 	const [inputValue, setInputValue] = useState(initialQuery);
 	const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
+	const isFocusedRef = useRef(false);
 
 	// Focus input on mount
 	useEffect(() => {
 		inputRef.current?.focus();
 	}, []);
 
-	// Sync input with URL when navigating
-	useEffect(() => {
-		const urlQuery = searchParams.get("q") || "";
-		if (urlQuery !== inputValue && document.activeElement !== inputRef.current) {
+	// Sync input with URL when navigating — render-time adjustment
+	// Only sync when the input isn't focused (avoid overwriting mid-typing)
+	const urlQuery = searchParams.get("q") || "";
+	const prevUrlQueryRef = useRef(urlQuery);
+	if (urlQuery !== prevUrlQueryRef.current) {
+		prevUrlQueryRef.current = urlQuery;
+		if (!isFocusedRef.current) {
 			setInputValue(urlQuery);
 		}
-	}, [searchParams]);
+	}
 
 	const updateSearchParams = useCallback(
 		(query: string) => {
@@ -92,6 +96,8 @@ export function SinglesSearch() {
 				value={inputValue}
 				onChange={handleChange}
 				onKeyDown={handleKeyDown}
+				onFocus={() => { isFocusedRef.current = true; }}
+				onBlur={() => { isFocusedRef.current = false; }}
 				placeholder="Search cards by name, set, collector number..."
 				className="w-full rounded-lg border border-gray-300 px-4 py-3 pl-12 pr-12 text-lg shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
 				aria-label="Search cards"

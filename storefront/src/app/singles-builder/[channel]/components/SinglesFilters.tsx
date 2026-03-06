@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback, useState, useTransition, useRef, useEffect } from "react";
+import { useCallback, useState, useTransition, useRef } from "react";
 import {
 	type SinglesFilterState,
 	DEFAULT_SINGLES_FILTER,
@@ -108,18 +108,18 @@ export function SinglesFilters() {
 	const searchParams = useSearchParams();
 	const [isPending, startTransition] = useTransition();
 
-	// Parse initial filter state from URL
-	const initialFilters = parseFiltersFromURL(searchParams);
-	const [filters, setFilters] = useState<SinglesFilterState>(initialFilters);
-	const [setNameInput, setSetNameInput] = useState(initialFilters.setName);
+	// Derive filter state from URL — URL is the source of truth
+	const filters = parseFiltersFromURL(searchParams);
+	const [setNameInput, setSetNameInput] = useState(filters.setName);
 	const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-	// Sync filters with URL when searchParams change externally
-	useEffect(() => {
-		const urlFilters = parseFiltersFromURL(searchParams);
-		setFilters(urlFilters);
-		setSetNameInput(urlFilters.setName);
-	}, [searchParams]);
+	// Sync debounced input when URL changes externally (e.g., browser back/forward)
+	const prevSearchParamsRef = useRef(searchParams.toString());
+	const currentSearchParamsStr = searchParams.toString();
+	if (currentSearchParamsStr !== prevSearchParamsRef.current) {
+		prevSearchParamsRef.current = currentSearchParamsStr;
+		setSetNameInput(filters.setName);
+	}
 
 	// Update URL with new filter state
 	const updateURL = useCallback(
@@ -171,7 +171,6 @@ export function SinglesFilters() {
 	const handleFilterChange = useCallback(
 		(key: keyof SinglesFilterState, value: SinglesFilterState[typeof key]) => {
 			const newFilters = { ...filters, [key]: value };
-			setFilters(newFilters);
 			updateURL(newFilters);
 		},
 		[filters, updateURL],
@@ -192,7 +191,6 @@ export function SinglesFilters() {
 
 	// Clear all filters
 	const handleClearAll = () => {
-		setFilters(DEFAULT_SINGLES_FILTER);
 		setSetNameInput("");
 		updateURL(DEFAULT_SINGLES_FILTER);
 	};

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { getAvailableSetsForSearch } from "@/lib/filters/getAvailableSets";
@@ -21,13 +21,19 @@ export const SetFilterDropdown = ({ value, onChange, channel = "webstore" }: Set
 	const [isPending, startTransition] = useTransition();
 	const [hasLoaded, setHasLoaded] = useState(false);
 
-	// Fetch available sets when search query changes or dropdown opens
-	useEffect(() => {
+	// Clear options when search query is too short — render-time adjustment
+	const prevSearchQueryRef = useRef(searchQuery);
+	if (searchQuery !== prevSearchQueryRef.current) {
+		prevSearchQueryRef.current = searchQuery;
 		if (!searchQuery || searchQuery.length < 2) {
 			setOptions([]);
 			setHasLoaded(false);
-			return;
 		}
+	}
+
+	// Fetch available sets when search query changes or dropdown opens
+	useEffect(() => {
+		if (!searchQuery || searchQuery.length < 2) return;
 
 		// Only fetch when dropdown is opened or we haven't loaded yet
 		if (!isOpen && hasLoaded) return;

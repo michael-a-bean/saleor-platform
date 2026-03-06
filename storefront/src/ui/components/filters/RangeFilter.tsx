@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import type { RangeValue } from "@/lib/filters";
 
 interface RangeFilterProps {
@@ -22,11 +22,13 @@ export const RangeFilter = ({
 	const [localMin, setLocalMin] = useState(value.min?.toString() ?? "");
 	const [localMax, setLocalMax] = useState(value.max?.toString() ?? "");
 
-	// Sync local state with prop changes
-	useEffect(() => {
+	// Sync local state with prop changes — render-time adjustment
+	const prevValueRef = useRef({ min: value.min, max: value.max });
+	if (value.min !== prevValueRef.current.min || value.max !== prevValueRef.current.max) {
+		prevValueRef.current = { min: value.min, max: value.max };
 		setLocalMin(value.min?.toString() ?? "");
 		setLocalMax(value.max?.toString() ?? "");
-	}, [value.min, value.max]);
+	}
 
 	const handleBlur = () => {
 		const min = localMin ? parseFloat(localMin) : undefined;
