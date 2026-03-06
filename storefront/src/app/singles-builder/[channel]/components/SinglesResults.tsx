@@ -31,6 +31,7 @@ export function SinglesResults({
 	onRemoveLine,
 	cartLines,
 }: SinglesResultsProps) {
+	"use no memo"; // TanStack Virtual uses interior mutability incompatible with React Compiler
 	const parentRef = useRef<HTMLDivElement>(null);
 	const [parentHeight, setParentHeight] = useState(600);
 

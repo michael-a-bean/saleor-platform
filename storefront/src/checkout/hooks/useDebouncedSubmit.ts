@@ -1,22 +1,26 @@
 import { debounce } from "lodash-es";
-import { useCallback, useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 export const useDebouncedSubmit = <TArgs extends Array<any>>(
 	onSubmit: (...args: TArgs) => Promise<any> | void,
 ) => {
-	const debouncedSubmit = useCallback(
-		debounce((...args: TArgs) => {
-			void onSubmit(...args);
-		}, 2000),
-		[onSubmit],
+	// Use ref to always call the latest onSubmit without recreating the debounced function
+	const onSubmitRef = useRef(onSubmit);
+	onSubmitRef.current = onSubmit;
+
+	const debouncedSubmit = useMemo(
+		() =>
+			debounce((...args: TArgs) => {
+				void onSubmitRef.current(...args);
+			}, 2000),
+		[],
 	);
 
 	useEffect(() => {
 		return () => {
 			debouncedSubmit.cancel();
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	}, [debouncedSubmit]);
 
 	return debouncedSubmit;
 };

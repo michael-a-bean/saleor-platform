@@ -49,9 +49,13 @@ export const usePaymentGatewaysInitialize = () => {
 		),
 	);
 
+	const initializedRef = useRef(false);
 	useEffect(() => {
-		void onSubmit();
-	}, []);
+		if (!initializedRef.current) {
+			initializedRef.current = true;
+			void onSubmit();
+		}
+	}, [onSubmit]);
 
 	useEffect(() => {
 		if (billingCountry !== previousBillingCountry.current) {
