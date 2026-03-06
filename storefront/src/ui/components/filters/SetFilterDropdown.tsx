@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition, useRef } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { getAvailableSetsForSearch } from "@/lib/filters/getAvailableSets";
@@ -22,9 +22,9 @@ export const SetFilterDropdown = ({ value, onChange, channel = "webstore" }: Set
 	const [hasLoaded, setHasLoaded] = useState(false);
 
 	// Clear options when search query is too short — render-time adjustment
-	const prevSearchQueryRef = useRef(searchQuery);
-	if (searchQuery !== prevSearchQueryRef.current) {
-		prevSearchQueryRef.current = searchQuery;
+	const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
+	if (searchQuery !== prevSearchQuery) {
+		setPrevSearchQuery(searchQuery);
 		if (!searchQuery || searchQuery.length < 2) {
 			setOptions([]);
 			setHasLoaded(false);

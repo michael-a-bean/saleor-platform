@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useState } from "react";
 import { paymentMethodToComponent } from "./supportedPaymentApps";
 import { PaymentSectionSkeleton } from "@/checkout/sections/PaymentSection/PaymentSectionSkeleton";
 import { usePayments } from "@/checkout/sections/PaymentSection/usePayments";
@@ -18,14 +18,14 @@ export const PaymentMethods = () => {
 		[availablePaymentGateways],
 	);
 
-	// Track if we've ever successfully loaded gateways
-	const hasLoadedRef = useRef(false);
-	if (gatewaysWithDefinedComponent.length > 0) {
-		hasLoadedRef.current = true;
+	// Track if we've ever successfully loaded gateways — render-time adjustment
+	const [hasLoaded, setHasLoaded] = useState(false);
+	if (gatewaysWithDefinedComponent.length > 0 && !hasLoaded) {
+		setHasLoaded(true);
 	}
 
-	// Derive initializing state from fetch status instead of useState+useEffect
-	const isInitializing = !hasLoadedRef.current &&
+	// Derive initializing state from fetch status
+	const isInitializing = !hasLoaded &&
 		(paymentGatewaysInitialize !== "success" || fetching);
 
 	// Don't show payment until a delivery method is selected (when shipping is required).

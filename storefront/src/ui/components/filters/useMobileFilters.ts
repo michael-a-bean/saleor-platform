@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 export const useMobileFilters = () => {
@@ -8,11 +8,11 @@ export const useMobileFilters = () => {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
-	// Close on route change — render-time adjustment instead of useEffect
-	const prevRouteRef = useRef({ pathname, search: searchParams.toString() });
+	// Close on route change — render-time adjustment
 	const currentSearch = searchParams.toString();
-	if (pathname !== prevRouteRef.current.pathname || currentSearch !== prevRouteRef.current.search) {
-		prevRouteRef.current = { pathname, search: currentSearch };
+	const [prevRoute, setPrevRoute] = useState({ pathname, search: currentSearch });
+	if (pathname !== prevRoute.pathname || currentSearch !== prevRoute.search) {
+		setPrevRoute({ pathname, search: currentSearch });
 		setIsOpen(false);
 	}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useTransition, useMemo, useRef } from "react";
+import { useState, useCallback, useTransition, useMemo } from "react";
 import { toast } from "react-toastify";
 import type { SinglesBuilderProductFragment, SinglesBuilderSearchQuery } from "@/gql/graphql";
 import { SinglesResults } from "./SinglesResults";
@@ -54,9 +54,9 @@ export function SinglesResultsWrapper({
 	const [isPending, startTransition] = useTransition();
 
 	// Sync products when initialData changes (e.g., filters applied) — render-time adjustment
-	const prevInitialDataRef = useRef(initialData);
-	if (initialData !== prevInitialDataRef.current) {
-		prevInitialDataRef.current = initialData;
+	const [prevInitialData, setPrevInitialData] = useState(initialData);
+	if (initialData !== prevInitialData) {
+		setPrevInitialData(initialData);
 		setProducts(initialData?.edges.map((e) => e.node) || []);
 		setPageInfo(initialData?.pageInfo);
 	}

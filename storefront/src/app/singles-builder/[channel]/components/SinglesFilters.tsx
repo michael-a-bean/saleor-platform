@@ -114,10 +114,10 @@ export function SinglesFilters() {
 	const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
 	// Sync debounced input when URL changes externally (e.g., browser back/forward)
-	const prevSearchParamsRef = useRef(searchParams.toString());
 	const currentSearchParamsStr = searchParams.toString();
-	if (currentSearchParamsStr !== prevSearchParamsRef.current) {
-		prevSearchParamsRef.current = currentSearchParamsStr;
+	const [prevSearchParamsStr, setPrevSearchParamsStr] = useState(currentSearchParamsStr);
+	if (currentSearchParamsStr !== prevSearchParamsStr) {
+		setPrevSearchParamsStr(currentSearchParamsStr);
 		setSetNameInput(filters.setName);
 	}
 
