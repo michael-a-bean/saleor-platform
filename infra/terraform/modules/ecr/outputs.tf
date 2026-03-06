@@ -40,3 +40,4 @@ output "mtg_import_app_repository_url" {
   value       = aws_ecr_repository.repos["mtg-import-app"].repository_url
 }
 
+

@@ -50,16 +50,18 @@ resource "aws_ecr_lifecycle_policy" "repos" {
 
   repository = each.value.name
 
+  # CI tags: raw commit SHA (e.g., ff1ae67) + staging-latest
+  # Rule 1 preserves staging-latest and version tags; Rule 2 expires everything else after 14 days
   policy = jsonencode({
     rules = [
       {
         rulePriority = 1
-        description  = "Keep last 30 tagged images"
+        description  = "Keep last 5 staging-latest and version tags"
         selection = {
           tagStatus     = "tagged"
-          tagPrefixList = ["v", "sha-"]
+          tagPrefixList = ["staging-latest", "v"]
           countType     = "imageCountMoreThan"
-          countNumber   = 30
+          countNumber   = 5
         }
         action = {
           type = "expire"
@@ -67,12 +69,12 @@ resource "aws_ecr_lifecycle_policy" "repos" {
       },
       {
         rulePriority = 2
-        description  = "Remove untagged images older than 7 days"
+        description  = "Expire all other images after 14 days"
         selection = {
-          tagStatus   = "untagged"
+          tagStatus   = "any"
           countType   = "sinceImagePushed"
           countUnit   = "days"
-          countNumber = 7
+          countNumber = 14
         }
         action = {
           type = "expire"

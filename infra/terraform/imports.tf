@@ -188,15 +188,16 @@ import {
   id = "igw-029a454967ff72400"
 }
 
-import {
-  to = module.vpc[0].aws_nat_gateway.main[0]
-  id = "nat-05ca5f050c37e97a1"
-}
-
-import {
-  to = module.vpc[0].aws_eip.nat[0]
-  id = "eipalloc-0b7171488dae2fece"
-}
+# NAT Gateway + EIP REMOVED 2026-03-04: replaced with fck-nat (use_fck_nat = true)
+# import {
+#   to = module.vpc[0].aws_nat_gateway.main[0]
+#   id = "nat-05ca5f050c37e97a1"
+# }
+#
+# import {
+#   to = module.vpc[0].aws_eip.nat[0]
+#   id = "eipalloc-0b7171488dae2fece"
+# }
 
 import {
   to = module.vpc[0].aws_route_table.public
