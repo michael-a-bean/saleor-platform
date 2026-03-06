@@ -288,7 +288,8 @@ resource "aws_ecs_task_definition" "beat" {
       ]
       environment = [
         { name = "DEBUG", value = "false" },
-        { name = "ALLOWED_HOSTS", value = var.allowed_hosts }
+        { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
+        { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts }
       ]
       logConfiguration = {
         logDriver = "awslogs"
