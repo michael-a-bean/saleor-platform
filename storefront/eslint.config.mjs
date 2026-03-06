@@ -23,7 +23,7 @@ const config = nextVitals.map((configObj) => {
 });
 
 config.push({
-	ignores: [".next/**", "out/**", "build/**", "next-env.d.ts"],
+	ignores: [".next/**", "out/**", "build/**", "next-env.d.ts", "src/gql/**"],
 });
 
 export default config;

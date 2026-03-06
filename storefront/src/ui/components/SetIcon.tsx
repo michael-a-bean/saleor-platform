@@ -33,6 +33,7 @@ export function SetIcon({ setCode, rarity, size = "md" }: SetIconProps) {
 		return (
 			<>
 				{/* Hidden img to detect load errors */}
+				{/* eslint-disable-next-line @next/next/no-img-element */}
 				<img
 					src={iconUrl}
 					alt=""

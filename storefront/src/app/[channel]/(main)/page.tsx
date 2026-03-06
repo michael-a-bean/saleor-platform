@@ -136,7 +136,6 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 							width={1640}
 							height={680}
 						/>
-						{/* eslint-disable-next-line @next/next/no-img-element */}
 						<img
 							src="/images/sets/ecl/ECL_sma_key_1640x680_en.webp"
 							alt="Lorwyn Eclipsed"
