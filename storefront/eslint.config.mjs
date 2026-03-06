@@ -1,10 +1,8 @@
 import nextVitals from "eslint-config-next/core-web-vitals";
 
-// Downgrade React Compiler informational rules from error to warning.
-// These surface valid recommendations but are not blocking issues:
-// - set-state-in-effect: Common pattern for syncing state from props/URL params
-// - incompatible-library: Expected for Formik and TanStack Virtual
-// - preserve-manual-memoization: Existing useMemo/useCallback that compiler can't preserve
+// Downgrade incompatible-library from error to warning — TanStack Virtual
+// uses interior mutability that the compiler can't optimize. This is expected
+// and "use no memo" is applied to affected components.
 const config = nextVitals.map((configObj) => {
 	const rules = configObj.rules || {};
 	const hasReactHooksRules = Object.keys(rules).some((key) => key.startsWith("react-hooks/"));
@@ -13,9 +11,7 @@ const config = nextVitals.map((configObj) => {
 			...configObj,
 			rules: {
 				...rules,
-				"react-hooks/set-state-in-effect": "warn",
 				"react-hooks/incompatible-library": "warn",
-				"react-hooks/preserve-manual-memoization": "warn",
 			},
 		};
 	}
