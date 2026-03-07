@@ -164,3 +164,7 @@ grafana_external_id    = "1533536"
 # Grafana Cloud dashboard provisioning
 grafana_url = "https://michaelbean.grafana.net/"
 # grafana_api_token: pass via TF_VAR_grafana_api_token (never commit tokens)
+
+# Grafana Cloud OTEL data sources (pre-existing, managed by Grafana Cloud)
+tempo_datasource_uid      = "grafanacloud-traces"
+prometheus_datasource_uid = "grafanacloud-prom"

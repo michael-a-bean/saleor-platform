@@ -50,3 +50,15 @@ variable "fck_nat_instance_name" {
   type        = string
   default     = ""
 }
+
+variable "tempo_datasource_uid" {
+  description = "UID of the Grafana Cloud Tempo data source for traces. Empty = skip OTEL dashboards."
+  type        = string
+  default     = ""
+}
+
+variable "prometheus_datasource_uid" {
+  description = "UID of the Grafana Cloud Prometheus/Mimir data source for OTEL metrics. Empty = skip OTEL dashboards."
+  type        = string
+  default     = ""
+}

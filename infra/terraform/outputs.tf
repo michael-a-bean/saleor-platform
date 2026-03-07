@@ -240,6 +240,18 @@ output "grafana_infrastructure_dashboard_url" {
   sensitive   = true
 }
 
+output "grafana_apm_dashboard_url" {
+  description = "Grafana APM dashboard URL. Retrieve with: terraform output -raw grafana_apm_dashboard_url"
+  value       = var.grafana_api_token != "" && var.tempo_datasource_uid != "" ? module.grafana_dashboards[0].apm_dashboard_url : null
+  sensitive   = true
+}
+
+output "grafana_external_services_dashboard_url" {
+  description = "Grafana External Services dashboard URL. Retrieve with: terraform output -raw grafana_external_services_dashboard_url"
+  value       = var.grafana_api_token != "" && var.prometheus_datasource_uid != "" ? module.grafana_dashboards[0].external_services_dashboard_url : null
+  sensitive   = true
+}
+
 output "grafana_cloudwatch_role_arn" {
   description = "IAM role ARN for Grafana Cloud CloudWatch integration. Retrieve with: terraform output -raw grafana_cloudwatch_role_arn"
   value       = var.grafana_aws_account_id != "" && var.grafana_external_id != "" ? module.grafana_cloudwatch[0].iam_role_arn : null

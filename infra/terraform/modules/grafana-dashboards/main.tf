@@ -1,5 +1,6 @@
 # Grafana Cloud Dashboards Module
 # Provisions CloudWatch data source and monitoring dashboards for Saleor platform.
+# Also provisions OTEL-based APM and External Services dashboards when data source UIDs are provided.
 
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
@@ -43,6 +44,29 @@ resource "grafana_dashboard" "ecs_services" {
     service_names     = join(",", var.ecs_service_names)
     service_names_json = join(", ", [for s in var.ecs_service_names : "\"${s}\""])
     environment       = var.environment
+  })
+}
+
+resource "grafana_dashboard" "apm" {
+  count     = var.tempo_datasource_uid != "" && var.prometheus_datasource_uid != "" ? 1 : 0
+  folder    = grafana_folder.saleor.uid
+  overwrite = true
+
+  config_json = templatefile("${path.module}/dashboards/apm.json.tftpl", {
+    ds_uid_tempo = var.tempo_datasource_uid
+    ds_uid_prom  = var.prometheus_datasource_uid
+    environment  = var.environment
+  })
+}
+
+resource "grafana_dashboard" "external_services" {
+  count     = var.prometheus_datasource_uid != "" ? 1 : 0
+  folder    = grafana_folder.saleor.uid
+  overwrite = true
+
+  config_json = templatefile("${path.module}/dashboards/external-services.json.tftpl", {
+    ds_uid_prom = var.prometheus_datasource_uid
+    environment = var.environment
   })
 }
 

@@ -499,6 +499,18 @@ variable "otel_exporter_endpoint" {
   default     = ""
 }
 
+variable "tempo_datasource_uid" {
+  description = "UID of the Grafana Cloud Tempo data source for OTEL trace dashboards. Empty = skip OTEL dashboards."
+  type        = string
+  default     = ""
+}
+
+variable "prometheus_datasource_uid" {
+  description = "UID of the Grafana Cloud Prometheus/Mimir data source for OTEL metric dashboards. Empty = skip OTEL dashboards."
+  type        = string
+  default     = ""
+}
+
 # =============================================================================
 # GitHub Actions OIDC
 # =============================================================================

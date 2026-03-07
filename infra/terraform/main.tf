@@ -272,6 +272,9 @@ module "grafana_dashboards" {
   elasticache_cluster_id = "${local.name_prefix}-cache-001"
   alb_arn_suffix         = module.alb.alb_arn_suffix
   fck_nat_instance_name  = var.use_fck_nat ? "${local.name_prefix}-fck-nat" : ""
+
+  tempo_datasource_uid      = var.tempo_datasource_uid
+  prometheus_datasource_uid = var.prometheus_datasource_uid
 }
 
 # =============================================================================
