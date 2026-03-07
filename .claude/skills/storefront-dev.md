@@ -115,6 +115,88 @@ const price = product.pricing?.priceRange?.start?.gross
   : "";
 ```
 
+## Image Serving Strategy
+
+The storefront uses CloudFront CDN with different cache behaviors for different image paths. Choosing the right approach matters for performance.
+
+### Decision: `<img>` vs `next/image`
+
+| Image Type | Use | Why |
+|------------|-----|-----|
+| **Static assets** in `public/images/` (logos, banners, product marketing) | Direct `<img>` tag | Served from `/images/*` CloudFront cache (immutable, 1 year). No server-side processing. |
+| **Art-directed images** (different crops per breakpoint) | `<picture>` with `<source>` | `next/image` doesn't support art direction. Use AVIF sources first, WebP fallback. |
+| **Dynamic/external images** (Saleor media, Scryfall CDN) | `next/image` `<Image>` | Needs on-demand resizing and format conversion. Served via `/_next/image` CloudFront cache (24h). |
+
+### Static Image Best Practices
+
+For images in `storefront/public/images/`:
+
+1. **Pre-optimize before committing** — resize to max display size, compress WebP quality
+   ```bash
+   # Resize to max 512px width (product thumbnails)
+   convert input.webp -resize 512x -quality 80 output.webp
+
+   # Generate AVIF for hero/large images (~55% smaller than WebP)
+   convert input.webp -quality 50 output.avif
+   ```
+
+2. **Use direct `<img>` tags** — bypasses `/_next/image` server-side processing
+   ```tsx
+   <img
+     src="/images/sets/ecl/product.webp"
+     alt="Product name"
+     width={256}
+     height={128}
+     loading="eager"        // "lazy" for below-the-fold
+     fetchPriority="high"   // "auto" for below-the-fold
+     decoding="async"
+     className="object-contain"
+   />
+   ```
+
+3. **Add `<link rel="preload">` for above-the-fold images**
+   ```tsx
+   {/* In the page component's return, before the main content */}
+   <link rel="preload" as="image" href="/images/sets/ecl/product.webp" />
+
+   {/* For art-directed images, specify type and media */}
+   <link rel="preload" as="image" type="image/avif"
+     href="/images/hero-desktop.avif" media="(min-width: 768px)" />
+   ```
+
+4. **Art-directed hero pattern** — AVIF first, WebP fallback
+   ```tsx
+   <picture>
+     <source media="(max-width: 767px)" srcSet="/images/hero-mobile.avif"
+       type="image/avif" width={1080} height={1080} />
+     <source media="(min-width: 768px)" srcSet="/images/hero-desktop.avif"
+       type="image/avif" width={1640} height={680} />
+     <source media="(max-width: 767px)" srcSet="/images/hero-mobile.webp"
+       type="image/webp" width={1080} height={1080} />
+     <source media="(min-width: 768px)" srcSet="/images/hero-desktop.webp"
+       type="image/webp" width={1640} height={680} />
+     <img src="/images/hero-desktop.webp" alt="..." fetchPriority="high"
+       decoding="async" className="h-full w-full object-cover" />
+   </picture>
+   ```
+
+### CloudFront Cache Behaviors
+
+| Path | TTL | Use Case |
+|------|-----|----------|
+| `/_next/static/*` | 1 year (immutable) | Hashed JS/CSS bundles |
+| `/images/*` | 1 year (immutable) | Static marketing/product images |
+| `/_next/image*` | 24h (Accept header in cache key) | Next.js on-demand image optimization |
+| `*.ico` | 1 year (immutable) | Favicon |
+| Default | Respects origin `s-maxage` (60s) | Dynamic HTML pages |
+
+### Anti-Patterns
+
+- **Don't use `next/image` for static assets in `/public`** — adds unnecessary server-side processing latency on first request. The images are already optimized.
+- **Don't commit unoptimized images** — resize to max display dimensions first. A 900px source image displayed at 256px wastes bandwidth.
+- **Don't skip `loading="lazy"` on below-the-fold images** — the first 2-4 visible images should be eager, everything else lazy.
+- **Don't forget `decoding="async"`** — prevents image decode from blocking the main thread.
+
 ## Debugging
 
 ### Check API Connectivity

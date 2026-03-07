@@ -28,6 +28,15 @@ Available asset categories:
 - Dungeons & Dragons
 - Avalon Hill / Hasbro Gaming
 
+## Image Optimization (IMPORTANT)
+
+Before adding any image to `storefront/public/images/`, follow the image serving strategy in **`.claude/skills/storefront-dev.md` → Image Serving Strategy**. Key rules:
+
+- **Resize** to max display dimensions before committing (e.g., 512px for thumbnails, full-size for hero)
+- **Generate AVIF** for hero/large images (`convert input.webp -quality 50 output.avif`)
+- **Use direct `<img>` tags** for static assets — NOT `next/image` (CloudFront serves `/images/*` with immutable 1-year cache; `/_next/image` adds server-side processing latency)
+- **Use `<picture>`** for art-directed images needing different crops per breakpoint (AVIF sources first, WebP fallback)
+
 ## Implementation Plan
 
 ### Phase 1: Asset Organization
