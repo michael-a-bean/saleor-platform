@@ -40,6 +40,9 @@ locals {
   # Apps base URL: where Saleor apps are externally reachable
   # Used for APP_API_BASE_URL and APP_IFRAME_BASE_URL in app containers
   public_apps_base_url = "${local.url_scheme}://apps.${var.domain_name}"
+
+  # Alert SNS topic ARN (empty if alerting disabled)
+  alert_sns_topic_arn = var.alert_email != "" ? aws_sns_topic.alerts[0].arn : ""
 }
 
 # =============================================================================
@@ -209,16 +212,36 @@ module "elasticache" {
 }
 
 # =============================================================================
+# Alerting (SNS)
+# =============================================================================
+
+resource "aws_sns_topic" "alerts" {
+  count = var.alert_email != "" ? 1 : 0
+
+  name = "${local.name_prefix}-alerts"
+  tags = local.common_tags
+}
+
+resource "aws_sns_topic_subscription" "alert_email" {
+  count = var.alert_email != "" ? 1 : 0
+
+  topic_arn = aws_sns_topic.alerts[0].arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+}
+
+# =============================================================================
 # ECS Cluster and Services
 # =============================================================================
 
 module "ecs" {
   source = "./modules/ecs"
 
-  project_name = var.project_name
-  environment  = var.environment
-  aws_region   = var.aws_region
-  domain_name  = var.domain_name
+  project_name     = var.project_name
+  environment      = var.environment
+  aws_region       = var.aws_region
+  domain_name      = var.domain_name
+  use_fargate_spot = var.use_fargate_spot
 
   # Public URLs for applications (supports overrides for staging without DNS)
   public_api_base_url        = local.public_api_base_url
@@ -271,6 +294,10 @@ module "ecs" {
 
   # OpenTelemetry → Grafana Cloud
   otel_exporter_endpoint = var.otel_exporter_endpoint
+
+  # Alerting
+  enable_alerting     = var.alert_email != ""
+  alert_sns_topic_arn = local.alert_sns_topic_arn
 
   # Auto-Scaling & Scheduled Scaling
   enable_autoscaling         = var.enable_autoscaling

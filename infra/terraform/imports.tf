@@ -597,6 +597,143 @@ import {
 
 # mtg_import_app_http[0] removed 2026-02-14 — destroyed with enable_https=true
 
+# =============================================================================
+# Route53 Records (created manually, importing into state 2026-03-06)
+# =============================================================================
+import {
+  to = aws_route53_record.api[0]
+  id = "Z04460563Q0BF3J4587VW_api.staging.michaelbean.org_A"
+}
+
+import {
+  to = aws_route53_record.www[0]
+  id = "Z04460563Q0BF3J4587VW_www.staging.michaelbean.org_A"
+}
+
+import {
+  to = aws_route53_record.dashboard[0]
+  id = "Z04460563Q0BF3J4587VW_dashboard.staging.michaelbean.org_A"
+}
+
+import {
+  to = aws_route53_record.apps[0]
+  id = "Z04460563Q0BF3J4587VW_apps.staging.michaelbean.org_A"
+}
+
+import {
+  to = aws_route53_record.apex[0]
+  id = "Z04460563Q0BF3J4587VW_staging.michaelbean.org_A"
+}
+
+# =============================================================================
+# HTTPS Listener + Rules (created manually, importing 2026-03-06)
+# =============================================================================
+import {
+  to = module.alb.aws_lb_listener.https[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/11f61245eba8645a"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.api[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/11f61245eba8645a/6bea9a63cb7dfc84"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.dashboard[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/11f61245eba8645a/94e13efd42df8884"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.stripe_app[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/11f61245eba8645a/1c20b7896323e5e0"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.inventory_ops_app[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/11f61245eba8645a/3d198c5432235d78"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.buylist_app[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/11f61245eba8645a/de6a0928cd4e6fb8"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.pos_app[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/11f61245eba8645a/dc7830b19d5e064c"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.mtg_import_app[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/11f61245eba8645a/9537529efefe7bd4"
+}
+
+import {
+  to = module.alb.aws_lb_listener_rule.storefront[0]
+  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/11f61245eba8645a/da45f7757c7e5972"
+}
+
+# =============================================================================
+# Auto-Scaling Targets (created by previous apply, importing 2026-03-06)
+# =============================================================================
+import {
+  to = module.ecs.aws_appautoscaling_target.api[0]
+  id = "ecs/service/saleor-platform-staging/api/ecs:service:DesiredCount"
+}
+
+import {
+  to = module.ecs.aws_appautoscaling_target.worker[0]
+  id = "ecs/service/saleor-platform-staging/worker/ecs:service:DesiredCount"
+}
+
+import {
+  to = module.ecs.aws_appautoscaling_target.beat[0]
+  id = "ecs/service/saleor-platform-staging/beat/ecs:service:DesiredCount"
+}
+
+import {
+  to = module.ecs.aws_appautoscaling_target.storefront[0]
+  id = "ecs/service/saleor-platform-staging/storefront/ecs:service:DesiredCount"
+}
+
+import {
+  to = module.ecs.aws_appautoscaling_target.dashboard[0]
+  id = "ecs/service/saleor-platform-staging/dashboard/ecs:service:DesiredCount"
+}
+
+import {
+  to = module.ecs.aws_appautoscaling_target.apps["stripe"]
+  id = "ecs/service/saleor-platform-staging/stripe/ecs:service:DesiredCount"
+}
+
+import {
+  to = module.ecs.aws_appautoscaling_target.apps["inventory-ops"]
+  id = "ecs/service/saleor-platform-staging/inventory-ops/ecs:service:DesiredCount"
+}
+
+import {
+  to = module.ecs.aws_appautoscaling_target.apps["buylist"]
+  id = "ecs/service/saleor-platform-staging/buylist/ecs:service:DesiredCount"
+}
+
+import {
+  to = module.ecs.aws_appautoscaling_target.apps["pos"]
+  id = "ecs/service/saleor-platform-staging/pos/ecs:service:DesiredCount"
+}
+
+import {
+  to = module.ecs.aws_appautoscaling_target.apps["mtg-import"]
+  id = "ecs/service/saleor-platform-staging/mtg-import/ecs:service:DesiredCount"
+}
+
+# =============================================================================
+# SSM Parameters (created manually, importing 2026-03-06)
+# =============================================================================
+import {
+  to = module.secrets.aws_ssm_parameter.inventory_cron_secret
+  id = "/saleor/staging/apps/inventory-ops/CRON_SECRET"
+}
+
 import {
   to = module.ecs.aws_ecs_task_definition.apps["mtg-import"]
   id = "arn:aws:ecs:us-west-1:546464732019:task-definition/saleor-platform-staging-mtg-import:8"

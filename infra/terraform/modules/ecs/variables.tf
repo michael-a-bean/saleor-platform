@@ -384,3 +384,25 @@ variable "otel_exporter_endpoint" {
   type        = string
   default     = ""
 }
+
+# =============================================================================
+# Alerting
+# =============================================================================
+
+variable "alert_sns_topic_arn" {
+  description = "SNS topic ARN for CloudWatch alarms."
+  type        = string
+  default     = ""
+}
+
+variable "enable_alerting" {
+  description = "Enable CloudWatch alarms for ECS service health. Requires alert_sns_topic_arn."
+  type        = bool
+  default     = false
+}
+
+variable "use_fargate_spot" {
+  description = "Use Fargate Spot capacity provider for cost savings (may be interrupted)"
+  type        = bool
+  default     = false
+}

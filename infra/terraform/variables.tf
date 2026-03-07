@@ -193,6 +193,12 @@ variable "create_separate_celery_cache" {
 # ECS Configuration
 # =============================================================================
 
+variable "use_fargate_spot" {
+  description = "Use Fargate Spot capacity provider for cost savings (tasks may be interrupted)"
+  type        = bool
+  default     = false
+}
+
 variable "api_desired_count" {
   description = "Desired count for API service"
   type        = number
@@ -523,8 +529,8 @@ variable "meilisearch_master_key" {
 # Monitoring & Alerting
 # =============================================================================
 
-variable "alert_sns_topic_arn" {
-  description = "SNS topic ARN for CloudWatch alarms. If empty, alarms will be created without actions."
+variable "alert_email" {
+  description = "Email address for CloudWatch alarm notifications. If empty, alerting is disabled."
   type        = string
   default     = ""
 }

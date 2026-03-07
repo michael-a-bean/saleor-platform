@@ -374,7 +374,7 @@ resource "aws_cloudwatch_event_target" "meilisearch_reconcile" {
 
 # DLQ depth alarm - alert when sync messages fail repeatedly
 resource "aws_cloudwatch_metric_alarm" "meilisearch_dlq_depth" {
-  count = var.meilisearch_enabled && var.alert_sns_topic_arn != "" ? 1 : 0
+  count = var.meilisearch_enabled && var.alert_email != "" ? 1 : 0
 
   alarm_name          = "${local.name_prefix}-meilisearch-dlq-depth"
   comparison_operator = "GreaterThanThreshold"
@@ -390,8 +390,8 @@ resource "aws_cloudwatch_metric_alarm" "meilisearch_dlq_depth" {
     QueueName = aws_sqs_queue.meilisearch_sync_dlq[0].name
   }
 
-  alarm_actions = [var.alert_sns_topic_arn]
-  ok_actions    = [var.alert_sns_topic_arn]
+  alarm_actions = [local.alert_sns_topic_arn]
+  ok_actions    = [local.alert_sns_topic_arn]
 
   tags = {
     Name    = "${local.name_prefix}-meilisearch-dlq-depth"
@@ -401,7 +401,7 @@ resource "aws_cloudwatch_metric_alarm" "meilisearch_dlq_depth" {
 
 # Queue backlog alarm - alert when sync is falling behind
 resource "aws_cloudwatch_metric_alarm" "meilisearch_queue_backlog" {
-  count = var.meilisearch_enabled && var.alert_sns_topic_arn != "" ? 1 : 0
+  count = var.meilisearch_enabled && var.alert_email != "" ? 1 : 0
 
   alarm_name          = "${local.name_prefix}-meilisearch-queue-backlog"
   comparison_operator = "GreaterThanThreshold"
@@ -417,8 +417,8 @@ resource "aws_cloudwatch_metric_alarm" "meilisearch_queue_backlog" {
     QueueName = aws_sqs_queue.meilisearch_sync[0].name
   }
 
-  alarm_actions = [var.alert_sns_topic_arn]
-  ok_actions    = [var.alert_sns_topic_arn]
+  alarm_actions = [local.alert_sns_topic_arn]
+  ok_actions    = [local.alert_sns_topic_arn]
 
   tags = {
     Name    = "${local.name_prefix}-meilisearch-queue-backlog"
@@ -428,7 +428,7 @@ resource "aws_cloudwatch_metric_alarm" "meilisearch_queue_backlog" {
 
 # Meilisearch service health - alert when no tasks running
 resource "aws_cloudwatch_metric_alarm" "meilisearch_unhealthy" {
-  count = var.meilisearch_enabled && var.alert_sns_topic_arn != "" ? 1 : 0
+  count = var.meilisearch_enabled && var.alert_email != "" ? 1 : 0
 
   alarm_name          = "${local.name_prefix}-meilisearch-unhealthy"
   comparison_operator = "LessThanThreshold"
@@ -445,8 +445,8 @@ resource "aws_cloudwatch_metric_alarm" "meilisearch_unhealthy" {
     ServiceName = "meilisearch"
   }
 
-  alarm_actions = [var.alert_sns_topic_arn]
-  ok_actions    = [var.alert_sns_topic_arn]
+  alarm_actions = [local.alert_sns_topic_arn]
+  ok_actions    = [local.alert_sns_topic_arn]
 
   tags = {
     Name    = "${local.name_prefix}-meilisearch-unhealthy"

@@ -272,25 +272,48 @@ resource "aws_ecs_task_definition" "beat" {
       ]
       essential   = true
       stopTimeout = 120
-      secrets = [
-        {
-          name      = "SECRET_KEY"
-          valueFrom = "${var.ssm_path_prefix}/api/SECRET_KEY"
-        },
-        {
-          name      = "DATABASE_URL"
-          valueFrom = "${var.ssm_path_prefix}/api/DATABASE_URL"
-        },
-        {
-          name      = "CELERY_BROKER_URL"
-          valueFrom = "${var.ssm_path_prefix}/api/CELERY_BROKER_URL"
-        }
-      ]
-      environment = [
-        { name = "DEBUG", value = "false" },
-        { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
-        { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts }
-      ]
+      secrets = concat(
+        [
+          {
+            name      = "SECRET_KEY"
+            valueFrom = "${var.ssm_path_prefix}/api/SECRET_KEY"
+          },
+          {
+            name      = "DATABASE_URL"
+            valueFrom = "${var.ssm_path_prefix}/api/DATABASE_URL"
+          },
+          {
+            name      = "CELERY_BROKER_URL"
+            valueFrom = "${var.ssm_path_prefix}/api/CELERY_BROKER_URL"
+          },
+          {
+            name      = "RSA_PRIVATE_KEY"
+            valueFrom = "${var.ssm_path_prefix}/api/RSA_PRIVATE_KEY"
+          }
+        ],
+        # OpenTelemetry auth header (Grafana Cloud Basic auth)
+        var.otel_exporter_endpoint != "" ? [
+          {
+            name      = "OTEL_EXPORTER_OTLP_HEADERS"
+            valueFrom = "${var.ssm_path_prefix}/api/OTEL_EXPORTER_OTLP_HEADERS"
+          }
+        ] : []
+      )
+      environment = concat(
+        [
+          { name = "DEBUG", value = "false" },
+          { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
+          { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts }
+        ],
+        # OpenTelemetry → Grafana Cloud
+        var.otel_exporter_endpoint != "" ? [
+          { name = "OTEL_SERVICE_NAME", value = "saleor-beat" },
+          { name = "OTEL_TRACES_EXPORTER", value = "otlp" },
+          { name = "OTEL_METRICS_EXPORTER", value = "otlp" },
+          { name = "OTEL_EXPORTER_OTLP_PROTOCOL", value = "http/protobuf" },
+          { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = var.otel_exporter_endpoint }
+        ] : []
+      )
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -1123,3 +1146,37 @@ resource "aws_appautoscaling_scheduled_action" "apps_scale_up" {
 #
 # Security group rules for port 7700 are managed in the ALB module's
 # ecs_backend security group.
+
+# =============================================================================
+# ECS Service Health Alarms
+# =============================================================================
+# Alerts when running task count drops below desired for core services.
+# Prevents silent failures like the beat crash-loop (issue #40).
+
+resource "aws_cloudwatch_metric_alarm" "ecs_service_health" {
+  for_each = var.enable_alerting ? toset(["api", "worker", "beat"]) : toset([])
+
+  alarm_name          = "${local.name_prefix}-${each.key}-unhealthy"
+  alarm_description   = "${each.key} service has fewer running tasks than desired"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 3
+  metric_name         = "RunningTaskCount"
+  namespace           = "ECS/ContainerInsights"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 1
+  treat_missing_data  = "breaching"
+
+  dimensions = {
+    ClusterName = aws_ecs_cluster.main.name
+    ServiceName = each.key
+  }
+
+  alarm_actions = [var.alert_sns_topic_arn]
+  ok_actions    = [var.alert_sns_topic_arn]
+
+  tags = {
+    Name    = "${local.name_prefix}-${each.key}-health-alarm"
+    Service = each.key
+  }
+}

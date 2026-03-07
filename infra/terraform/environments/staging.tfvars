@@ -71,6 +71,7 @@ create_separate_celery_cache = false
 # =============================================================================
 # ECS (right-sized for staging based on utilization analysis 2026-02-12)
 # =============================================================================
+use_fargate_spot         = true
 api_desired_count        = 1
 api_cpu                  = 1024
 api_memory               = 2048
@@ -138,9 +139,12 @@ meilisearch_enabled = true
 cloudfront_only_media_access = true
 
 # =============================================================================
-# Monitoring (right-sized for staging)
+# Monitoring & Alerting (right-sized for staging)
 # =============================================================================
-# Container Insights disabled: 308 custom metrics cost ~$9/mo with no active monitoring.
-# Re-enable during debugging: set to true and apply.
-enable_container_insights = false
+# Container Insights: required for ECS service health alarms (RunningTaskCount).
+# Cost: ~$9/mo for 308 custom metrics.
+enable_container_insights = true
 log_retention_days        = 14
+
+# Alerting: email for CloudWatch alarm notifications
+alert_email = "michael@michaelbean.org"
