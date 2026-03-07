@@ -39,9 +39,9 @@ resource "aws_cloudfront_cache_policy" "static_assets" {
 resource "aws_cloudfront_cache_policy" "nextjs_images" {
   name        = "${local.name_prefix}-nextjs-images"
   comment     = "Next.js optimized images — cache by query params"
-  default_ttl = 86400   # 24 hours
-  max_ttl     = 604800  # 7 days
-  min_ttl     = 3600    # 1 hour minimum
+  default_ttl = 86400  # 24 hours
+  max_ttl     = 604800 # 7 days
+  min_ttl     = 3600   # 1 hour minimum
 
   parameters_in_cache_key_and_forwarded_to_origin {
     cookies_config {
@@ -66,9 +66,9 @@ resource "aws_cloudfront_cache_policy" "nextjs_images" {
 resource "aws_cloudfront_cache_policy" "dynamic_pages" {
   name        = "${local.name_prefix}-dynamic-pages"
   comment     = "Dynamic storefront pages — respect origin Cache-Control"
-  default_ttl = 60    # Fallback if no Cache-Control header
-  max_ttl     = 300   # Cap at 5 minutes
-  min_ttl     = 0     # Allow no-cache for auth pages
+  default_ttl = 60  # Fallback if no Cache-Control header
+  max_ttl     = 300 # Cap at 5 minutes
+  min_ttl     = 0   # Allow no-cache for auth pages
 
   parameters_in_cache_key_and_forwarded_to_origin {
     cookies_config {
