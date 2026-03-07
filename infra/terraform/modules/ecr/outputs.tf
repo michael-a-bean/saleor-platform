@@ -40,7 +40,3 @@ output "mtg_import_app_repository_url" {
   value       = aws_ecr_repository.repos["mtg-import-app"].repository_url
 }
 
-output "price_sync_worker_repository_url" {
-  description = "URL of price-sync-worker repository"
-  value       = aws_ecr_repository.repos["price-sync-worker"].repository_url
-}

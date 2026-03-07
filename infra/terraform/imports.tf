@@ -31,10 +31,6 @@ import {
   id = "saleor-platform/pos-app"
 }
 
-import {
-  to = module.ecr.aws_ecr_repository.repos["price-sync-worker"]
-  id = "saleor-platform/price-sync-worker"
-}
 
 # =============================================================================
 # ALB - Re-added 2026-01-27 after drift analysis
@@ -471,40 +467,14 @@ import {
 }
 
 # =============================================================================
-# EventBridge Targets - Added 2026-01-27
 # =============================================================================
-import {
-  to = aws_cloudwatch_event_target.meilisearch_catchup[0]
-  id = "saleor-platform-staging-meilisearch-catchup/meilisearch-catchup"
-}
-
-import {
-  to = aws_cloudwatch_event_target.meilisearch_reconcile[0]
-  id = "saleor-platform-staging-meilisearch-reconcile/meilisearch-reconcile"
-}
-
-# =============================================================================
-# Meilisearch Sync Worker Resources - Added 2026-01-27
+# Meilisearch Master Key - Added 2026-01-27
 # =============================================================================
 import {
   to = aws_secretsmanager_secret.meilisearch_master_key[0]
   id = "arn:aws:secretsmanager:us-west-1:546464732019:secret:saleor/staging/meilisearch/master-key-WZCjY8"
 }
 
-import {
-  to = aws_iam_role.meilisearch_sync_worker[0]
-  id = "saleor-platform-staging-meilisearch-sync-worker"
-}
-
-import {
-  to = aws_iam_role.eventbridge_ecs[0]
-  id = "saleor-platform-staging-eventbridge-ecs"
-}
-
-import {
-  to = aws_cloudwatch_log_group.meilisearch_sync_worker[0]
-  id = "/ecs/saleor-platform-staging/meilisearch-sync-worker"
-}
 
 import {
   to = module.ecs.aws_cloudwatch_log_group.services["beat"]

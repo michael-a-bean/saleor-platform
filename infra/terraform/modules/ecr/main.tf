@@ -13,7 +13,6 @@ locals {
     "buylist-app",
     "pos-app",
     "mtg-import-app",
-    "price-sync-worker"
   ])
 }
 

@@ -212,6 +212,7 @@ resource "aws_ecs_task_definition" "worker" {
           { name = "DEBUG", value = "false" },
           { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
           { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts },
+          { name = "DEFAULT_CHANNEL_SLUG", value = "webstore" },
           # S3 Media Storage - AWS_MEDIA_BUCKET_NAME is required for product images
           { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
           { name = "AWS_MEDIA_BUCKET_NAME", value = var.media_bucket_name },
@@ -1154,7 +1155,7 @@ resource "aws_appautoscaling_scheduled_action" "apps_scale_up" {
 # Prevents silent failures like the beat crash-loop (issue #40).
 
 resource "aws_cloudwatch_metric_alarm" "ecs_service_health" {
-  for_each = var.enable_alerting ? toset(["api", "worker", "beat"]) : toset([])
+  for_each = var.enable_alerting ? toset(["api", "worker", "beat", "storefront", "dashboard", "stripe", "inventory-ops", "meilisearch"]) : toset([])
 
   alarm_name          = "${local.name_prefix}-${each.key}-unhealthy"
   alarm_description   = "${each.key} service has fewer running tasks than desired"
