@@ -59,6 +59,8 @@ module "vpc" {
   vpc_cidr                   = var.vpc_cidr
   availability_zones         = var.availability_zones
   single_nat_gateway         = var.environment == "staging"
+  use_fck_nat                = var.use_fck_nat
+  fck_nat_instance_type      = var.fck_nat_instance_type
   create_vpc_endpoints       = true
   create_interface_endpoints = var.create_interface_endpoints
   tags                       = local.common_tags
@@ -681,9 +683,10 @@ module "meilisearch" {
   source = "./modules/meilisearch"
   count  = var.meilisearch_enabled ? 1 : 0
 
-  project_name = var.project_name
-  environment  = var.environment
-  aws_region   = var.aws_region
+  project_name     = var.project_name
+  environment      = var.environment
+  aws_region       = var.aws_region
+  use_fargate_spot = var.use_fargate_spot
 
   vpc_id             = local.vpc_id
   private_subnet_ids = local.private_subnet_ids

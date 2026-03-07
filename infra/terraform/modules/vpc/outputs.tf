@@ -31,7 +31,7 @@ output "private_subnet_cidrs" {
 }
 
 output "nat_gateway_ips" {
-  description = "Public IPs of NAT gateways"
+  description = "Public IPs of NAT gateways (empty when using fck-nat)"
   value       = aws_eip.nat[*].public_ip
 }
 

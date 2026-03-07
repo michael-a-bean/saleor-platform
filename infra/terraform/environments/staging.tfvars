@@ -45,6 +45,11 @@ availability_zones = ["us-west-1a", "us-west-1b"]
 # in NAT data transfer for staging traffic levels. NAT gateway handles this.
 create_interface_endpoints = false
 
+# fck-nat: EC2-based NAT instance (~$7/mo) replaces managed NAT Gateway (~$42/mo).
+# t4g.nano ARM64 with HA mode (ASG auto-recovery, ~5 min failover). Acceptable for staging.
+# Rollback: set use_fck_nat = false and apply to recreate managed NAT Gateway.
+use_fck_nat = true
+
 # =============================================================================
 # Database (right-sized for staging)
 # =============================================================================
@@ -71,7 +76,9 @@ create_separate_celery_cache = false
 # =============================================================================
 # ECS (right-sized for staging based on utilization analysis 2026-02-12)
 # =============================================================================
-use_fargate_spot         = true
+# Fargate Spot: ~60% cheaper than on-demand. Interruption risk acceptable for staging.
+use_fargate_spot = true
+
 api_desired_count        = 1
 api_cpu                  = 1024
 api_memory               = 2048

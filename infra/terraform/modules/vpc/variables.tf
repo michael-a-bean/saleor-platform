@@ -32,6 +32,18 @@ variable "single_nat_gateway" {
   default     = true
 }
 
+variable "use_fck_nat" {
+  description = "Use fck-nat EC2 instance instead of managed NAT Gateway (~$7/mo vs ~$42/mo, ~5 min failover)"
+  type        = bool
+  default     = false
+}
+
+variable "fck_nat_instance_type" {
+  description = "Instance type for fck-nat (t4g.nano recommended for staging)"
+  type        = string
+  default     = "t4g.nano"
+}
+
 variable "create_vpc_endpoints" {
   description = "Create VPC endpoints for AWS services (gateway endpoints are free)"
   type        = bool

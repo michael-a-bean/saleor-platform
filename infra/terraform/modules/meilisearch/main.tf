@@ -252,7 +252,10 @@ resource "aws_ecs_service" "meilisearch" {
   cluster         = var.cluster_id
   task_definition = aws_ecs_task_definition.meilisearch.arn
   desired_count   = 1
-  launch_type     = "FARGATE"
+  capacity_provider_strategy {
+    capacity_provider = var.use_fargate_spot ? "FARGATE_SPOT" : "FARGATE"
+    weight            = 100
+  }
 
   # Platform version 1.4.0+ required for EFS
   platform_version = "1.4.0"

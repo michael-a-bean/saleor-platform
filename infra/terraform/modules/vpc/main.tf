@@ -94,11 +94,11 @@ resource "aws_subnet" "private" {
 }
 
 # =============================================================================
-# NAT Gateway (one per AZ for HA)
+# NAT Gateway (managed, skipped when use_fck_nat = true)
 # =============================================================================
 
 resource "aws_eip" "nat" {
-  count  = var.single_nat_gateway ? 1 : length(var.availability_zones)
+  count  = var.use_fck_nat ? 0 : (var.single_nat_gateway ? 1 : length(var.availability_zones))
   domain = "vpc"
 
   tags = merge(local.default_tags, {
@@ -109,7 +109,7 @@ resource "aws_eip" "nat" {
 }
 
 resource "aws_nat_gateway" "main" {
-  count = var.single_nat_gateway ? 1 : length(var.availability_zones)
+  count = var.use_fck_nat ? 0 : (var.single_nat_gateway ? 1 : length(var.availability_zones))
 
   allocation_id = aws_eip.nat[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
@@ -121,20 +121,54 @@ resource "aws_nat_gateway" "main" {
   depends_on = [aws_internet_gateway.main]
 }
 
-# Private route tables (one per AZ when using multiple NAT gateways)
+# =============================================================================
+# fck-nat (EC2-based NAT, ~$7/mo vs ~$42/mo for managed NAT Gateway)
+# =============================================================================
+
+module "fck_nat" {
+  source  = "RaJiska/fck-nat/aws"
+  version = "1.3.0"
+  count   = var.use_fck_nat ? 1 : 0
+
+  name               = "${local.name_prefix}-fck-nat"
+  vpc_id             = aws_vpc.main.id
+  subnet_id          = aws_subnet.public[0].id
+  instance_type      = var.fck_nat_instance_type
+  ha_mode            = true
+  update_route_table = true
+  route_table_id     = aws_route_table.private[0].id
+
+  tags = local.default_tags
+
+  depends_on = [aws_internet_gateway.main]
+}
+
+# =============================================================================
+# Private Route Tables
+# =============================================================================
+
 resource "aws_route_table" "private" {
   count = var.single_nat_gateway ? 1 : length(var.availability_zones)
 
   vpc_id = aws_vpc.main.id
 
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main[var.single_nat_gateway ? 0 : count.index].id
-  }
-
   tags = merge(local.default_tags, {
     Name = "${local.name_prefix}-private-rt-${count.index}"
   })
+
+  # fck-nat manages routes externally via update_route_table
+  lifecycle {
+    ignore_changes = [route]
+  }
+}
+
+# NAT Gateway route (only when NOT using fck-nat)
+resource "aws_route" "private_nat_gateway" {
+  count = var.use_fck_nat ? 0 : (var.single_nat_gateway ? 1 : length(var.availability_zones))
+
+  route_table_id         = aws_route_table.private[count.index].id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.main[var.single_nat_gateway ? 0 : count.index].id
 }
 
 resource "aws_route_table_association" "private" {

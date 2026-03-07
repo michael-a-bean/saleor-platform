@@ -47,6 +47,60 @@ if [ "$BRANCH" = "master" ]; then
 fi
 
 # =============================================================================
+# Submodule Validation
+# =============================================================================
+
+# Ensure all submodule pointers (including nested) reference commits
+# that exist on their remotes. Prevents pushing commits that CI can't check out.
+echo "Checking submodule references..."
+
+check_submodule_refs() {
+    local base_dir="$1"
+    local error=0
+
+    while IFS= read -r line; do
+        # Format: "<status><sha> <path> (<describe>)"
+        SHA=$(echo "$line" | awk '{print $1}' | sed 's/^[+ -]*//')
+        SUBPATH=$(echo "$line" | awk '{print $2}')
+
+        if [ -z "$SHA" ] || [ -z "$SUBPATH" ]; then
+            continue
+        fi
+
+        local full_path="${base_dir:+$base_dir/}$SUBPATH"
+
+        if ! git -C "$full_path" branch -r --contains "$SHA" >/dev/null 2>&1; then
+            echo ""
+            echo "=========================================="
+            echo "ERROR: Submodule '$full_path' references"
+            echo "  commit $SHA"
+            echo "  which has NOT been pushed to its remote."
+            echo "=========================================="
+            echo ""
+            echo "Fix: cd $full_path && git push origin HEAD:main"
+            echo ""
+            error=1
+        fi
+
+        # Recursively check nested submodules
+        if [ -f "$full_path/.gitmodules" ]; then
+            if ! (cd "$full_path" && check_submodule_refs "$full_path"); then
+                error=1
+            fi
+        fi
+    done < <(git -C "${base_dir:-.}" submodule status 2>/dev/null)
+
+    return $error
+}
+
+if ! check_submodule_refs ""; then
+    echo "Push submodule commits first, then retry."
+    exit 1
+fi
+
+echo "[OK] All submodule references exist on remotes"
+
+# =============================================================================
 # Environment Validation
 # =============================================================================
 

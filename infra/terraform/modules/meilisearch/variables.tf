@@ -1,5 +1,11 @@
 # Meilisearch Module Variables
 
+variable "use_fargate_spot" {
+  description = "Use FARGATE_SPOT capacity provider (acceptable for staging)"
+  type        = bool
+  default     = false
+}
+
 # =============================================================================
 # Required Variables
 # =============================================================================
