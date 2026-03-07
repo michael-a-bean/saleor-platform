@@ -225,6 +225,20 @@ output "media_cdn_url" {
 }
 
 # =============================================================================
+# Storefront CDN
+# =============================================================================
+
+output "storefront_cdn_distribution_id" {
+  description = "CloudFront distribution ID for storefront CDN"
+  value       = var.enable_storefront_cdn ? module.cloudfront_storefront[0].distribution_id : null
+}
+
+output "storefront_cdn_domain_name" {
+  description = "CloudFront distribution domain name for storefront CDN"
+  value       = var.enable_storefront_cdn ? module.cloudfront_storefront[0].domain_name : null
+}
+
+# =============================================================================
 # Grafana Cloud
 # =============================================================================
 

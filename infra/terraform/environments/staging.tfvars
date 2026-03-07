@@ -145,6 +145,11 @@ meilisearch_enabled = true
 # S3 Media Security (locked to CloudFront-only access 2026-01-27)
 cloudfront_only_media_access = true
 
+# Storefront CDN: CloudFront in front of ALB for edge caching
+# Caches /_next/static/*, /images/*, /_next/image* at edge
+# Dynamic pages respect origin Cache-Control (s-maxage=60)
+enable_storefront_cdn = true
+
 # =============================================================================
 # Monitoring & Alerting (right-sized for staging)
 # =============================================================================

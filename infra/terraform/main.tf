@@ -297,6 +297,73 @@ module "grafana_dashboards" {
 }
 
 # =============================================================================
+# CloudFront CDN for Storefront (ALB origin)
+# =============================================================================
+
+# ACM certificate in us-east-1 (required by CloudFront).
+# This duplicates the domain/SANs of aws_acm_certificate.main (us-west-1 for ALB)
+# because CloudFront requires certs in us-east-1. DNS validation records overlap
+# but allow_overwrite = true handles this safely.
+resource "aws_acm_certificate" "storefront_cdn" {
+  count    = var.enable_storefront_cdn ? 1 : 0
+  provider = aws.us_east_1
+
+  domain_name               = var.domain_name
+  subject_alternative_names = ["*.${var.domain_name}"]
+  validation_method         = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = {
+    Name    = "${local.name_prefix}-storefront-cdn-cert"
+    Service = "storefront"
+  }
+}
+
+resource "aws_route53_record" "storefront_cdn_cert_validation" {
+  for_each = var.enable_storefront_cdn && var.route53_zone_id != "" ? {
+    for dvo in aws_acm_certificate.storefront_cdn[0].domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  } : {}
+
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 60
+  type            = each.value.type
+  zone_id         = local.zone_id
+}
+
+resource "aws_acm_certificate_validation" "storefront_cdn" {
+  count    = var.enable_storefront_cdn && var.route53_zone_id != "" ? 1 : 0
+  provider = aws.us_east_1
+
+  certificate_arn         = aws_acm_certificate.storefront_cdn[0].arn
+  validation_record_fqdns = [for record in aws_route53_record.storefront_cdn_cert_validation : record.fqdn]
+}
+
+module "cloudfront_storefront" {
+  source = "./modules/cloudfront-storefront"
+  count  = var.enable_storefront_cdn ? 1 : 0
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  alb_dns_name        = module.alb.alb_dns_name
+  domain_names        = [var.domain_name, "www.${var.domain_name}"]
+  acm_certificate_arn = aws_acm_certificate.storefront_cdn[0].arn
+  price_class         = var.cloudfront_price_class
+  tags                = local.common_tags
+
+  depends_on = [aws_acm_certificate_validation.storefront_cdn]
+}
+
+# =============================================================================
 # ECS Cluster and Services
 # =============================================================================
 
@@ -633,9 +700,9 @@ resource "aws_route53_record" "www" {
   type    = "A"
 
   alias {
-    name                   = module.alb.alb_dns_name
-    zone_id                = module.alb.alb_zone_id
-    evaluate_target_health = true
+    name                   = var.enable_storefront_cdn ? module.cloudfront_storefront[0].domain_name : module.alb.alb_dns_name
+    zone_id                = var.enable_storefront_cdn ? module.cloudfront_storefront[0].hosted_zone_id : module.alb.alb_zone_id
+    evaluate_target_health = !var.enable_storefront_cdn
   }
 }
 
@@ -668,7 +735,7 @@ resource "aws_route53_record" "apps" {
 }
 
 # Bare domain (e.g., staging.michaelbean.org) points to storefront
-# This complements www.{domain} — both resolve to the ALB
+# When CDN is enabled, routes through CloudFront for edge caching
 resource "aws_route53_record" "apex" {
   count = var.route53_zone_id != "" ? 1 : 0
 
@@ -677,9 +744,9 @@ resource "aws_route53_record" "apex" {
   type    = "A"
 
   alias {
-    name                   = module.alb.alb_dns_name
-    zone_id                = module.alb.alb_zone_id
-    evaluate_target_health = true
+    name                   = var.enable_storefront_cdn ? module.cloudfront_storefront[0].domain_name : module.alb.alb_dns_name
+    zone_id                = var.enable_storefront_cdn ? module.cloudfront_storefront[0].hosted_zone_id : module.alb.alb_zone_id
+    evaluate_target_health = !var.enable_storefront_cdn
   }
 }
 

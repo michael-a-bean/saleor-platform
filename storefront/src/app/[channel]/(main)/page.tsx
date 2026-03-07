@@ -101,19 +101,19 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 
 	return (
 		<>
-			{/* Preload hero banner — browser fetches before component tree renders */}
+			{/* Preload hero banner — browser fetches AVIF (smaller) before component tree renders */}
 			<link
 				rel="preload"
 				as="image"
-				type="image/webp"
-				href="/images/sets/ecl/ECL_sma_key_1640x680_en.webp"
+				type="image/avif"
+				href="/images/sets/ecl/ECL_sma_key_1640x680_en.avif"
 				media="(min-width: 768px)"
 			/>
 			<link
 				rel="preload"
 				as="image"
-				type="image/webp"
-				href="/images/sets/ecl/ECL_sma_key_1080x1080_en.webp"
+				type="image/avif"
+				href="/images/sets/ecl/ECL_sma_key_1080x1080_en.avif"
 				media="(max-width: 767px)"
 			/>
 		<div className="min-h-screen">
@@ -122,6 +122,22 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 				{/* Background Image */}
 				<div className="absolute inset-0">
 					<picture>
+						{/* AVIF sources — ~55% smaller than WebP */}
+						<source
+							media="(max-width: 767px)"
+							srcSet="/images/sets/ecl/ECL_sma_key_1080x1080_en.avif"
+							type="image/avif"
+							width={1080}
+							height={1080}
+						/>
+						<source
+							media="(min-width: 768px)"
+							srcSet="/images/sets/ecl/ECL_sma_key_1640x680_en.avif"
+							type="image/avif"
+							width={1640}
+							height={680}
+						/>
+						{/* WebP fallback for older browsers */}
 						<source
 							media="(max-width: 767px)"
 							srcSet="/images/sets/ecl/ECL_sma_key_1080x1080_en.webp"
@@ -203,7 +219,7 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 										fill
 										sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 256px"
 										className="object-contain transition-transform group-hover:scale-105"
-										loading="eager"
+										loading={index < 4 ? "eager" : "lazy"}
 										priority={index < 4}
 									/>
 								</div>

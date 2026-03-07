@@ -608,6 +608,12 @@ variable "cloudfront_only_media_access" {
   default     = false
 }
 
+variable "enable_storefront_cdn" {
+  description = "Enable CloudFront CDN in front of the storefront ALB for edge caching of static assets and optimized images"
+  type        = bool
+  default     = false
+}
+
 # =============================================================================
 # Drift Prevention & Compliance
 # =============================================================================
