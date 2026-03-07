@@ -40,8 +40,9 @@ resource "grafana_dashboard" "ecs_services" {
     ds_uid        = grafana_data_source.cloudwatch.uid
     region        = var.aws_region
     cluster_name  = var.ecs_cluster_name
-    service_names = join(",", var.ecs_service_names)
-    environment   = var.environment
+    service_names     = join(",", var.ecs_service_names)
+    service_names_json = join(", ", [for s in var.ecs_service_names : "\"${s}\""])
+    environment       = var.environment
   })
 }
 

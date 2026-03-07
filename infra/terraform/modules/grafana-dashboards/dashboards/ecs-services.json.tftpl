@@ -6,20 +6,6 @@
   "timezone": "browser",
   "refresh": "1m",
   "time": { "from": "now-3h", "to": "now" },
-  "templating": {
-    "list": [
-      {
-        "name": "service",
-        "type": "custom",
-        "label": "Service",
-        "query": "${service_names}",
-        "current": { "text": "All", "value": "$__all" },
-        "includeAll": true,
-        "multi": true,
-        "allValue": null
-      }
-    ]
-  },
   "panels": [
     {
       "title": "Service Health",
@@ -58,7 +44,7 @@
           "metricName": "RunningTaskCount",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
-            "ServiceName": ["$service"]
+            "ServiceName": [${service_names_json}]
           },
           "matchExact": true,
           "statistics": ["Average"],
@@ -92,7 +78,7 @@
           "metricName": "RunningTaskCount",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
-            "ServiceName": ["$service"]
+            "ServiceName": [${service_names_json}]
           },
           "matchExact": true,
           "statistics": ["Average"],
@@ -107,7 +93,7 @@
           "metricName": "DesiredTaskCount",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
-            "ServiceName": ["$service"]
+            "ServiceName": [${service_names_json}]
           },
           "matchExact": true,
           "statistics": ["Average"],
@@ -133,7 +119,6 @@
         "defaults": {
           "unit": "percent",
           "min": 0,
-          "max": 100,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -157,7 +142,7 @@
           "metricName": "CPUUtilization",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
-            "ServiceName": ["$service"]
+            "ServiceName": [${service_names_json}]
           },
           "matchExact": true,
           "statistics": ["Average"],
@@ -183,7 +168,6 @@
         "defaults": {
           "unit": "percent",
           "min": 0,
-          "max": 100,
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,
@@ -207,7 +191,7 @@
           "metricName": "MemoryUtilization",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
-            "ServiceName": ["$service"]
+            "ServiceName": [${service_names_json}]
           },
           "matchExact": true,
           "statistics": ["Average"],
@@ -254,7 +238,7 @@
           "metricName": "NetworkRxBytes",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
-            "ServiceName": ["$service"]
+            "ServiceName": [${service_names_json}]
           },
           "matchExact": true,
           "statistics": ["Average"],
@@ -295,7 +279,7 @@
           "metricName": "NetworkTxBytes",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
-            "ServiceName": ["$service"]
+            "ServiceName": [${service_names_json}]
           },
           "matchExact": true,
           "statistics": ["Average"],
