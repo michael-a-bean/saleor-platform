@@ -55,6 +55,7 @@ RUN pnpm next build
 
 # Production image, copy all the files and run next
 FROM base AS runner
+RUN apk upgrade --no-cache
 WORKDIR /app
 
 ENV NODE_ENV production
