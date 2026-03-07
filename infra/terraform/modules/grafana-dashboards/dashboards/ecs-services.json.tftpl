@@ -54,15 +54,19 @@
       "targets": [
         {
           "refId": "A",
+          "queryMode": "Metrics",
           "namespace": "ECS/ContainerInsights",
           "metricName": "RunningTaskCount",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
             "ServiceName": ["$service"]
           },
+          "matchExact": true,
           "statistic": "Average",
           "period": "300",
-          "region": "${region}"
+          "region": "${region}",
+          "id": "",
+          "expression": ""
         }
       ]
     },
@@ -86,28 +90,36 @@
       "targets": [
         {
           "refId": "A",
+          "queryMode": "Metrics",
           "namespace": "ECS/ContainerInsights",
           "metricName": "RunningTaskCount",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
             "ServiceName": ["$service"]
           },
+          "matchExact": true,
           "statistic": "Average",
           "period": "300",
           "region": "${region}",
+          "id": "",
+          "expression": "",
           "label": "$${PROP('Dim.ServiceName')} running"
         },
         {
           "refId": "B",
+          "queryMode": "Metrics",
           "namespace": "ECS/ContainerInsights",
           "metricName": "DesiredTaskCount",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
             "ServiceName": ["$service"]
           },
+          "matchExact": true,
           "statistic": "Average",
           "period": "300",
           "region": "${region}",
+          "id": "",
+          "expression": "",
           "label": "$${PROP('Dim.ServiceName')} desired"
         }
       ]
@@ -147,15 +159,19 @@
       "targets": [
         {
           "refId": "A",
+          "queryMode": "Metrics",
           "namespace": "AWS/ECS",
           "metricName": "CPUUtilization",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
             "ServiceName": ["$service"]
           },
+          "matchExact": true,
           "statistic": "Average",
           "period": "300",
           "region": "${region}",
+          "id": "",
+          "expression": "",
           "label": "$${PROP('Dim.ServiceName')}"
         }
       ]
@@ -195,15 +211,19 @@
       "targets": [
         {
           "refId": "A",
+          "queryMode": "Metrics",
           "namespace": "AWS/ECS",
           "metricName": "MemoryUtilization",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
             "ServiceName": ["$service"]
           },
+          "matchExact": true,
           "statistic": "Average",
           "period": "300",
           "region": "${region}",
+          "id": "",
+          "expression": "",
           "label": "$${PROP('Dim.ServiceName')}"
         }
       ]
@@ -240,15 +260,19 @@
       "targets": [
         {
           "refId": "A",
+          "queryMode": "Metrics",
           "namespace": "ECS/ContainerInsights",
           "metricName": "NetworkRxBytes",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
             "ServiceName": ["$service"]
           },
+          "matchExact": true,
           "statistic": "Average",
           "period": "300",
           "region": "${region}",
+          "id": "",
+          "expression": "",
           "label": "$${PROP('Dim.ServiceName')}"
         }
       ]
@@ -279,15 +303,19 @@
       "targets": [
         {
           "refId": "A",
+          "queryMode": "Metrics",
           "namespace": "ECS/ContainerInsights",
           "metricName": "NetworkTxBytes",
           "dimensions": {
             "ClusterName": ["${cluster_name}"],
             "ServiceName": ["$service"]
           },
+          "matchExact": true,
           "statistic": "Average",
           "period": "300",
           "region": "${region}",
+          "id": "",
+          "expression": "",
           "label": "$${PROP('Dim.ServiceName')}"
         }
       ]
