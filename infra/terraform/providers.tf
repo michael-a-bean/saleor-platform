@@ -13,6 +13,12 @@ provider "aws" {
   }
 }
 
+# Grafana Cloud Provider (for dashboards and data source management)
+provider "grafana" {
+  url  = var.grafana_url
+  auth = var.grafana_api_token
+}
+
 # Secondary provider for us-east-1 (required for ACM certs for CloudFront)
 provider "aws" {
   alias  = "us_east_1"

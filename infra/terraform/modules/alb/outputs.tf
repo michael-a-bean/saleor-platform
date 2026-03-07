@@ -76,6 +76,11 @@ output "mtg_import_app_target_group_arn" {
   value       = aws_lb_target_group.mtg_import_app.arn
 }
 
+output "alb_arn_suffix" {
+  description = "ARN suffix of the ALB (for CloudWatch metrics LoadBalancer dimension)"
+  value       = aws_lb.main.arn_suffix
+}
+
 output "https_listener_arn" {
   description = "ARN of HTTPS listener"
   value       = length(aws_lb_listener.https) > 0 ? aws_lb_listener.https[0].arn : null

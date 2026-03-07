@@ -1,0 +1,489 @@
+{
+  "uid": "${environment}-infrastructure",
+  "title": "Infrastructure — ${environment}",
+  "description": "RDS, ElastiCache, ALB, and NAT metrics via CloudWatch",
+  "tags": ["infrastructure", "${environment}", "managed-by-terraform"],
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": { "from": "now-3h", "to": "now" },
+  "panels": [
+    {
+      "title": "RDS PostgreSQL",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "title": "RDS CPU Utilization",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 1 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 20, "showPoints": "never", "spanNulls": true },
+          "color": { "mode": "fixed", "fixedColor": "orange" },
+          "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 60 }, { "color": "red", "value": 80 }] }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/RDS",
+          "metricName": "CPUUtilization",
+          "dimensions": { "DBInstanceIdentifier": ["${rds_identifier}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}"
+        }
+      ]
+    },
+    {
+      "title": "Database Connections",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 1 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never", "spanNulls": true },
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/RDS",
+          "metricName": "DatabaseConnections",
+          "dimensions": { "DBInstanceIdentifier": ["${rds_identifier}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}"
+        }
+      ]
+    },
+    {
+      "title": "Freeable Memory",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 1 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never", "spanNulls": true },
+          "color": { "mode": "fixed", "fixedColor": "green" }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/RDS",
+          "metricName": "FreeableMemory",
+          "dimensions": { "DBInstanceIdentifier": ["${rds_identifier}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}"
+        }
+      ]
+    },
+    {
+      "title": "Read / Write IOPS",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "iops",
+          "custom": { "drawStyle": "line", "lineWidth": 1, "fillOpacity": 15, "showPoints": "never", "spanNulls": true },
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/RDS",
+          "metricName": "ReadIOPS",
+          "dimensions": { "DBInstanceIdentifier": ["${rds_identifier}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}",
+          "label": "Read IOPS"
+        },
+        {
+          "refId": "B",
+          "namespace": "AWS/RDS",
+          "metricName": "WriteIOPS",
+          "dimensions": { "DBInstanceIdentifier": ["${rds_identifier}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}",
+          "label": "Write IOPS"
+        }
+      ]
+    },
+    {
+      "title": "Free Storage Space",
+      "type": "stat",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 5368709120 }, { "color": "green", "value": 10737418240 }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/RDS",
+          "metricName": "FreeStorageSpace",
+          "dimensions": { "DBInstanceIdentifier": ["${rds_identifier}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}"
+        }
+      ]
+    },
+    {
+      "title": "ElastiCache Redis",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+      "collapsed": false
+    },
+    {
+      "title": "Cache Hit Rate",
+      "type": "gauge",
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 16 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 70 }, { "color": "green", "value": 90 }] }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/ElastiCache",
+          "metricName": "CacheHitRate",
+          "dimensions": { "CacheClusterId": ["${elasticache_id}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}"
+        }
+      ]
+    },
+    {
+      "title": "Memory Usage",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 16 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 20, "showPoints": "never", "spanNulls": true },
+          "color": { "mode": "fixed", "fixedColor": "purple" }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/ElastiCache",
+          "metricName": "DatabaseMemoryUsagePercentage",
+          "dimensions": { "CacheClusterId": ["${elasticache_id}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}"
+        }
+      ]
+    },
+    {
+      "title": "Engine CPU",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 16 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 20, "showPoints": "never", "spanNulls": true },
+          "color": { "mode": "fixed", "fixedColor": "orange" }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/ElastiCache",
+          "metricName": "EngineCPUUtilization",
+          "dimensions": { "CacheClusterId": ["${elasticache_id}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}"
+        }
+      ]
+    },
+    {
+      "title": "Current Connections",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 16 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never", "spanNulls": true },
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/ElastiCache",
+          "metricName": "CurrConnections",
+          "dimensions": { "CacheClusterId": ["${elasticache_id}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}"
+        }
+      ]
+    },
+    {
+      "title": "Application Load Balancer",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "collapsed": false
+    },
+    {
+      "title": "Request Count",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 24 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 50, "showPoints": "never" },
+          "color": { "mode": "fixed", "fixedColor": "green" }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/ApplicationELB",
+          "metricName": "RequestCount",
+          "dimensions": { "LoadBalancer": ["${alb_arn_suffix}"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "${region}"
+        }
+      ]
+    },
+    {
+      "title": "Target Response Time",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 24 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never", "spanNulls": true },
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/ApplicationELB",
+          "metricName": "TargetResponseTime",
+          "dimensions": { "LoadBalancer": ["${alb_arn_suffix}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}",
+          "label": "avg"
+        },
+        {
+          "refId": "B",
+          "namespace": "AWS/ApplicationELB",
+          "metricName": "TargetResponseTime",
+          "dimensions": { "LoadBalancer": ["${alb_arn_suffix}"] },
+          "statistic": "p99",
+          "period": "300",
+          "region": "${region}",
+          "label": "p99"
+        }
+      ]
+    },
+    {
+      "title": "HTTP 5xx Errors",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 24 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 50, "showPoints": "never" },
+          "color": { "mode": "fixed", "fixedColor": "red" }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/ApplicationELB",
+          "metricName": "HTTPCode_ELB_5XX_Count",
+          "dimensions": { "LoadBalancer": ["${alb_arn_suffix}"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "${region}",
+          "label": "ELB 5xx"
+        },
+        {
+          "refId": "B",
+          "namespace": "AWS/ApplicationELB",
+          "metricName": "HTTPCode_Target_5XX_Count",
+          "dimensions": { "LoadBalancer": ["${alb_arn_suffix}"] },
+          "statistic": "Sum",
+          "period": "300",
+          "region": "${region}",
+          "label": "Target 5xx"
+        }
+      ]
+    },
+    {
+      "title": "Healthy Hosts",
+      "type": "stat",
+      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 24 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/ApplicationELB",
+          "metricName": "HealthyHostCount",
+          "dimensions": { "LoadBalancer": ["${alb_arn_suffix}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}"
+        }
+      ]
+    }
+%{ if include_fck_nat }
+    ,{
+      "title": "fck-nat (NAT Instance)",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+      "collapsed": false
+    },
+    {
+      "title": "NAT Network In / Out",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 32 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 15, "showPoints": "never", "spanNulls": true },
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/EC2",
+          "metricName": "NetworkIn",
+          "dimensions": { "AutoScalingGroupName": ["${fck_nat_name}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}",
+          "label": "Network In"
+        },
+        {
+          "refId": "B",
+          "namespace": "AWS/EC2",
+          "metricName": "NetworkOut",
+          "dimensions": { "AutoScalingGroupName": ["${fck_nat_name}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}",
+          "label": "Network Out"
+        }
+      ]
+    },
+    {
+      "title": "NAT CPU Utilization",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 32 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 20, "showPoints": "never", "spanNulls": true },
+          "color": { "mode": "fixed", "fixedColor": "orange" }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/EC2",
+          "metricName": "CPUUtilization",
+          "dimensions": { "AutoScalingGroupName": ["${fck_nat_name}"] },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}"
+        }
+      ]
+    }
+%{ endif }
+  ],
+  "schemaVersion": 39
+}

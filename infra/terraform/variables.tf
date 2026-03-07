@@ -561,6 +561,19 @@ variable "grafana_external_id" {
   sensitive   = true
 }
 
+variable "grafana_url" {
+  description = "Grafana Cloud stack URL (e.g., https://michaelbean.grafana.net/). Empty = skip dashboard provisioning."
+  type        = string
+  default     = ""
+}
+
+variable "grafana_api_token" {
+  description = "Grafana Cloud service account token (Editor role). Pass via TF_VAR_grafana_api_token, never commit to tfvars."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 # =============================================================================
 # CloudFront CDN Configuration
 # =============================================================================

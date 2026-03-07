@@ -228,6 +228,18 @@ output "media_cdn_url" {
 # Grafana Cloud
 # =============================================================================
 
+output "grafana_ecs_dashboard_url" {
+  description = "Grafana ECS Services dashboard URL. Retrieve with: terraform output -raw grafana_ecs_dashboard_url"
+  value       = var.grafana_api_token != "" ? module.grafana_dashboards[0].ecs_dashboard_url : null
+  sensitive   = true
+}
+
+output "grafana_infrastructure_dashboard_url" {
+  description = "Grafana Infrastructure dashboard URL. Retrieve with: terraform output -raw grafana_infrastructure_dashboard_url"
+  value       = var.grafana_api_token != "" ? module.grafana_dashboards[0].infrastructure_dashboard_url : null
+  sensitive   = true
+}
+
 output "grafana_cloudwatch_role_arn" {
   description = "IAM role ARN for Grafana Cloud CloudWatch integration. Retrieve with: terraform output -raw grafana_cloudwatch_role_arn"
   value       = var.grafana_aws_account_id != "" && var.grafana_external_id != "" ? module.grafana_cloudwatch[0].iam_role_arn : null

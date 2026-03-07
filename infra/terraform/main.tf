@@ -248,6 +248,33 @@ module "grafana_cloudwatch" {
 }
 
 # =============================================================================
+# Grafana Cloud Dashboards
+# =============================================================================
+
+module "grafana_dashboards" {
+  source = "./modules/grafana-dashboards"
+  count  = var.grafana_api_token != "" ? 1 : 0
+
+  project_name = var.project_name
+  environment  = var.environment
+  aws_region   = var.aws_region
+
+  cloudwatch_role_arn = var.grafana_aws_account_id != "" && var.grafana_external_id != "" ? module.grafana_cloudwatch[0].iam_role_arn : ""
+
+  ecs_cluster_name = "${local.name_prefix}"
+  ecs_service_names = concat(
+    ["api", "worker", "beat", "storefront", "dashboard"],
+    var.apps_enabled ? ["stripe", "inventory-ops", "buylist", "pos", "mtg-import"] : [],
+    var.meilisearch_enabled ? ["meilisearch"] : []
+  )
+
+  rds_identifier         = "${local.name_prefix}-saleor"
+  elasticache_cluster_id = "${local.name_prefix}-cache-001"
+  alb_arn_suffix         = module.alb.alb_arn_suffix
+  fck_nat_instance_name  = var.use_fck_nat ? "${local.name_prefix}-fck-nat" : ""
+}
+
+# =============================================================================
 # ECS Cluster and Services
 # =============================================================================
 

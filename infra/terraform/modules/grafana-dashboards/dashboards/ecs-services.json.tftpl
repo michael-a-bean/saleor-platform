@@ -1,0 +1,297 @@
+{
+  "uid": "${environment}-ecs-services",
+  "title": "ECS Services — ${environment}",
+  "description": "ECS service health, CPU, memory, and network metrics via CloudWatch Container Insights",
+  "tags": ["ecs", "${environment}", "managed-by-terraform"],
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": { "from": "now-3h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "custom",
+        "label": "Service",
+        "query": "${service_names}",
+        "current": { "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "multi": true,
+        "allValue": null
+      }
+    ]
+  },
+  "panels": [
+    {
+      "title": "Service Health",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "title": "Running Tasks",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 1 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "ECS/ContainerInsights",
+          "metricName": "RunningTaskCount",
+          "dimensions": {
+            "ClusterName": ["${cluster_name}"],
+            "ServiceName": ["$service"]
+          },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}"
+        }
+      ]
+    },
+    {
+      "title": "Desired vs Running Tasks",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 1 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "ECS/ContainerInsights",
+          "metricName": "RunningTaskCount",
+          "dimensions": {
+            "ClusterName": ["${cluster_name}"],
+            "ServiceName": ["$service"]
+          },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}",
+          "label": "$${PROP('Dim.ServiceName')} running"
+        },
+        {
+          "refId": "B",
+          "namespace": "ECS/ContainerInsights",
+          "metricName": "DesiredTaskCount",
+          "dimensions": {
+            "ClusterName": ["${cluster_name}"],
+            "ServiceName": ["$service"]
+          },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}",
+          "label": "$${PROP('Dim.ServiceName')} desired"
+        }
+      ]
+    },
+    {
+      "title": "CPU Utilization",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 },
+      "collapsed": false
+    },
+    {
+      "title": "CPU Utilization (%)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 15,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max", "lastNotNull"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/ECS",
+          "metricName": "CPUUtilization",
+          "dimensions": {
+            "ClusterName": ["${cluster_name}"],
+            "ServiceName": ["$service"]
+          },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}",
+          "label": "$${PROP('Dim.ServiceName')}"
+        }
+      ]
+    },
+    {
+      "title": "Memory Utilization",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "collapsed": false
+    },
+    {
+      "title": "Memory Utilization (%)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 17 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 15,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max", "lastNotNull"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/ECS",
+          "metricName": "MemoryUtilization",
+          "dimensions": {
+            "ClusterName": ["${cluster_name}"],
+            "ServiceName": ["$service"]
+          },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}",
+          "label": "$${PROP('Dim.ServiceName')}"
+        }
+      ]
+    },
+    {
+      "title": "Network I/O",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
+      "collapsed": false
+    },
+    {
+      "title": "Network Receive (bytes/sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 15,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "ECS/ContainerInsights",
+          "metricName": "NetworkRxBytes",
+          "dimensions": {
+            "ClusterName": ["${cluster_name}"],
+            "ServiceName": ["$service"]
+          },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}",
+          "label": "$${PROP('Dim.ServiceName')}"
+        }
+      ]
+    },
+    {
+      "title": "Network Transmit (bytes/sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 },
+      "datasource": { "type": "cloudwatch", "uid": "${ds_uid}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 15,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "ECS/ContainerInsights",
+          "metricName": "NetworkTxBytes",
+          "dimensions": {
+            "ClusterName": ["${cluster_name}"],
+            "ServiceName": ["$service"]
+          },
+          "statistic": "Average",
+          "period": "300",
+          "region": "${region}",
+          "label": "$${PROP('Dim.ServiceName')}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39
+}
