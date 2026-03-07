@@ -28,9 +28,9 @@
         "overrides": []
       },
       "targets": [{
-        "refId": "A", "queryMode": "Metrics", "namespace": "AWS/RDS", "metricName": "CPUUtilization",
+        "refId": "A", "namespace": "AWS/RDS", "metricName": "CPUUtilization",
         "dimensions": { "DBInstanceIdentifier": ["${rds_identifier}"] },
-        "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": ""
+        "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": ""
       }]
     },
     {
@@ -47,9 +47,9 @@
         "overrides": []
       },
       "targets": [{
-        "refId": "A", "queryMode": "Metrics", "namespace": "AWS/RDS", "metricName": "DatabaseConnections",
+        "refId": "A", "namespace": "AWS/RDS", "metricName": "DatabaseConnections",
         "dimensions": { "DBInstanceIdentifier": ["${rds_identifier}"] },
-        "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": ""
+        "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": ""
       }]
     },
     {
@@ -66,9 +66,9 @@
         "overrides": []
       },
       "targets": [{
-        "refId": "A", "queryMode": "Metrics", "namespace": "AWS/RDS", "metricName": "FreeableMemory",
+        "refId": "A", "namespace": "AWS/RDS", "metricName": "FreeableMemory",
         "dimensions": { "DBInstanceIdentifier": ["${rds_identifier}"] },
-        "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": ""
+        "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": ""
       }]
     },
     {
@@ -87,14 +87,14 @@
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
       "targets": [
         {
-          "refId": "A", "queryMode": "Metrics", "namespace": "AWS/RDS", "metricName": "ReadIOPS",
+          "refId": "A", "namespace": "AWS/RDS", "metricName": "ReadIOPS",
           "dimensions": { "DBInstanceIdentifier": ["${rds_identifier}"] },
-          "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": "", "label": "Read IOPS"
+          "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": "", "label": "Read IOPS"
         },
         {
-          "refId": "B", "queryMode": "Metrics", "namespace": "AWS/RDS", "metricName": "WriteIOPS",
+          "refId": "B", "namespace": "AWS/RDS", "metricName": "WriteIOPS",
           "dimensions": { "DBInstanceIdentifier": ["${rds_identifier}"] },
-          "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": "", "label": "Write IOPS"
+          "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": "", "label": "Write IOPS"
         }
       ]
     },
@@ -113,9 +113,9 @@
       },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
       "targets": [{
-        "refId": "A", "queryMode": "Metrics", "namespace": "AWS/RDS", "metricName": "FreeStorageSpace",
+        "refId": "A", "namespace": "AWS/RDS", "metricName": "FreeStorageSpace",
         "dimensions": { "DBInstanceIdentifier": ["${rds_identifier}"] },
-        "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": ""
+        "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": ""
       }]
     },
     {
@@ -137,9 +137,9 @@
         "overrides": []
       },
       "targets": [{
-        "refId": "A", "queryMode": "Metrics", "namespace": "AWS/ElastiCache", "metricName": "CacheHitRate",
+        "refId": "A", "namespace": "AWS/ElastiCache", "metricName": "CacheHitRate",
         "dimensions": { "CacheClusterId": ["${elasticache_id}"] },
-        "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": ""
+        "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": ""
       }]
     },
     {
@@ -156,9 +156,9 @@
         "overrides": []
       },
       "targets": [{
-        "refId": "A", "queryMode": "Metrics", "namespace": "AWS/ElastiCache", "metricName": "DatabaseMemoryUsagePercentage",
+        "refId": "A", "namespace": "AWS/ElastiCache", "metricName": "DatabaseMemoryUsagePercentage",
         "dimensions": { "CacheClusterId": ["${elasticache_id}"] },
-        "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": ""
+        "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": ""
       }]
     },
     {
@@ -175,9 +175,9 @@
         "overrides": []
       },
       "targets": [{
-        "refId": "A", "queryMode": "Metrics", "namespace": "AWS/ElastiCache", "metricName": "EngineCPUUtilization",
+        "refId": "A", "namespace": "AWS/ElastiCache", "metricName": "EngineCPUUtilization",
         "dimensions": { "CacheClusterId": ["${elasticache_id}"] },
-        "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": ""
+        "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": ""
       }]
     },
     {
@@ -194,9 +194,9 @@
         "overrides": []
       },
       "targets": [{
-        "refId": "A", "queryMode": "Metrics", "namespace": "AWS/ElastiCache", "metricName": "CurrConnections",
+        "refId": "A", "namespace": "AWS/ElastiCache", "metricName": "CurrConnections",
         "dimensions": { "CacheClusterId": ["${elasticache_id}"] },
-        "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": ""
+        "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": ""
       }]
     },
     {
@@ -219,9 +219,9 @@
         "overrides": []
       },
       "targets": [{
-        "refId": "A", "queryMode": "Metrics", "namespace": "AWS/ApplicationELB", "metricName": "RequestCount",
+        "refId": "A", "namespace": "AWS/ApplicationELB", "metricName": "RequestCount",
         "dimensions": { "LoadBalancer": ["${alb_arn_suffix}"] },
-        "matchExact": true, "statistic": "Sum", "period": "300", "region": "${region}", "id": "", "expression": ""
+        "matchExact": true, "statistics": ["Sum"], "period": "300", "region": "${region}", "expression": ""
       }]
     },
     {
@@ -240,14 +240,14 @@
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
       "targets": [
         {
-          "refId": "A", "queryMode": "Metrics", "namespace": "AWS/ApplicationELB", "metricName": "TargetResponseTime",
+          "refId": "A", "namespace": "AWS/ApplicationELB", "metricName": "TargetResponseTime",
           "dimensions": { "LoadBalancer": ["${alb_arn_suffix}"] },
-          "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": "", "label": "avg"
+          "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": "", "label": "avg"
         },
         {
-          "refId": "B", "queryMode": "Metrics", "namespace": "AWS/ApplicationELB", "metricName": "TargetResponseTime",
+          "refId": "B", "namespace": "AWS/ApplicationELB", "metricName": "TargetResponseTime",
           "dimensions": { "LoadBalancer": ["${alb_arn_suffix}"] },
-          "matchExact": true, "statistic": "p99", "period": "300", "region": "${region}", "id": "", "expression": "", "label": "p99"
+          "matchExact": true, "statistics": ["p99"], "period": "300", "region": "${region}", "expression": "", "label": "p99"
         }
       ]
     },
@@ -266,14 +266,14 @@
       },
       "targets": [
         {
-          "refId": "A", "queryMode": "Metrics", "namespace": "AWS/ApplicationELB", "metricName": "HTTPCode_ELB_5XX_Count",
+          "refId": "A", "namespace": "AWS/ApplicationELB", "metricName": "HTTPCode_ELB_5XX_Count",
           "dimensions": { "LoadBalancer": ["${alb_arn_suffix}"] },
-          "matchExact": true, "statistic": "Sum", "period": "300", "region": "${region}", "id": "", "expression": "", "label": "ELB 5xx"
+          "matchExact": true, "statistics": ["Sum"], "period": "300", "region": "${region}", "expression": "", "label": "ELB 5xx"
         },
         {
-          "refId": "B", "queryMode": "Metrics", "namespace": "AWS/ApplicationELB", "metricName": "HTTPCode_Target_5XX_Count",
+          "refId": "B", "namespace": "AWS/ApplicationELB", "metricName": "HTTPCode_Target_5XX_Count",
           "dimensions": { "LoadBalancer": ["${alb_arn_suffix}"] },
-          "matchExact": true, "statistic": "Sum", "period": "300", "region": "${region}", "id": "", "expression": "", "label": "Target 5xx"
+          "matchExact": true, "statistics": ["Sum"], "period": "300", "region": "${region}", "expression": "", "label": "Target 5xx"
         }
       ]
     },
@@ -292,9 +292,9 @@
       },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" },
       "targets": [{
-        "refId": "A", "queryMode": "Metrics", "namespace": "AWS/ApplicationELB", "metricName": "HealthyHostCount",
+        "refId": "A", "namespace": "AWS/ApplicationELB", "metricName": "HealthyHostCount",
         "dimensions": { "LoadBalancer": ["${alb_arn_suffix}"] },
-        "matchExact": false, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": ""
+        "matchExact": false, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": ""
       }]
     }
 %{ if include_fck_nat }
@@ -320,14 +320,14 @@
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
       "targets": [
         {
-          "refId": "A", "queryMode": "Metrics", "namespace": "AWS/EC2", "metricName": "NetworkIn",
+          "refId": "A", "namespace": "AWS/EC2", "metricName": "NetworkIn",
           "dimensions": { "AutoScalingGroupName": ["${fck_nat_name}"] },
-          "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": "", "label": "Network In"
+          "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": "", "label": "Network In"
         },
         {
-          "refId": "B", "queryMode": "Metrics", "namespace": "AWS/EC2", "metricName": "NetworkOut",
+          "refId": "B", "namespace": "AWS/EC2", "metricName": "NetworkOut",
           "dimensions": { "AutoScalingGroupName": ["${fck_nat_name}"] },
-          "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": "", "label": "Network Out"
+          "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": "", "label": "Network Out"
         }
       ]
     },
@@ -345,12 +345,12 @@
         "overrides": []
       },
       "targets": [{
-        "refId": "A", "queryMode": "Metrics", "namespace": "AWS/EC2", "metricName": "CPUUtilization",
+        "refId": "A", "namespace": "AWS/EC2", "metricName": "CPUUtilization",
         "dimensions": { "AutoScalingGroupName": ["${fck_nat_name}"] },
-        "matchExact": true, "statistic": "Average", "period": "300", "region": "${region}", "id": "", "expression": ""
+        "matchExact": true, "statistics": ["Average"], "period": "300", "region": "${region}", "expression": ""
       }]
     }
 %{ endif }
   ],
-  "schemaVersion": 39
+  "schemaVersion": 21
 }
