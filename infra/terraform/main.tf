@@ -233,6 +233,25 @@ resource "aws_sns_topic_subscription" "alert_email" {
 }
 
 # =============================================================================
+# CloudWatch Alarms
+# =============================================================================
+
+module "cloudwatch_alarms" {
+  source = "./modules/cloudwatch-alarms"
+  count  = var.alert_email != "" ? 1 : 0
+
+  name_prefix            = local.name_prefix
+  sns_topic_arn          = local.alert_sns_topic_arn
+  alb_arn_suffix         = module.alb.alb_arn_suffix
+  ecs_cluster_name       = local.name_prefix
+  ecs_service_names      = ["api", "worker"]
+  rds_instance_id        = module.rds.db_instance_id
+  elasticache_cluster_id = "${local.name_prefix}-cache-001"
+
+  tags = local.common_tags
+}
+
+# =============================================================================
 # Grafana Cloud CloudWatch Integration
 # =============================================================================
 
@@ -261,7 +280,7 @@ module "grafana_dashboards" {
 
   cloudwatch_role_arn = var.grafana_aws_account_id != "" && var.grafana_external_id != "" ? module.grafana_cloudwatch[0].iam_role_arn : ""
 
-  ecs_cluster_name = "${local.name_prefix}"
+  ecs_cluster_name = local.name_prefix
   ecs_service_names = concat(
     ["api", "worker", "beat", "storefront", "dashboard"],
     var.apps_enabled ? ["stripe", "inventory-ops", "buylist", "pos", "mtg-import"] : [],

@@ -1,6 +1,6 @@
 # Terraform Plan on PR
 # Runs terraform plan when infrastructure files change in a PR
-# Posts plan output as a PR comment for review
+# Includes: fmt, validate, tflint, trivy, plan, terraform-docs
 
 name: Terraform Plan
 
@@ -55,7 +55,37 @@ jobs:
         id: validate
         working-directory: infra/terraform
         run: terraform validate -no-color
+        continue-on-error: true
 
+      # --- tflint ---
+      - name: Setup tflint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Init tflint plugins
+        working-directory: infra/terraform
+        run: tflint --init
+
+      - name: Run tflint
+        id: tflint
+        working-directory: infra/terraform
+        run: tflint --format compact --recursive
+        continue-on-error: true
+
+      # --- trivy IaC scan ---
+      - name: Run Trivy IaC scan
+        id: trivy
+        uses: aquasecurity/trivy-action@v0.28.0
+        with:
+          scan-type: config
+          scan-ref: infra/terraform
+          trivyignores: infra/terraform/.trivyignore
+          exit-code: 1
+          severity: HIGH,CRITICAL
+        continue-on-error: true
+
+      # --- Terraform Plan ---
       - name: Terraform Plan
         id: plan
         working-directory: infra/terraform
@@ -63,30 +93,58 @@ jobs:
           terraform plan -var-file=${{ env.TF_VAR_FILE }} -no-color -out=tfplan 2>&1 | tee plan-output.txt
         continue-on-error: true
 
+      # --- terraform-docs ---
+      - name: Check terraform-docs freshness
+        id: tfdocs
+        uses: terraform-docs/gh-actions@v1
+        with:
+          working-dir: infra/terraform/modules
+          config-file: infra/terraform/.terraform-docs.yml
+          output-file: README.md
+          output-method: inject
+          fail-on-diff: true
+          recursive: true
+          recursive-path: .
+        continue-on-error: true
+
+      # --- Post results to PR ---
       - name: Post Plan to PR
+        if: always()
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const plan = fs.readFileSync('infra/terraform/plan-output.txt', 'utf8');
+
+            let plan = 'Plan output not available (plan step did not run)';
+            try {
+              plan = fs.readFileSync('infra/terraform/plan-output.txt', 'utf8');
+            } catch (e) {}
 
             const fmtOutcome = '${{ steps.fmt.outcome }}';
             const validateOutcome = '${{ steps.validate.outcome }}';
+            const tflintOutcome = '${{ steps.tflint.outcome }}';
+            const trivyOutcome = '${{ steps.trivy.outcome }}';
             const planOutcome = '${{ steps.plan.outcome }}';
+            const tfdocsOutcome = '${{ steps.tfdocs.outcome }}';
 
-            // Truncate plan if too long for GitHub comment (max ~65k chars)
-            const maxLen = 60000;
+            const maxLen = 50000;
             const truncated = plan.length > maxLen
               ? plan.substring(0, maxLen) + '\n\n... (truncated)'
               : plan;
+
+            const icon = (outcome) => outcome === 'success' ? '✅' : '❌';
+            const docsNote = tfdocsOutcome === 'failure' ? ' (run `terraform-docs` locally)' : '';
 
             const body = `## Terraform Plan Results
 
             | Check | Status |
             |-------|--------|
-            | Format | ${fmtOutcome === 'success' ? '✅' : '❌'} |
-            | Validate | ${validateOutcome === 'success' ? '✅' : '❌'} |
-            | Plan | ${planOutcome === 'success' ? '✅' : '❌'} |
+            | Format | ${icon(fmtOutcome)} |
+            | Validate | ${icon(validateOutcome)} |
+            | tflint | ${icon(tflintOutcome)} |
+            | Trivy | ${icon(trivyOutcome)} |
+            | Plan | ${icon(planOutcome)} |
+            | Docs | ${icon(tfdocsOutcome)}${docsNote} |
 
             <details>
             <summary>Plan Output</summary>
@@ -128,5 +186,10 @@ jobs:
             }
 
       - name: Fail on Issues
-        if: steps.fmt.outcome == 'failure' || steps.validate.outcome == 'failure' || steps.plan.outcome == 'failure'
+        if: |
+          steps.fmt.outcome == 'failure' ||
+          steps.validate.outcome == 'failure' ||
+          steps.tflint.outcome == 'failure' ||
+          steps.trivy.outcome == 'failure' ||
+          steps.plan.outcome == 'failure'
         run: exit 1

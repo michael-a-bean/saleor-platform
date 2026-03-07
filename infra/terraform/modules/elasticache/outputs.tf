@@ -26,6 +26,11 @@ output "cache_url" {
   value       = "redis://${aws_elasticache_replication_group.cache.primary_endpoint_address}:${aws_elasticache_replication_group.cache.port}/0"
 }
 
+output "cache_replication_group_id" {
+  description = "Replication group ID for cache cluster (for CloudWatch dimensions)"
+  value       = aws_elasticache_replication_group.cache.replication_group_id
+}
+
 # Broker cluster outputs (if separate)
 output "broker_endpoint" {
   description = "Primary endpoint for broker cluster"

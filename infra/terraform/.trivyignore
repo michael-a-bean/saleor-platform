@@ -1,0 +1,14 @@
+# Trivy IaC scan ignore list
+# Format: check ID per line, with optional comment
+
+# ECS tasks use awsvpc networking with security groups — public IP not a risk in private subnets
+AVD-AWS-0034
+
+# We use fck-nat instances instead of NAT Gateway (cost optimization, accepted trade-off)
+AVD-AWS-0178
+
+# CloudFront default certificate is fine for staging
+AVD-AWS-0013
+
+# RDS performance insights — not needed for staging
+AVD-AWS-0133
