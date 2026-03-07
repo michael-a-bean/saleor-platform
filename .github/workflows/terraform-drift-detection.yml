@@ -20,6 +20,7 @@ env:
   AWS_REGION: us-west-1
   TF_VAR_FILE: environments/staging.tfvars
   TERRAFORM_VERSION: "1.5"
+  TF_VAR_grafana_api_token: ${{ secrets.GRAFANA_API_TOKEN }}
 
 jobs:
   drift-detection:
