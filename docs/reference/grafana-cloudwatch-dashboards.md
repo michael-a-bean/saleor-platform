@@ -1,13 +1,15 @@
-# Grafana Cloud CloudWatch Dashboards
+# Grafana Cloud Dashboards
 
-Reference for Terraform-managed CloudWatch dashboards in Grafana Cloud. Documents critical compatibility requirements discovered during initial setup (March 2026, Grafana Cloud 13.0.0).
+Reference for Terraform-managed dashboards in Grafana Cloud. Documents critical compatibility requirements discovered during initial setup (March 2026, Grafana Cloud 13.0.0).
 
 ## Dashboard Locations
 
-| Dashboard | Template | Grafana UID |
-|-----------|----------|-------------|
-| ECS Services | `infra/terraform/modules/grafana-dashboards/dashboards/ecs-services.json.tftpl` | `staging-ecs-services` |
-| Infrastructure | `infra/terraform/modules/grafana-dashboards/dashboards/infrastructure.json.tftpl` | `staging-infrastructure` |
+| Dashboard | Data Source | Template | Grafana UID |
+|-----------|-------------|----------|-------------|
+| ECS Services | CloudWatch | `dashboards/ecs-services.json.tftpl` | `staging-ecs-services` |
+| Infrastructure | CloudWatch | `dashboards/infrastructure.json.tftpl` | `staging-infrastructure` |
+| Saleor APM | Prometheus + Tempo | `dashboards/apm.json.tftpl` | `staging-apm` |
+| External Services | Prometheus | `dashboards/external-services.json.tftpl` | `staging-external-services` |
 
 Terraform module: `infra/terraform/modules/grafana-dashboards/`
 
@@ -151,6 +153,47 @@ The IAM role (`modules/grafana-cloudwatch/`) trusts Grafana Cloud's AWS account 
 3. Apply with `terraform apply` — Grafana resource uses `overwrite = true`
 4. Verify in Grafana that panels render data before committing
 
+## OTEL Dashboards (Prometheus/Mimir + Tempo)
+
+The APM and External Services dashboards use Saleor's custom OTEL metrics, not standard OTEL semantic conventions.
+
+### Saleor Metric Names
+
+| Metric | Labels | Description |
+|--------|--------|-------------|
+| `saleor_request_count_total` | `service_name` | Total HTTP requests |
+| `saleor_request_duration_seconds` | `service_name` | Request latency histogram |
+| `saleor_graphql_operation_count_total` | `graphql_operation_type`, `error_type` | GraphQL operations |
+| `saleor_graphql_operation_duration_seconds` | `graphql_operation_type`, `error_type` | GraphQL latency |
+| `saleor_graphql_operation_cost` | `graphql_operation_type` | Query complexity cost |
+| `saleor_graphql_slow_operation_duration_seconds` | `graphql_operation_type` | Slow operations only |
+| `saleor_external_request_count_total` | `service_name` | Outbound HTTP requests |
+| `saleor_external_request_duration_seconds` | `service_name` | Outbound latency |
+| `saleor_external_request_body_size_bytes` | `service_name` | Response body size |
+
+**Service name**: `saleor-api` (in both Prometheus metrics and Tempo traces).
+
+**GraphQL operation types**: `query`, `mutation`
+
+**Error types**: `GraphQLError`, `GraphQLLocatedError`, `GraphQLSyntaxError`, `request_error`
+
+### Data Sources (pre-existing in Grafana Cloud)
+
+| Data Source | UID | Purpose |
+|-------------|-----|---------|
+| Prometheus/Mimir | `grafanacloud-prom` | OTEL metrics |
+| Tempo | `grafanacloud-traces` | OTEL traces |
+
+These are NOT managed by Terraform — they're provisioned by Grafana Cloud automatically. The dashboards reference them via `tempo_datasource_uid` and `prometheus_datasource_uid` variables.
+
+### Conditionally Created
+
+Both OTEL dashboards use `count` to skip creation when data source UIDs are empty:
+
+```hcl
+count = var.tempo_datasource_uid != "" && var.prometheus_datasource_uid != "" ? 1 : 0
+```
+
 ## Version History
 
 | Date | Commit | Change |
@@ -158,3 +201,4 @@ The IAM role (`modules/grafana-cloudwatch/`) trusts Grafana Cloud's AWS account 
 | 2026-03-06 | `8ec0aaa` | Initial dashboard templates (broken — schemaVersion 39) |
 | 2026-03-06 | `b0c5a1a` | Fix schemaVersion to 21, statistics array format |
 | 2026-03-06 | `4da4894` | Replace template variables with hardcoded Terraform values |
+| 2026-03-06 | `5fcc350` | Add OTEL APM and External Services dashboards |
