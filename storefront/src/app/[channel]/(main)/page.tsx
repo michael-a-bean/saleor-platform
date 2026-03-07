@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { SearchIcon, Package, Sparkles, Users, Calendar } from "lucide-react";
 import { ProductList } from "@/ui/components/ProductList";
 import { SetIconImage } from "@/ui/components/SetIconImage";
@@ -116,6 +115,9 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 				href="/images/sets/ecl/ECL_sma_key_1080x1080_en.avif"
 				media="(max-width: 767px)"
 			/>
+			{/* Preload first two preorder product images — visible immediately below hero */}
+			<link rel="preload" as="image" href="/images/sets/ecl/MTGECL_EN_DspBx_Play_01_01.webp" />
+			<link rel="preload" as="image" href="/images/sets/ecl/MTGECL_EN_DspBx_Clctr_01_01.webp" />
 		<div className="min-h-screen">
 			{/* Lorwyn Eclipsed Hero Banner */}
 			<section className="relative overflow-hidden bg-gradient-to-br from-[#1a3a2f] via-[#2d4a3f] to-[#1f2f3a]">
@@ -212,15 +214,16 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 								href={product.href(params.channel)}
 								className="group flex flex-col items-center rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-brand-bright-blue hover:shadow-lg"
 							>
-								<div className="relative mb-3 h-32 w-full">
-									<Image
+								<div className="relative mb-3 flex h-32 w-full items-center justify-center">
+									<img
 										src={product.image}
 										alt={product.name}
-										fill
-										sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 256px"
-										className="object-contain transition-transform group-hover:scale-105"
+										width={256}
+										height={128}
 										loading={index < 4 ? "eager" : "lazy"}
-										priority={index < 4}
+										fetchPriority={index < 4 ? "high" : "auto"}
+										decoding="async"
+										className="h-full w-auto object-contain transition-transform group-hover:scale-105"
 									/>
 								</div>
 								<h3 className="text-center text-sm font-semibold text-neutral-900 group-hover:text-brand-bright-blue">
