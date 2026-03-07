@@ -155,3 +155,9 @@ log_retention_days        = 14
 
 # Alerting: email for CloudWatch alarm notifications
 alert_email = "michael@michaelbean.org"
+
+# Grafana Cloud CloudWatch integration
+# Get these values from Grafana Cloud → Connections → CloudWatch → "Grafana Assume Role" settings.
+# Leave empty to skip IAM role creation.
+# grafana_aws_account_id = ""
+# grafana_external_id    = ""

@@ -223,3 +223,13 @@ output "media_cdn_url" {
   description = "Media CDN URL (CloudFront if enabled, otherwise direct S3)"
   value       = var.enable_cloudfront ? module.cloudfront[0].media_url : "https://${module.s3.bucket_regional_domain_name}"
 }
+
+# =============================================================================
+# Grafana Cloud
+# =============================================================================
+
+output "grafana_cloudwatch_role_arn" {
+  description = "IAM role ARN for Grafana Cloud CloudWatch integration. Retrieve with: terraform output -raw grafana_cloudwatch_role_arn"
+  value       = var.grafana_aws_account_id != "" && var.grafana_external_id != "" ? module.grafana_cloudwatch[0].iam_role_arn : null
+  sensitive   = true
+}

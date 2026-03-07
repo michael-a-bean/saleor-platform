@@ -547,6 +547,20 @@ variable "alert_email" {
   default     = ""
 }
 
+variable "grafana_aws_account_id" {
+  description = "Grafana Labs AWS account ID (from CloudWatch data source settings in Grafana Cloud). Empty = skip IAM role creation."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "grafana_external_id" {
+  description = "External ID for Grafana Cloud assume role (from CloudWatch data source settings). Empty = skip IAM role creation."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 # =============================================================================
 # CloudFront CDN Configuration
 # =============================================================================

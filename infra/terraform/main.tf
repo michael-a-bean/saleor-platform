@@ -233,6 +233,21 @@ resource "aws_sns_topic_subscription" "alert_email" {
 }
 
 # =============================================================================
+# Grafana Cloud CloudWatch Integration
+# =============================================================================
+
+module "grafana_cloudwatch" {
+  source = "./modules/grafana-cloudwatch"
+  count  = var.grafana_aws_account_id != "" && var.grafana_external_id != "" ? 1 : 0
+
+  project_name           = var.project_name
+  environment            = var.environment
+  grafana_aws_account_id = var.grafana_aws_account_id
+  grafana_external_id    = var.grafana_external_id
+  tags                   = local.common_tags
+}
+
+# =============================================================================
 # ECS Cluster and Services
 # =============================================================================
 
