@@ -1,0 +1,127 @@
+name: Codex PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout PR merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.SUBMODULES_TOKEN }}
+
+      - name: Fetch base branch for diff
+        run: |
+          git fetch --no-tags origin \
+            ${{ github.event.pull_request.base.ref }} \
+            +refs/pull/${{ github.event.pull_request.number }}/head
+
+      - name: Generate diff context
+        id: diff
+        run: |
+          FILES_CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }})
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$FILES_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Run Codex review
+        uses: openai/codex-action@v1
+        id: codex
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          sandbox: read-only
+          prompt: |
+            You are reviewing PR #${{ github.event.pull_request.number }}: "${{ github.event.pull_request.title }}"
+
+            PR description:
+            ${{ github.event.pull_request.body }}
+
+            Files changed:
+            ${{ steps.diff.outputs.files }}
+
+            Review the changes in this PR. Focus on:
+            1. Bugs or logic errors
+            2. Security issues (injection, auth, data exposure)
+            3. Missing error handling or edge cases
+            4. Performance concerns
+            5. Style/consistency issues with the surrounding codebase
+
+            Read the changed files using the diff range:
+            git diff ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}
+
+            Also read CLAUDE.md for project conventions.
+
+            Output your review as markdown with:
+            - A one-line summary verdict (APPROVE / REQUEST_CHANGES / COMMENT)
+            - Numbered findings with file:line references
+            - Severity labels: [critical], [warning], [suggestion], [nit]
+            - If no issues found, say so clearly
+
+            Be concise. Don't praise obvious things. Focus on what matters.
+
+      - name: Post review comment
+        if: always() && steps.codex.outputs.final-message != ''
+        env:
+          REVIEW_BODY: ${{ steps.codex.outputs.final-message }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const review = process.env.REVIEW_BODY || '';
+
+            if (!review.trim()) {
+              console.log('No review output from Codex, skipping comment');
+              return;
+            }
+
+            const body = [
+              '## Codex Review',
+              '',
+              review,
+              '',
+              '---',
+              '*Automated review by [OpenAI Codex](https://github.com/openai/codex)*'
+            ].join('\n');
+
+            // Find and update existing Codex review comment, or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+
+            const existing = comments.find(c =>
+              c.body?.startsWith('## Codex Review') &&
+              c.user?.type === 'Bot'
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+              console.log(`Updated existing review comment #${existing.id}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+              console.log('Created new review comment');
+            }
