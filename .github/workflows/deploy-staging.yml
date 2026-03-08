@@ -328,6 +328,18 @@ jobs:
           STAGING_API_URL: ${{ vars.STAGING_API_URL }}
           STAGING_STOREFRONT_URL: ${{ vars.STAGING_STOREFRONT_URL }}
 
+      - name: Check for trivyignore
+        if: steps.should-build.outputs.build == 'true'
+        id: trivyignore
+        run: |
+          # Look for .trivyignore relative to the Dockerfile context
+          DOCKERFILE_DIR=$(dirname "${{ matrix.dockerfile }}")
+          if [ -f "${DOCKERFILE_DIR}/.trivyignore" ]; then
+            echo "file=${DOCKERFILE_DIR}/.trivyignore" >> "$GITHUB_OUTPUT"
+          else
+            echo "file=" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Trivy image scan ${{ matrix.service }}
         if: steps.should-build.outputs.build == 'true'
         uses: aquasecurity/trivy-action@0.35.0
@@ -336,6 +348,7 @@ jobs:
           exit-code: 1
           severity: CRITICAL
           ignore-unfixed: true
+          trivyignores: ${{ steps.trivyignore.outputs.file }}
 
       - name: Tag and push ${{ matrix.service }}
         if: steps.should-build.outputs.build == 'true'
