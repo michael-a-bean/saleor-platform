@@ -21,14 +21,14 @@ When invoked, execute these steps in order:
 ```bash
 CURRENT=$(git branch --show-current)
 if [ "$CURRENT" = "main" ] || [ "$CURRENT" = "platform/main" ]; then
-  echo "ERROR: Cannot create PR from $CURRENT. Create a feature branch first."
-  exit 1
+  echo "On $CURRENT — need a feature branch for PR."
 fi
 ```
 
-If on `platform/main`, create a feature branch:
+If on `main` or `platform/main`:
 - Ask the user for a branch name, or auto-generate from the commit messages
 - `git checkout -b feature/<name>`
+- If the user declines, abort
 
 ### Step 2: Run Local Review Gate
 
