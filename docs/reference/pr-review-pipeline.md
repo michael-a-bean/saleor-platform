@@ -20,6 +20,11 @@ push to feature/* branch
         │       REQUEST_CHANGES     COMMENT
         │       (blocks merge)    (informational)
         │              │                │
+        │              │         ┌──────┴──────┐
+        │              │         │ Create GitHub│
+        │              │         │ issues for   │
+        │              │         │ each finding │
+        │              │         └──────────────┘
         ▼              ▼                ▼
 ┌─────────────────────────────────────────────┐
 │              Auto-Merge Check               │
@@ -47,11 +52,13 @@ push to feature/* branch
 
 2. **Verdict derived from content** — The workflow scans for `[critical]` labels in Codex output rather than trusting a first-line verdict format. This is more reliable.
 
-3. **babysit-pr ignores review comments** — The babysit skill only fixes CI failures. Codex REQUEST_CHANGES (critical findings) are escalated to a human, not auto-fixed.
+3. **Non-blocking findings become GitHub issues** — `[warning]` and `[note]` findings are automatically created as GitHub issues with `codex-review` + severity labels. This ensures findings are tracked even when they don't block the PR. Dedup by title prevents duplicates on re-runs.
 
-4. **Auto-merge requires no approval** — Only green CI + `auto-merge` label + not draft + no active REQUEST_CHANGES. No Codex APPROVE needed.
+4. **babysit-pr ignores review comments** — The babysit skill only fixes CI failures. Codex REQUEST_CHANGES (critical findings) are escalated to a human, not auto-fixed.
 
-5. **Previous REQUEST_CHANGES are dismissed on re-review** — When a new push triggers Codex, any prior REQUEST_CHANGES is dismissed so stale blocks don't persist.
+5. **Auto-merge requires no approval** — Only green CI + `auto-merge` label + not draft + no active REQUEST_CHANGES. No Codex APPROVE needed.
+
+6. **Previous REQUEST_CHANGES are dismissed on re-review** — When a new push triggers Codex, any prior REQUEST_CHANGES is dismissed so stale blocks don't persist.
 
 ## Workflow Files
 

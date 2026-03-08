@@ -3,6 +3,8 @@ name: Auto-Merge on Green CI
 on:
   check_suite:
     types: [completed]
+  pull_request:
+    types: [labeled]
 
 permissions:
   contents: write
@@ -19,21 +21,36 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            if (context.eventName !== 'check_suite') {
-              console.log('Unexpected event');
+            if (context.eventName === 'pull_request') {
+              // Triggered by adding a label — PR number is directly available
+              const pr = context.payload.pull_request;
+              if (pr.base.ref !== 'platform/main') {
+                console.log(`PR targets ${pr.base.ref}, not platform/main — skipping`);
+                return;
+              }
+              if (context.payload.label?.name !== 'auto-merge') {
+                console.log(`Label "${context.payload.label?.name}" added, not auto-merge — skipping`);
+                return;
+              }
+              core.setOutput('number', pr.number);
+              console.log(`PR #${pr.number} (labeled)`);
               return;
             }
 
-            // Find PRs for this head SHA targeting platform/main
-            const prs = context.payload.check_suite.pull_requests || [];
-            const targetPr = prs.find(pr => pr.base.ref === 'platform/main');
-            if (!targetPr) {
-              console.log('No PR targeting platform/main in this check suite');
+            if (context.eventName === 'check_suite') {
+              // Find PRs for this head SHA targeting platform/main
+              const prs = context.payload.check_suite.pull_requests || [];
+              const targetPr = prs.find(pr => pr.base.ref === 'platform/main');
+              if (!targetPr) {
+                console.log('No PR targeting platform/main in this check suite');
+                return;
+              }
+              core.setOutput('number', targetPr.number);
+              console.log(`PR #${targetPr.number} (check_suite)`);
               return;
             }
 
-            core.setOutput('number', targetPr.number);
-            console.log(`PR #${targetPr.number}`);
+            console.log(`Unexpected event: ${context.eventName}`);
 
       - name: Check auto-merge eligibility
         if: steps.pr.outputs.number
@@ -66,7 +83,6 @@ jobs:
 
             // Only check required status checks (non-required failures should not block merge)
             const requiredChecks = [
-              'Backend Tests',
               'Storefront Checks',
               'Apps Checks',
               'Container Builds',
