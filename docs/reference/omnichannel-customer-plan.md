@@ -115,6 +115,10 @@ This is a public-facing REST (or tRPC) API that:
 - New page: `/[channel]/account/credit` — full credit history with transaction table
 - API calls from Next.js server components (SSR) using the user's JWT
 
+### Phase 1 Cleanup (bundled with Phase 2)
+
+- Fix `countryStr in CountryCode` enum validation — checks keys instead of values, silently coerces non-US countries to `"US"`. Use `Object.values(CountryCode).includes()` instead.
+
 ### What Ships
 
 A customer logs into the website, sees "Store Credit: $47.50" in their account menu, and can view a history of every credit transaction (buylist payouts, POS purchases, adjustments) with dates and notes.
