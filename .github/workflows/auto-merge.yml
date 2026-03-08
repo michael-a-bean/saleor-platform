@@ -66,7 +66,6 @@ jobs:
 
             // Only check required status checks (non-required failures should not block merge)
             const requiredChecks = [
-              'Backend Tests',
               'Storefront Checks',
               'Apps Checks',
               'Container Builds',

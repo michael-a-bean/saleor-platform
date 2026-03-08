@@ -7,6 +7,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   review:
@@ -159,3 +160,113 @@ jobs:
 
             // Set output for downstream workflows
             core.setOutput('verdict', event);
+
+      - name: Create issues for non-blocking findings
+        if: always() && steps.codex.outputs.final-message != ''
+        env:
+          REVIEW_BODY: ${{ steps.codex.outputs.final-message }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const review = process.env.REVIEW_BODY || '';
+            const prNumber = context.payload.pull_request.number;
+            const prTitle = context.payload.pull_request.title;
+
+            // Parse [warning] and [note] findings from the review body.
+            // Each finding starts with a severity tag and runs until the next
+            // tag or end of text.
+            const findingPattern = /\[(warning|note)\]\s*([^\[]*?)(?=\n\s*\[(?:critical|warning|note)\]|\n---|\n\s*$)/gis;
+            const findings = [];
+
+            let match;
+            while ((match = findingPattern.exec(review)) !== null) {
+              const severity = match[1].toLowerCase();
+              const body = match[2].trim();
+              if (body) {
+                findings.push({ severity, body });
+              }
+            }
+
+            if (findings.length === 0) {
+              console.log('No warning/note findings to create issues for');
+              return;
+            }
+
+            // Fetch existing open issues with the codex-review label to avoid
+            // duplicates on re-runs (synchronize events).
+            const { data: existingIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'codex-review',
+              state: 'open',
+              per_page: 100,
+            });
+
+            // Ensure labels exist
+            for (const label of ['codex-review', 'warning', 'note']) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label,
+                });
+              } catch {
+                const colors = { 'codex-review': 'c5def5', 'warning': 'fbca04', 'note': 'd4c5f9' };
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label,
+                  color: colors[label],
+                  description: label === 'codex-review'
+                    ? 'Automated finding from Codex PR review'
+                    : `Codex ${label}-level finding`,
+                });
+                console.log(`Created label: ${label}`);
+              }
+            }
+
+            let created = 0;
+            for (const finding of findings) {
+              // Extract a short title from the first line/sentence
+              const firstLine = finding.body.split('\n')[0].replace(/`[^`]*`/g, '').trim();
+              const titleSnippet = firstLine.length > 80
+                ? firstLine.substring(0, 77) + '...'
+                : firstLine;
+              const title = `[${finding.severity}] PR #${prNumber}: ${titleSnippet}`;
+
+              // Dedup: skip if an open issue with the same title already exists
+              const isDuplicate = existingIssues.some(issue =>
+                issue.title === title
+              );
+
+              if (isDuplicate) {
+                console.log(`Skipping duplicate: ${title}`);
+                continue;
+              }
+
+              const issueBody = [
+                `**Source:** Codex review on PR #${prNumber} (${prTitle})`,
+                `**Severity:** ${finding.severity}`,
+                '',
+                '### Finding',
+                '',
+                finding.body,
+                '',
+                `---`,
+                `*Auto-created from [Codex PR Review](${context.payload.pull_request.html_url})*`,
+              ].join('\n');
+
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body: issueBody,
+                labels: ['codex-review', finding.severity],
+              });
+
+              created++;
+              console.log(`Created issue: ${title}`);
+            }
+
+            console.log(`Created ${created} issues from ${findings.length} findings`);

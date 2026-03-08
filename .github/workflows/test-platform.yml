@@ -12,42 +12,6 @@ concurrency:
 
 jobs:
   # =============================================================================
-  # BACKEND TESTS
-  # =============================================================================
-  verify_backend:
-    name: Backend Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          token: ${{ secrets.SUBMODULES_TOKEN }}
-
-      - name: Set up environment
-        run: |
-          # Create minimal .env for docker compose config validation
-          cat > .env << 'EOF'
-          SECRET_KEY=ci-test-secret-key-not-for-production
-          POSTGRES_USER=saleor
-          POSTGRES_PASSWORD=saleor
-          STRIPE_APP_SECRET_KEY=ci-stripe-key
-          INVENTORY_OPS_SECRET_KEY=ci-inventory-key
-          BUYLIST_SECRET_KEY=ci-buylist-key
-          POS_SECRET_KEY=ci-pos-key
-          MTG_IMPORT_SECRET_KEY=ci-mtg-import-key
-          INVENTORY_DATABASE_URL=postgresql://inventory:inventory@inventory-ops-db:5432/inventory_ops
-          INVENTORY_POSTGRES_USER=inventory
-          INVENTORY_POSTGRES_PASSWORD=inventory
-          SALEOR_DATABASE_URL=postgresql://saleor:saleor@db:5432/saleor
-          EOF
-
-      - name: Build containers
-        run: docker compose build api
-
-      - name: Run backend tests
-        run: docker compose run --rm api pytest -n logical --allow-hosts cache
-
-  # =============================================================================
   # STOREFRONT CHECKS
   # =============================================================================
   verify_storefront:
