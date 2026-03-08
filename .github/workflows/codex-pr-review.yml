@@ -72,7 +72,7 @@ jobs:
 
             Be concise. Don't praise obvious things. Focus on what matters.
 
-      - name: Post review comment
+      - name: Submit formal review
         if: always() && steps.codex.outputs.final-message != ''
         env:
           REVIEW_BODY: ${{ steps.codex.outputs.final-message }}
@@ -83,8 +83,19 @@ jobs:
             const review = process.env.REVIEW_BODY || '';
 
             if (!review.trim()) {
-              console.log('No review output from Codex, skipping comment');
+              console.log('No review output from Codex, skipping');
               return;
+            }
+
+            // Parse verdict from first line: "APPROVE", "REQUEST_CHANGES", or "COMMENT"
+            const firstLine = review.split('\n').find(l => l.trim().length > 0) || '';
+            const upper = firstLine.toUpperCase();
+
+            let event = 'COMMENT';
+            if (upper.includes('APPROVE') && !upper.includes('REQUEST_CHANGES')) {
+              event = 'APPROVE';
+            } else if (upper.includes('REQUEST_CHANGES') || upper.includes('REQUEST CHANGES')) {
+              event = 'REQUEST_CHANGES';
             }
 
             const body = [
@@ -93,35 +104,47 @@ jobs:
               review,
               '',
               '---',
-              '*Automated review by [OpenAI Codex](https://github.com/openai/codex)*'
+              `*Verdict: **${event}** | Automated review by [OpenAI Codex](https://github.com/openai/codex)*`
             ].join('\n');
 
-            // Find and update existing Codex review comment, or create new one
-            const { data: comments } = await github.rest.issues.listComments({
+            // Dismiss any previous Codex review to avoid stale blocks
+            const { data: reviews } = await github.rest.pulls.listReviews({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
+              pull_number: context.payload.pull_request.number,
             });
 
-            const existing = comments.find(c =>
-              c.body?.startsWith('## Codex Review') &&
-              c.user?.type === 'Bot'
+            const previousCodex = reviews.filter(r =>
+              r.body?.startsWith('## Codex Review') &&
+              r.user?.type === 'Bot' &&
+              r.state === 'CHANGES_REQUESTED'
             );
 
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-              console.log(`Updated existing review comment #${existing.id}`);
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                body,
-              });
-              console.log('Created new review comment');
+            for (const prev of previousCodex) {
+              try {
+                await github.rest.pulls.dismissReview({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: context.payload.pull_request.number,
+                  review_id: prev.id,
+                  message: 'Superseded by new Codex review',
+                });
+                console.log(`Dismissed previous review #${prev.id}`);
+              } catch (e) {
+                console.log(`Could not dismiss review #${prev.id}: ${e.message}`);
+              }
             }
+
+            // Submit formal PR review
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              body,
+              event,
+            });
+
+            console.log(`Submitted ${event} review`);
+
+            // Set output for downstream workflows
+            core.setOutput('verdict', event);
