@@ -35,13 +35,26 @@ export function UserMenu({ user }: Props) {
 						<Menu.Item>
 							{({ active }) => (
 								<LinkWithChannel
+									href="/account"
+									className={clsx(
+										active && "bg-neutral-100",
+										"block px-4 py-2 text-sm font-medium text-neutral-500 hover:text-neutral-700",
+									)}
+								>
+									My Account
+								</LinkWithChannel>
+							)}
+						</Menu.Item>
+						<Menu.Item>
+							{({ active }) => (
+								<LinkWithChannel
 									href="/orders"
 									className={clsx(
 										active && "bg-neutral-100",
 										"block px-4 py-2 text-sm font-medium text-neutral-500 hover:text-neutral-700",
 									)}
 								>
-									My orders
+									My Orders
 								</LinkWithChannel>
 							)}
 						</Menu.Item>
