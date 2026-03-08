@@ -64,29 +64,43 @@ jobs:
               return;
             }
 
-            // Check all status checks pass
+            // Only check required status checks (non-required failures should not block merge)
+            const requiredChecks = [
+              'Backend Tests',
+              'Storefront Checks',
+              'Apps Checks',
+              'Container Builds',
+              'Docker Compose Validation',
+              'Migration Validation',
+              'Terraform Validation',
+            ];
+
             const { data: checks } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: pr.head.sha,
             });
 
-            const failedChecks = checks.check_runs.filter(c =>
+            const requiredRuns = checks.check_runs.filter(c =>
+              requiredChecks.includes(c.name)
+            );
+
+            const failedChecks = requiredRuns.filter(c =>
               c.status === 'completed' && c.conclusion !== 'success' && c.conclusion !== 'skipped'
             );
 
-            const pendingChecks = checks.check_runs.filter(c =>
+            const pendingChecks = requiredRuns.filter(c =>
               c.status !== 'completed'
             );
 
             if (pendingChecks.length > 0) {
-              console.log(`${pendingChecks.length} checks still pending, will retry on next event`);
+              console.log(`${pendingChecks.length} required checks still pending, will retry on next event`);
               return;
             }
 
             if (failedChecks.length > 0) {
               const names = failedChecks.map(c => c.name).join(', ');
-              console.log(`Failed checks: ${names}`);
+              console.log(`Failed required checks: ${names}`);
               return;
             }
 
