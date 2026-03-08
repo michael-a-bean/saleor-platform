@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const config = {
 	reactCompiler: true,
+	experimental: {
+		optimizePackageImports: ["lucide-react", "lodash-es"],
+	},
 	images: {
 		remotePatterns: [
 			// Scryfall card images and SVGs (mana symbols, set icons)
@@ -60,7 +63,20 @@ const config = {
 		unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === "true",
 	},
 	async headers() {
+		const isDev = process.env.NODE_ENV === "development";
 		return [
+			// Versioned assets (hashed filenames) — cache forever
+			{
+				source: "/:path*",
+				has: [{ type: "query", key: "v" }],
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "public, max-age=31536000, immutable",
+					},
+				],
+			},
+			// Static images — cache forever (immutable filenames)
 			{
 				source: "/images/:path*",
 				headers: [
@@ -70,6 +86,30 @@ const config = {
 					},
 				],
 			},
+			// Public assets (fonts, manifest, non-hashed images) — 30 days with SWR
+			{
+				source: "/fonts/:path*",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "public, max-age=2592000, stale-while-revalidate=86400",
+					},
+				],
+			},
+			// Development: prevent aggressive caching of dynamic chunks
+			...(isDev
+				? [
+						{
+							source: "/_next/static/chunks/:path*",
+							headers: [
+								{
+									key: "Cache-Control",
+									value: "no-store, must-revalidate",
+								},
+							],
+						},
+					]
+				: []),
 		];
 	},
 	typedRoutes: false,
