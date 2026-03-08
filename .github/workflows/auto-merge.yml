@@ -3,6 +3,8 @@ name: Auto-Merge on Approval
 on:
   pull_request_review:
     types: [submitted]
+  check_suite:
+    types: [completed]
 
 permissions:
   contents: write
@@ -12,7 +14,9 @@ jobs:
   auto-merge:
     runs-on: ubuntu-latest
     # Only run for PRs targeting platform/main
-    if: github.event.pull_request.base.ref == 'platform/main'
+    if: >-
+      (github.event_name == 'pull_request_review' && github.event.pull_request.base.ref == 'platform/main') ||
+      github.event_name == 'check_suite'
 
     steps:
       - name: Get PR number
@@ -21,7 +25,26 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const prNumber = context.payload.pull_request.number;
+            let prNumber;
+
+            if (context.eventName === 'pull_request_review') {
+              prNumber = context.payload.pull_request.number;
+            } else if (context.eventName === 'check_suite') {
+              // Find PRs for this head SHA targeting platform/main
+              const prs = context.payload.check_suite.pull_requests || [];
+              const targetPr = prs.find(pr => pr.base.ref === 'platform/main');
+              if (!targetPr) {
+                console.log('No PR targeting platform/main in this check suite');
+                return;
+              }
+              prNumber = targetPr.number;
+            }
+
+            if (!prNumber) {
+              console.log('Could not determine PR number');
+              return;
+            }
+
             core.setOutput('number', prNumber);
             console.log(`PR #${prNumber}`);
 
