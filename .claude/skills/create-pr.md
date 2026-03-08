@@ -74,7 +74,6 @@ gh pr create \
 
 ## Test plan
 - [ ] CI checks pass
-- [ ] Codex review approves
 - [ ] Changes verified locally
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
@@ -85,8 +84,9 @@ EOF
 ### Step 5: Report
 
 Output the PR URL and remind the user:
-- Auto-merge will trigger when all checks pass + Codex approves
-- Use `/babysit-pr <number>` to monitor and auto-fix failures
+- Auto-merge triggers when all CI checks pass (no Codex approval needed)
+- Codex will review and comment, but only `[critical]` findings block merge
+- Use `/babysit-pr <number>` to monitor and auto-fix CI failures
 
 ## Arguments
 

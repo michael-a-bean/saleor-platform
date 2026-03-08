@@ -72,6 +72,7 @@ This file stays intentionally lean. Detailed procedures live elsewhere and shoul
 - `docs/reference/git-philosophy.md` — Detailed git workflow guide
 - `docs/reference/sync-contracts.md` — Data sync contracts (Saleor/Meilisearch/inventory-ops)
 - `docs/reference/expected-divergence.md` — Terraform drift that is intentional vs concerning
+- `docs/reference/pr-review-pipeline.md` — PR review pipeline: Codex severity rubric, auto-merge, babysit-pr
 - `.claude/rules/` — Critical gotchas (database, storefront, git, **infrastructure**)
 
 ### Legacy Material

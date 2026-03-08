@@ -37,7 +37,14 @@ jobs:
           echo "$FILES_CHANGED" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
+          # Include actual diff content (capped at 50KB) for review context
+          DIFF_CONTENT=$(git diff --submodule=diff ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} | head -c 51200)
+          echo "diff_content<<DIFFEOF" >> "$GITHUB_OUTPUT"
+          echo "$DIFF_CONTENT" >> "$GITHUB_OUTPUT"
+          echo "DIFFEOF" >> "$GITHUB_OUTPUT"
+
       - name: Run Codex review
+        # Pin to v1 — update deliberately after testing new versions
         uses: openai/codex-action@v1
         id: codex
         with:
@@ -52,25 +59,35 @@ jobs:
             Files changed:
             ${{ steps.diff.outputs.files }}
 
-            Review the changes in this PR. Focus on:
-            1. Bugs or logic errors
-            2. Security issues (injection, auth, data exposure)
-            3. Missing error handling or edge cases
-            4. Performance concerns
-            5. Style/consistency issues with the surrounding codebase
+            Diff content (up to 50KB):
+            ${{ steps.diff.outputs.diff_content }}
 
-            Read the changed files using the diff range:
-            git diff ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}
+            Also read CLAUDE.md for project conventions if present.
 
-            Also read CLAUDE.md for project conventions.
+            ## Severity Rubric (use EXACTLY these labels)
 
-            Output your review as markdown with:
-            - A one-line summary verdict (APPROVE / REQUEST_CHANGES / COMMENT)
-            - Numbered findings with file:line references
-            - Severity labels: [critical], [warning], [suggestion], [nit]
-            - If no issues found, say so clearly
+            - `[critical]` — Security vulnerabilities, data loss, crashes, broken auth, injection flaws.
+              These BLOCK the PR. Use sparingly — only for issues that would cause real damage in production.
 
-            Be concise. Don't praise obvious things. Focus on what matters.
+            - `[warning]` — Bugs, logic errors, race conditions, missing error handling that could cause failures.
+              These are important but do not block the PR.
+
+            - `[note]` — Style issues, naming suggestions, minor improvements, readability.
+              Informational only.
+
+            ## Output Format
+
+            For each finding, output:
+            - Severity label: `[critical]`, `[warning]`, or `[note]`
+            - File and line reference
+            - Brief description of the issue
+
+            If no issues found, say "No issues found."
+
+            IMPORTANT:
+            - Do NOT output a verdict line (APPROVE/REQUEST_CHANGES/COMMENT). The verdict is derived automatically from your severity labels.
+            - Do NOT nitpick formatting, whitespace, or style unless it causes a bug.
+            - Be concise. Focus on what matters.
 
       - name: Submit formal review
         if: always() && steps.codex.outputs.final-message != ''
@@ -87,16 +104,10 @@ jobs:
               return;
             }
 
-            // Parse verdict from first line: "APPROVE", "REQUEST_CHANGES", or "COMMENT"
-            const firstLine = review.split('\n').find(l => l.trim().length > 0) || '';
-            const upper = firstLine.toUpperCase();
-
-            let event = 'COMMENT';
-            if (upper.includes('APPROVE') && !upper.includes('REQUEST_CHANGES')) {
-              event = 'APPROVE';
-            } else if (upper.includes('REQUEST_CHANGES') || upper.includes('REQUEST CHANGES')) {
-              event = 'REQUEST_CHANGES';
-            }
+            // Derive verdict from severity labels in the content
+            // Only [critical] findings trigger REQUEST_CHANGES
+            const hasCritical = /\[critical\]/i.test(review);
+            const event = hasCritical ? 'REQUEST_CHANGES' : 'COMMENT';
 
             const body = [
               '## Codex Review',

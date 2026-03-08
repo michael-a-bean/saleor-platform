@@ -1,6 +1,6 @@
 ---
 name: babysit-pr
-description: Monitor a PR, read CI failures or Codex review feedback, fix issues, and re-push. Uses /loop for polling.
+description: Monitor a PR, fix CI failures, and escalate Codex critical findings to human. Uses /loop for polling.
 ---
 
 # Babysit PR Skill
@@ -10,7 +10,6 @@ description: Monitor a PR, read CI failures or Codex review feedback, fix issues
 Use this skill when you need to:
 - Monitor a PR until it merges or needs human intervention
 - Auto-fix CI failures (lint, type-check, test, build)
-- Address Codex review feedback automatically
 - Poll PR status on an interval
 
 ## Workflow
@@ -32,9 +31,9 @@ gh pr view $PR_NUMBER --json state,reviews,statusCheckRollup,labels,mergeable
 Evaluate:
 - **Merged** → Done, report success
 - **Closed** → Done, report closure
-- **All checks pass + Codex APPROVED** → Auto-merge should handle it; verify
+- **All checks pass** → Auto-merge should handle it; verify
 - **Checks failing** → Go to Step 3
-- **Codex REQUEST_CHANGES** → Go to Step 4
+- **Codex REQUEST_CHANGES** → Escalate to human (critical finding detected). Do NOT attempt to fix review comments. Notify via ntfy and stop.
 - **Checks pending** → Wait, re-poll
 
 ### Step 3: Fix CI Failures
@@ -65,30 +64,7 @@ For each failing check:
 
 4. Re-poll after push (checks will re-run)
 
-### Step 4: Address Codex Review
-
-1. Read the review body:
-   ```bash
-   gh pr view $PR_NUMBER --json reviews --jq '.reviews[] | select(.body | startswith("## Codex Review"))'
-   ```
-
-2. Parse findings by severity:
-   - **[critical]** — Must fix
-   - **[warning]** — Should fix
-   - **[suggestion]** — Fix if easy, skip if debatable
-   - **[nit]** — Skip unless trivial
-
-3. Apply fixes for critical/warning items
-
-4. Commit and push:
-   ```bash
-   git commit -m "fix: address Codex review feedback"
-   git push
-   ```
-
-5. The push triggers a new Codex review (via `synchronize` event)
-
-### Step 5: Loop or Complete
+### Step 4: Loop or Complete
 
 After each fix cycle:
 - If max iterations reached (default: 5), stop and notify human
@@ -102,8 +78,9 @@ After each fix cycle:
 | Max iterations | 5 fix cycles before stopping |
 | No force-push | Never force-push; always new commits |
 | No test deletion | Never delete failing tests to make them pass |
-| Human escalation | Infrastructure failures, unclear errors, repeated same failure |
+| Human escalation | Infrastructure failures, unclear errors, repeated same failure, Codex REQUEST_CHANGES |
 | Scope limit | Only fix files already in the PR diff |
+| Review comments | IGNORE review comments entirely — only act on CI failures |
 
 ## Usage
 
