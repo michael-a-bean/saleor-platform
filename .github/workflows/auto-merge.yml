@@ -108,17 +108,21 @@ jobs:
               pull_number: prNumber,
             });
 
+            // Find Codex approval — must be from github-actions bot and for the latest commit
             const codexApproval = reviews.find(r =>
               r.body?.startsWith('## Codex Review') &&
-              r.state === 'APPROVED'
+              r.state === 'APPROVED' &&
+              r.user?.login === 'github-actions[bot]' &&
+              r.commit_id === pr.head.sha
             );
 
             if (!codexApproval) {
-              console.log('No Codex APPROVE review found');
+              console.log('No valid Codex APPROVE review found for latest commit');
               // Check if there's a REQUEST_CHANGES
               const codexBlock = reviews.find(r =>
                 r.body?.startsWith('## Codex Review') &&
-                r.state === 'CHANGES_REQUESTED'
+                r.state === 'CHANGES_REQUESTED' &&
+                r.user?.login === 'github-actions[bot]'
               );
               if (codexBlock) {
                 console.log('Codex requested changes — not merging');
