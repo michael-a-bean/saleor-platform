@@ -77,63 +77,62 @@ describe("getByUnmatchingId", () => {
 
 describe("isValidEmail", () => {
 	describe("valid emails", () => {
-		it("validates standard email", async () => {
-			expect(await isValidEmail("user@example.com")).toBe(true);
+		it("validates standard email", () => {
+			expect(isValidEmail("user@example.com")).toBe(true);
 		});
 
-		it("validates email with subdomain", async () => {
-			expect(await isValidEmail("user@mail.example.com")).toBe(true);
+		it("validates email with subdomain", () => {
+			expect(isValidEmail("user@mail.example.com")).toBe(true);
 		});
 
-		it("validates email with dots in local part", async () => {
-			expect(await isValidEmail("first.last@example.com")).toBe(true);
+		it("validates email with dots in local part", () => {
+			expect(isValidEmail("first.last@example.com")).toBe(true);
 		});
 
-		it("validates email with plus sign", async () => {
-			expect(await isValidEmail("user+tag@example.com")).toBe(true);
+		it("validates email with plus sign", () => {
+			expect(isValidEmail("user+tag@example.com")).toBe(true);
 		});
 
-		it("validates email with numbers", async () => {
-			expect(await isValidEmail("user123@example.com")).toBe(true);
+		it("validates email with numbers", () => {
+			expect(isValidEmail("user123@example.com")).toBe(true);
 		});
 
-		it("validates email with hyphens in domain", async () => {
-			expect(await isValidEmail("user@my-domain.com")).toBe(true);
+		it("validates email with hyphens in domain", () => {
+			expect(isValidEmail("user@my-domain.com")).toBe(true);
 		});
 	});
 
 	describe("invalid emails", () => {
-		it("rejects empty string", async () => {
-			expect(await isValidEmail("")).toBe(false);
+		it("rejects empty string", () => {
+			expect(isValidEmail("")).toBe(false);
 		});
 
-		it("rejects email without @", async () => {
-			expect(await isValidEmail("userexample.com")).toBe(false);
+		it("rejects email without @", () => {
+			expect(isValidEmail("userexample.com")).toBe(false);
 		});
 
-		it("rejects email without domain", async () => {
-			expect(await isValidEmail("user@")).toBe(false);
+		it("rejects email without domain", () => {
+			expect(isValidEmail("user@")).toBe(false);
 		});
 
-		it("rejects email without local part", async () => {
-			expect(await isValidEmail("@example.com")).toBe(false);
+		it("rejects email without local part", () => {
+			expect(isValidEmail("@example.com")).toBe(false);
 		});
 
-		it("rejects email with spaces", async () => {
-			expect(await isValidEmail("user @example.com")).toBe(false);
+		it("rejects email with spaces", () => {
+			expect(isValidEmail("user @example.com")).toBe(false);
 		});
 
-		it("rejects email with multiple @", async () => {
-			expect(await isValidEmail("user@@example.com")).toBe(false);
+		it("rejects email with multiple @", () => {
+			expect(isValidEmail("user@@example.com")).toBe(false);
 		});
 
-		it("rejects plain text", async () => {
-			expect(await isValidEmail("not an email")).toBe(false);
+		it("rejects plain text", () => {
+			expect(isValidEmail("not an email")).toBe(false);
 		});
 
-		it("accepts email without TLD (yup allows local domains)", async () => {
-			// Note: yup's email validator considers local domains valid per RFC 5321
-			expect(await isValidEmail("user@localhost")).toBe(true);
+		it("rejects email without TLD", () => {
+			expect(isValidEmail("user@localhost")).toBe(false);
 		});
 	});
 });

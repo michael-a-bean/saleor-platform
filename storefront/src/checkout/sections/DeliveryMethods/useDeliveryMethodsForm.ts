@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { type CountryCode, useCheckoutDeliveryMethodUpdateMutation } from "@/checkout/graphql";
 import { useCheckout } from "@/checkout/hooks/useCheckout";
-import { useDebouncedSubmit } from "@/checkout/hooks/useDebouncedSubmit";
-import { type ChangeHandler, useForm, type UseFormReturn } from "@/checkout/hooks/useForm";
+import { useForm, type UseFormReturn } from "@/checkout/hooks/useForm";
 import { useFormSubmit } from "@/checkout/hooks/useFormSubmit";
 import { type MightNotExist } from "@/checkout/lib/globalTypes";
 import { getById } from "@/checkout/lib/utils/common";
-import { useCheckoutUpdateStateChange } from "@/checkout/state/updateStateStore";
 
 interface DeliveryMethodsFormData {
 	selectedMethodId: string | undefined;
@@ -16,7 +14,6 @@ export const useDeliveryMethodsForm = (): UseFormReturn<DeliveryMethodsFormData>
 	const { checkout } = useCheckout();
 	const { shippingMethods, shippingAddress, deliveryMethod } = checkout;
 	const [, updateDeliveryMethod] = useCheckoutDeliveryMethodUpdateMutation();
-	const { setCheckoutUpdateState } = useCheckoutUpdateStateChange("checkoutDeliveryMethodUpdate");
 
 	const previousShippingCountry = useRef<MightNotExist<CountryCode>>(
 		shippingAddress?.country?.code as CountryCode | undefined,
@@ -60,11 +57,9 @@ export const useDeliveryMethodsForm = (): UseFormReturn<DeliveryMethodsFormData>
 		),
 	);
 
-	const debouncedSubmit = useDebouncedSubmit(onSubmit);
-
 	const form = useForm<DeliveryMethodsFormData>({
 		initialValues: defaultFormData,
-		onSubmit: debouncedSubmit,
+		onSubmit,
 		initialDirty: true,
 	});
 
@@ -72,15 +67,11 @@ export const useDeliveryMethodsForm = (): UseFormReturn<DeliveryMethodsFormData>
 		setFieldValue,
 		values: { selectedMethodId },
 		handleSubmit,
-		handleChange,
 	} = form;
 
 	useEffect(() => {
-		// Set loading state before debounced submit to gate the payment section.
-		// Without this, the 2s debounce window allows payment with a stale (pre-shipping) total.
-		setCheckoutUpdateState("loading");
 		handleSubmit();
-	}, [handleSubmit, selectedMethodId, setCheckoutUpdateState]);
+	}, [handleSubmit, selectedMethodId]);
 
 	useEffect(() => {
 		const hasShippingCountryChanged = shippingAddress?.country?.code !== previousShippingCountry.current;
@@ -105,10 +96,5 @@ export const useDeliveryMethodsForm = (): UseFormReturn<DeliveryMethodsFormData>
 		form.values.selectedMethodId,
 	]);
 
-	const onChange: ChangeHandler = (event) => {
-		setCheckoutUpdateState("loading");
-		handleChange(event);
-	};
-
-	return { ...form, handleChange: onChange };
+	return form;
 };

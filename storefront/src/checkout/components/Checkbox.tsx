@@ -1,4 +1,3 @@
-import { useField } from "formik";
 import { useFormContext } from "@/checkout/hooks/useForm";
 
 interface CheckboxProps<TName extends string> {
@@ -7,19 +6,15 @@ interface CheckboxProps<TName extends string> {
 }
 
 export const Checkbox = <TName extends string>({ name, label }: CheckboxProps<TName>) => {
-	const { handleChange } = useFormContext<Record<TName, string>>();
-	const [field, { value }] = useField<boolean>(name);
+	const { values, setFieldValue } = useFormContext<Record<TName, any>>();
+	const value = values[name];
 
 	return (
 		<label className="inline-flex items-center gap-x-2">
 			<input
-				{...field}
-				value={field.value as unknown as string}
 				name={name}
-				checked={value}
-				onChange={(event) => {
-					handleChange({ ...event, target: { ...event.target, name, value: !value } });
-				}}
+				checked={!!value}
+				onChange={() => setFieldValue(name as Extract<TName, string>, !value)}
 				type="checkbox"
 				className="rounded border-neutral-300 text-neutral-600 shadow-sm focus:border-neutral-300 focus:ring focus:ring-neutral-200 focus:ring-opacity-50 focus:ring-offset-0"
 			/>

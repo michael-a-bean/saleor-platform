@@ -1,5 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
-import { bool, object, type Schema, string } from "yup";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useUserRegisterMutation } from "@/checkout/graphql";
 import { useCheckout } from "@/checkout/hooks/useCheckout";
 import {
@@ -14,7 +13,8 @@ import { getCurrentHref } from "@/checkout/lib/utils/locale";
 import { useCheckoutEmailUpdate } from "@/checkout/sections/GuestUser/useCheckoutEmailUpdate";
 import { useErrorMessages } from "@/checkout/hooks/useErrorMessages";
 import { useUser } from "@/checkout/hooks/useUser";
-import { isValidEmail } from "@/checkout/lib/utils/common";
+import { EMAIL_REGEX, isValidEmail } from "@/checkout/lib/utils/common";
+import { type ValidationFn } from "@/checkout/hooks/useForm/types";
 
 export interface GuestUserFormData {
 	email: string;
@@ -38,13 +38,25 @@ export const useGuestUserForm = ({ initialEmail }: GuestUserFormProps) => {
 	const [userRegisterDisabled, setUserRegistrationDisabled] = useState(false);
 	const { setCheckoutUpdateState } = useCheckoutUpdateStateChange("checkoutEmailUpdate");
 
-	const validationSchema = object({
-		createAccount: bool(),
-		email: string().email(errorMessages.invalid).required(errorMessages.required),
-		password: string().when(["createAccount"], ([createAccount], field) =>
-			createAccount ? field.min(8, "Password must be at least 8 characters").required() : field,
-		),
-	}) as Schema<GuestUserFormData>;
+	const validationSchema: ValidationFn<GuestUserFormData> = useCallback(
+		(values) => {
+			const errors: Partial<Record<keyof GuestUserFormData, string>> = {};
+			if (!values.email) {
+				errors.email = errorMessages.required;
+			} else if (!EMAIL_REGEX.test(values.email)) {
+				errors.email = errorMessages.invalid;
+			}
+			if (values.createAccount) {
+				if (!values.password) {
+					errors.password = errorMessages.required;
+				} else if (values.password.length < 8) {
+					errors.password = "Password must be at least 8 characters";
+				}
+			}
+			return errors;
+		},
+		[errorMessages.required, errorMessages.invalid],
+	);
 
 	const defaultFormData: GuestUserFormData = {
 		email: initialEmail || checkout.email || "",
@@ -118,16 +130,14 @@ export const useGuestUserForm = ({ initialEmail }: GuestUserFormProps) => {
 
 	// since we use debounced submit, set update
 	// state as "loading" right away
-	const onChange: ChangeHandler = async (event) => {
+	const onChange: ChangeHandler = (event) => {
 		handleChange(event);
 
 		if (event.target.name === "email") {
 			setUserRegistrationDisabled(false);
 		}
 
-		const error = await isValidEmail(event.target.value as string);
-
-		if (!error) {
+		if (isValidEmail(event.target.value as string)) {
 			setCheckoutUpdateState("loading");
 		}
 	};

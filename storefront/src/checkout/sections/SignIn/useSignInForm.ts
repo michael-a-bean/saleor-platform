@@ -1,10 +1,12 @@
-import { object, string } from "yup";
+import { useCallback } from "react";
 import { useSaleorAuthContext } from "@saleor/auth-sdk/react";
 import { type AccountErrorCode } from "@/checkout/graphql";
 import { useErrorMessages } from "@/checkout/hooks/useErrorMessages";
 import { useGetParsedErrors } from "@/checkout/hooks/useGetParsedErrors";
 import { useForm } from "@/checkout/hooks/useForm";
 import { useFormSubmit } from "@/checkout/hooks/useFormSubmit";
+import { type ValidationFn } from "@/checkout/hooks/useForm/types";
+import { EMAIL_REGEX } from "@/checkout/lib/utils/common";
 
 interface SignInFormData {
 	email: string;
@@ -22,10 +24,21 @@ export const useSignInForm = ({ onSuccess, initialEmail }: SignInFormProps) => {
 	const { errorMessages } = useErrorMessages();
 	const { signIn } = useSaleorAuthContext();
 
-	const validationSchema = object({
-		password: string().required(errorMessages.required),
-		email: string().email(errorMessages.emailInvalid).required(errorMessages.required),
-	});
+	const validationSchema: ValidationFn<SignInFormData> = useCallback(
+		(values) => {
+			const errors: Partial<Record<keyof SignInFormData, string>> = {};
+			if (!values.password) {
+				errors.password = errorMessages.required;
+			}
+			if (!values.email) {
+				errors.email = errorMessages.required;
+			} else if (!EMAIL_REGEX.test(values.email)) {
+				errors.email = errorMessages.emailInvalid;
+			}
+			return errors;
+		},
+		[errorMessages.required, errorMessages.emailInvalid],
+	);
 
 	const defaultFormData: SignInFormData = {
 		email: initialEmail,

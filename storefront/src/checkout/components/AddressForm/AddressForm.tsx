@@ -1,8 +1,7 @@
 import { type FC, type PropsWithChildren, useEffect, useRef } from "react";
 import { difference } from "lodash-es";
-import { type FieldValidator } from "formik";
 import { type CountryCode } from "@/checkout/graphql";
-import { type AddressField, type AddressFormData } from "@/checkout/components/AddressForm/types";
+import { type AddressFormData } from "@/checkout/components/AddressForm/types";
 import { Title } from "@/checkout/components/Title";
 import { TextInput } from "@/checkout/components/TextInput";
 import { autocompleteTags, typeTags } from "@/checkout/lib/consts/inputAttributes";
@@ -11,7 +10,6 @@ import { Select } from "@/checkout/components/Select";
 import { getEmptyAddressFormData, isMatchingAddressFormData } from "@/checkout/components/AddressForm/utils";
 import { type ChangeHandler, useFormContext, type BlurHandler } from "@/checkout/hooks/useForm";
 import { useAddressFormUtils } from "@/checkout/components/AddressForm/useAddressFormUtils";
-import { usePhoneNumberValidator } from "@/checkout/lib/utils/phoneNumber";
 
 export interface AddressFormProps {
 	title: string;
@@ -29,7 +27,6 @@ export const AddressForm: FC<PropsWithChildren<AddressFormProps>> = ({
 	fieldProps = {},
 }) => {
 	const { values, setValues, dirty } = useFormContext<AddressFormData>();
-	const isValidPhoneNumber = usePhoneNumberValidator(values.countryCode);
 	const previousValues = useRef(values);
 
 	const {
@@ -41,10 +38,6 @@ export const AddressForm: FC<PropsWithChildren<AddressFormProps>> = ({
 	} = useAddressFormUtils(values.countryCode);
 
 	const allowedFieldsRef = useRef(allowedFields);
-
-	const customValidators: Partial<Record<AddressField, FieldValidator>> = {
-		phone: isValidPhoneNumber,
-	};
 
 	// prevents outdated data to remain in the form when a field is
 	// no longer allowed
@@ -89,7 +82,6 @@ export const AddressForm: FC<PropsWithChildren<AddressFormProps>> = ({
 						name: field,
 						label: label,
 						autoComplete: autocompleteTags[field],
-						validate: customValidators[field],
 						...fieldProps,
 					};
 

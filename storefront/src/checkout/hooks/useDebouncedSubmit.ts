@@ -8,7 +8,7 @@ export const useDebouncedSubmit = <TArgs extends Array<any>>(
 		() =>
 			debounce((...args: TArgs) => {
 				void onSubmit(...args);
-			}, 2000),
+			}, 300),
 		[onSubmit],
 	);
 

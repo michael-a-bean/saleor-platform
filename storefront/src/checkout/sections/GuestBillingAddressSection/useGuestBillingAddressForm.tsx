@@ -25,7 +25,7 @@ export const useGuestBillingAddressForm = ({ skipValidation }: GuestBillingAddre
 	const {
 		checkout: { billingAddress },
 	} = useCheckout();
-	const validationSchema = useAddressFormSchema();
+	const { validationSchema } = useAddressFormSchema();
 	const [, checkoutBillingAddressUpdate] = useCheckoutBillingAddressUpdateMutation();
 	const { setCheckoutFormValidationState } = useSetCheckoutFormValidationState("billingAddress");
 	const { setChangingBillingCountry } = useCheckoutUpdateStateActions();

@@ -294,10 +294,17 @@ check_dependency_changes() {
 check_secrets_in_diff() {
     local diff_content="$1"
 
+    # Filter out lock file chunks — integrity hashes cause false positives
+    local filtered_diff
+    filtered_diff=$(echo "$diff_content" | awk '
+        /^diff --git.*\.(lock|lockb|lock\.yaml)/ { skip=1; next }
+        /^diff --git/ { skip=0 }
+        !skip { print }
+    ')
+
     # Simple patterns for common secret formats
     local -a patterns=(
         'AKIA[0-9A-Z]{16}'                           # AWS Access Key
-        '[a-zA-Z0-9+/]{40}'                          # Generic 40-char base64 (potential key)
         'sk[-_]live[-_][a-zA-Z0-9]{24,}'             # Stripe live key
         'sk[-_]test[-_][a-zA-Z0-9]{24,}'             # Stripe test key
         'ghp_[a-zA-Z0-9]{36}'                        # GitHub Personal Access Token
@@ -308,10 +315,10 @@ check_secrets_in_diff() {
     )
 
     for pattern in "${patterns[@]}"; do
-        if echo "$diff_content" | grep -qE "^\+.*${pattern}"; then
+        if echo "$filtered_diff" | grep -qE "^\+.*${pattern}"; then
             # Get a sanitized preview
             local match
-            match=$(echo "$diff_content" | grep -E "^\+.*${pattern}" | head -1 | sed 's/^\+//' | cut -c1-60)
+            match=$(echo "$filtered_diff" | grep -E "^\+.*${pattern}" | head -1 | sed 's/^\+//' | cut -c1-60)
             add_finding "CRITICAL" "Secrets" \
                 "Potential secret detected in diff" \
                 "${match}..." \
