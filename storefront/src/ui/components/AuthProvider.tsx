@@ -12,6 +12,7 @@ import {
 	dedupExchange,
 	fetchExchange,
 } from "urql";
+import { withRetry } from "@/lib/fetch-retry";
 
 const saleorApiUrl = process.env.NEXT_PUBLIC_SALEOR_API_URL;
 invariant(saleorApiUrl, "Missing NEXT_PUBLIC_SALEOR_API_URL env variable");
@@ -48,11 +49,15 @@ const safeFetchWithAuth = async (
 	}
 };
 
+const resilientFetchWithAuth = withRetry(
+	(input: RequestInfo | URL, init?: RequestInit) => safeFetchWithAuth(input as RequestInfo, init),
+);
+
 const makeUrqlClient = () => {
 	return createClient({
 		url: saleorApiUrl,
 		suspense: true,
-		fetch: (input, init) => safeFetchWithAuth(input as RequestInfo, init),
+		fetch: resilientFetchWithAuth,
 		exchanges: [dedupExchange, cacheExchange, fetchExchange],
 	});
 };
