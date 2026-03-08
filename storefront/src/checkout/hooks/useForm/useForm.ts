@@ -59,14 +59,17 @@ export const useForm = <TData extends FormDataBase>(formProps: FormProps<TData>)
 	);
 
 	const setValues = useCallback(
-		(newValues: Partial<TData>, _shouldValidate?: boolean) => {
+		(newValues: Partial<TData>, shouldValidate?: boolean) => {
 			setValuesState((prev) => {
 				const next = { ...prev, ...newValues };
 				setDirty(true);
+				if (shouldValidate && validationSchema) {
+					setErrorsState(validationSchema(next));
+				}
 				return next;
 			});
 		},
-		[],
+		[validationSchema],
 	);
 
 	const setErrors = useCallback((newErrors: FormErrors<TData>) => {
@@ -107,6 +110,9 @@ export const useForm = <TData extends FormDataBase>(formProps: FormProps<TData>)
 	const handleChange = useCallback(
 		(e: React.ChangeEvent<any>) => {
 			const { name, value, type, checked } = e.target;
+			if (!name) {
+				return;
+			}
 			const fieldValue = type === "checkbox" ? checked : value;
 			setValuesState((prev) => {
 				const next = { ...prev, [name]: fieldValue };
@@ -124,6 +130,9 @@ export const useForm = <TData extends FormDataBase>(formProps: FormProps<TData>)
 	const handleBlur = useCallback(
 		(e: React.FocusEvent<any>) => {
 			const { name } = e.target;
+			if (!name) {
+				return;
+			}
 			setTouchedState((prev) => ({ ...prev, [name]: true }));
 			if (validateOnBlur && validationSchema) {
 				const formErrors = validationSchema(valuesRef.current);
@@ -161,21 +170,38 @@ export const useForm = <TData extends FormDataBase>(formProps: FormProps<TData>)
 	]);
 
 	const submitForm = useCallback(async () => {
+		if (validationSchema) {
+			const formErrors = validationSchema(valuesRef.current);
+			setErrorsState(formErrors);
+			if (Object.keys(formErrors).length > 0) {
+				const allTouched = Object.keys(valuesRef.current).reduce(
+					(acc, key) => ({ ...acc, [key]: true }),
+					{} as Partial<Record<keyof TData, boolean>>,
+				);
+				setTouchedState(allTouched);
+				return;
+			}
+		}
+
 		setIsSubmitting(true);
 		try {
 			const helpers = buildHelpers();
 			await onSubmit(valuesRef.current, helpers);
+		} catch (error) {
+			console.error("[useForm] Submit failed:", error);
 		} finally {
 			setIsSubmitting(false);
 		}
-	}, [onSubmit, buildHelpers]);
+	}, [onSubmit, buildHelpers, validationSchema]);
 
 	submitFormRef.current = submitForm;
 
 	const handleSubmit = useCallback(
 		(e?: React.FormEvent) => {
 			e?.preventDefault?.();
-			void submitForm();
+			submitForm().catch((error) => {
+				console.error("[useForm] Unhandled submit error:", error);
+			});
 		},
 		[submitForm],
 	);

@@ -4,6 +4,7 @@ import { useAddressFormUtils } from "@/checkout/components/AddressForm/useAddres
 import { type CountryCode } from "@/checkout/graphql";
 import { useErrorMessages } from "@/checkout/hooks/useErrorMessages";
 import { type ValidationFn } from "@/checkout/hooks/useForm/types";
+import { isValidPhoneNumber } from "@/checkout/lib/utils/phoneNumber";
 
 export const useAddressFormSchema = (initialCountryCode?: CountryCode) => {
 	const { errorMessages } = useErrorMessages();
@@ -23,6 +24,10 @@ export const useAddressFormSchema = (initialCountryCode?: CountryCode) => {
 				if (requiredFields.includes(field as AddressField) && !values[field]) {
 					errors[field] = errorMessages.required;
 				}
+			}
+
+			if (values.phone && !isValidPhoneNumber(values.phone, values.countryCode)) {
+				errors.phone = errorMessages.invalid;
 			}
 
 			return errors;
