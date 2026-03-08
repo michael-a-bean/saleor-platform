@@ -2,6 +2,7 @@ import { CurrentUserDocument } from "@/gql/graphql";
 import { executeGraphQL } from "@/lib/graphql";
 import { LoginForm } from "@/ui/components/LoginForm";
 import { StatusBanner } from "@/ui/components/StatusBanner";
+import { StoreCreditBadge } from "@/ui/components/StoreCreditBadge";
 import { LinkWithChannel } from "@/ui/atoms/LinkWithChannel";
 import { updateProfile, changePassword } from "./actions";
 import { getAccountMessage } from "./messages";
@@ -33,7 +34,10 @@ export default async function AccountPage({
 
 	return (
 		<div className="mx-auto max-w-7xl p-8">
-			<h1 className="text-2xl font-bold tracking-tight text-neutral-900">My Account</h1>
+			<div className="flex items-center justify-between">
+				<h1 className="text-2xl font-bold tracking-tight text-neutral-900">My Account</h1>
+				<StoreCreditBadge />
+			</div>
 
 			<StatusBanner message={message} />
 
@@ -146,7 +150,7 @@ export default async function AccountPage({
 			</div>
 
 			{/* Quick Links */}
-			<div className="mt-8 flex gap-4">
+			<div className="mt-8 flex flex-wrap gap-4">
 				<LinkWithChannel
 					href="/account/addresses"
 					className="rounded border px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
@@ -158,6 +162,12 @@ export default async function AccountPage({
 					className="rounded border px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
 				>
 					View Orders
+				</LinkWithChannel>
+				<LinkWithChannel
+					href="/account/credit"
+					className="rounded border px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+				>
+					Store Credit
 				</LinkWithChannel>
 			</div>
 		</div>

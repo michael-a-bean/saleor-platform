@@ -134,7 +134,7 @@ export async function updateAddress(channelSlug: string, addressId: string, form
 
 function extractAddressFromForm(formData: FormData) {
 	const countryStr = formData.get("country")?.toString() ?? "US";
-	const country = (countryStr in CountryCode ? countryStr : "US") as CountryCode;
+	const country = (Object.values(CountryCode).includes(countryStr as CountryCode) ? countryStr : "US") as CountryCode;
 
 	return {
 		firstName: formData.get("firstName")?.toString() ?? "",
