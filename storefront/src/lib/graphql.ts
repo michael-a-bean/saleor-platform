@@ -1,6 +1,8 @@
 import { invariant } from "ts-invariant";
 import { type TypedDocumentString } from "../gql/graphql";
 import { getServerAuthClient } from "@/app/config";
+import { withRetry } from "./fetch-retry";
+import { requestQueue } from "./request-queue";
 
 type GraphQLErrorResponse = {
 	errors: readonly {
@@ -9,6 +11,8 @@ type GraphQLErrorResponse = {
 };
 
 type GraphQLRespone<T> = { data: T } | GraphQLErrorResponse;
+
+const resilientFetch = withRetry(fetch);
 
 export async function executeGraphQL<Result, Variables>(
 	operation: TypedDocumentString<Result, Variables>,
@@ -38,9 +42,12 @@ export async function executeGraphQL<Result, Variables>(
 		next: { revalidate },
 	};
 
-	const response = withAuth
-		? await (await getServerAuthClient()).fetchWithAuth(apiUrl, input)
-		: await fetch(apiUrl, input);
+	const response = await requestQueue.enqueue(async () => {
+		if (withAuth) {
+			return (await getServerAuthClient()).fetchWithAuth(apiUrl, input);
+		}
+		return resilientFetch(apiUrl, input);
+	});
 
 	if (!response.ok) {
 		const body = await (async () => {
