@@ -2,6 +2,7 @@
 
 import { LinkWithChannel } from "@/ui/atoms/LinkWithChannel";
 import { createAddress, updateAddress } from "../actions";
+import { inputClassName, labelClassName } from "../styles";
 import type { AccountAddress } from "./types";
 
 type Props = {
@@ -24,7 +25,7 @@ export function AddressForm({ channelSlug, address }: Props) {
 		<form action={handleSubmit}>
 			<div className="grid gap-4 sm:grid-cols-2">
 				<div>
-					<label htmlFor="firstName" className="block text-sm font-medium text-neutral-700">
+					<label htmlFor="firstName" className={labelClassName}>
 						First Name
 					</label>
 					<input
@@ -33,11 +34,11 @@ export function AddressForm({ channelSlug, address }: Props) {
 						type="text"
 						required
 						defaultValue={address?.firstName ?? ""}
-						className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+						className={inputClassName}
 					/>
 				</div>
 				<div>
-					<label htmlFor="lastName" className="block text-sm font-medium text-neutral-700">
+					<label htmlFor="lastName" className={labelClassName}>
 						Last Name
 					</label>
 					<input
@@ -46,11 +47,11 @@ export function AddressForm({ channelSlug, address }: Props) {
 						type="text"
 						required
 						defaultValue={address?.lastName ?? ""}
-						className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+						className={inputClassName}
 					/>
 				</div>
 				<div className="sm:col-span-2">
-					<label htmlFor="companyName" className="block text-sm font-medium text-neutral-700">
+					<label htmlFor="companyName" className={labelClassName}>
 						Company
 					</label>
 					<input
@@ -58,11 +59,11 @@ export function AddressForm({ channelSlug, address }: Props) {
 						name="companyName"
 						type="text"
 						defaultValue={address?.companyName ?? ""}
-						className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+						className={inputClassName}
 					/>
 				</div>
 				<div className="sm:col-span-2">
-					<label htmlFor="streetAddress1" className="block text-sm font-medium text-neutral-700">
+					<label htmlFor="streetAddress1" className={labelClassName}>
 						Street Address
 					</label>
 					<input
@@ -71,11 +72,11 @@ export function AddressForm({ channelSlug, address }: Props) {
 						type="text"
 						required
 						defaultValue={address?.streetAddress1 ?? ""}
-						className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+						className={inputClassName}
 					/>
 				</div>
 				<div className="sm:col-span-2">
-					<label htmlFor="streetAddress2" className="block text-sm font-medium text-neutral-700">
+					<label htmlFor="streetAddress2" className={labelClassName}>
 						Apt, Suite, etc.
 					</label>
 					<input
@@ -83,11 +84,11 @@ export function AddressForm({ channelSlug, address }: Props) {
 						name="streetAddress2"
 						type="text"
 						defaultValue={address?.streetAddress2 ?? ""}
-						className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+						className={inputClassName}
 					/>
 				</div>
 				<div>
-					<label htmlFor="city" className="block text-sm font-medium text-neutral-700">
+					<label htmlFor="city" className={labelClassName}>
 						City
 					</label>
 					<input
@@ -96,11 +97,11 @@ export function AddressForm({ channelSlug, address }: Props) {
 						type="text"
 						required
 						defaultValue={address?.city ?? ""}
-						className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+						className={inputClassName}
 					/>
 				</div>
 				<div>
-					<label htmlFor="countryArea" className="block text-sm font-medium text-neutral-700">
+					<label htmlFor="countryArea" className={labelClassName}>
 						State / Province
 					</label>
 					<input
@@ -108,11 +109,11 @@ export function AddressForm({ channelSlug, address }: Props) {
 						name="countryArea"
 						type="text"
 						defaultValue={address?.countryArea ?? ""}
-						className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+						className={inputClassName}
 					/>
 				</div>
 				<div>
-					<label htmlFor="postalCode" className="block text-sm font-medium text-neutral-700">
+					<label htmlFor="postalCode" className={labelClassName}>
 						Postal Code
 					</label>
 					<input
@@ -121,25 +122,25 @@ export function AddressForm({ channelSlug, address }: Props) {
 						type="text"
 						required
 						defaultValue={address?.postalCode ?? ""}
-						className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+						className={inputClassName}
 					/>
 				</div>
 				<div>
-					<label htmlFor="country" className="block text-sm font-medium text-neutral-700">
+					<label htmlFor="country" className={labelClassName}>
 						Country
 					</label>
 					<select
 						id="country"
 						name="country"
 						defaultValue={address?.country.code ?? "US"}
-						className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+						className={inputClassName}
 					>
 						<option value="US">United States</option>
 						<option value="CA">Canada</option>
 					</select>
 				</div>
 				<div className="sm:col-span-2">
-					<label htmlFor="phone" className="block text-sm font-medium text-neutral-700">
+					<label htmlFor="phone" className={labelClassName}>
 						Phone
 					</label>
 					<input
@@ -147,7 +148,7 @@ export function AddressForm({ channelSlug, address }: Props) {
 						name="phone"
 						type="tel"
 						defaultValue={address?.phone ?? ""}
-						className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+						className={inputClassName}
 					/>
 				</div>
 			</div>

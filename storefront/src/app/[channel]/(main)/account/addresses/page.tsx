@@ -1,6 +1,7 @@
 import { MeWithAddressesDocument } from "@/gql/graphql";
 import { executeGraphQL } from "@/lib/graphql";
 import { LoginForm } from "@/ui/components/LoginForm";
+import { StatusBanner } from "@/ui/components/StatusBanner";
 import { LinkWithChannel } from "@/ui/atoms/LinkWithChannel";
 import { AddressCard } from "./AddressCard";
 import { AddressForm } from "./AddressForm";
@@ -44,17 +45,7 @@ export default async function AddressesPage({
 				</LinkWithChannel>
 			</div>
 
-			{message && (
-				<div
-					className={`mt-4 rounded-md p-4 text-sm ${
-						message.type === "success"
-							? "bg-green-50 text-green-800"
-							: "bg-red-50 text-red-800"
-					}`}
-				>
-					{message.text}
-				</div>
-			)}
+			<StatusBanner message={message} />
 
 			{/* Add/Edit Form */}
 			{(add !== undefined || editingAddress) && (

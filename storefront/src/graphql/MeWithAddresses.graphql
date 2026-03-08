@@ -2,21 +2,7 @@ query MeWithAddresses {
 	me {
 		...UserDetails
 		addresses {
-			id
-			firstName
-			lastName
-			companyName
-			streetAddress1
-			streetAddress2
-			city
-			cityArea
-			postalCode
-			countryArea
-			country {
-				country
-				code
-			}
-			phone
+			...AccountAddressDetails
 		}
 		defaultShippingAddress {
 			id

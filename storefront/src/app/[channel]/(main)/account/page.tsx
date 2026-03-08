@@ -1,9 +1,11 @@
 import { CurrentUserDocument } from "@/gql/graphql";
 import { executeGraphQL } from "@/lib/graphql";
 import { LoginForm } from "@/ui/components/LoginForm";
+import { StatusBanner } from "@/ui/components/StatusBanner";
 import { LinkWithChannel } from "@/ui/atoms/LinkWithChannel";
 import { updateProfile, changePassword } from "./actions";
 import { getAccountMessage } from "./messages";
+import { inputClassName, labelClassName } from "./styles";
 
 export const dynamic = "force-dynamic";
 
@@ -33,17 +35,7 @@ export default async function AccountPage({
 		<div className="mx-auto max-w-7xl p-8">
 			<h1 className="text-2xl font-bold tracking-tight text-neutral-900">My Account</h1>
 
-			{message && (
-				<div
-					className={`mt-4 rounded-md p-4 text-sm ${
-						message.type === "success"
-							? "bg-green-50 text-green-800"
-							: "bg-red-50 text-red-800"
-					}`}
-				>
-					{message.text}
-				</div>
-			)}
+			<StatusBanner message={message} />
 
 			<div className="mt-8 grid gap-8 md:grid-cols-2">
 				{/* Profile Section */}
@@ -54,7 +46,7 @@ export default async function AccountPage({
 					<form action={updateProfileWithChannel} className="px-6 py-4">
 						<div className="space-y-4">
 							<div>
-								<label htmlFor="firstName" className="block text-sm font-medium text-neutral-700">
+								<label htmlFor="firstName" className={labelClassName}>
 									First Name
 								</label>
 								<input
@@ -62,11 +54,11 @@ export default async function AccountPage({
 									name="firstName"
 									type="text"
 									defaultValue={user.firstName ?? ""}
-									className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+									className={inputClassName}
 								/>
 							</div>
 							<div>
-								<label htmlFor="lastName" className="block text-sm font-medium text-neutral-700">
+								<label htmlFor="lastName" className={labelClassName}>
 									Last Name
 								</label>
 								<input
@@ -74,11 +66,11 @@ export default async function AccountPage({
 									name="lastName"
 									type="text"
 									defaultValue={user.lastName ?? ""}
-									className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+									className={inputClassName}
 								/>
 							</div>
 							<div>
-								<label className="block text-sm font-medium text-neutral-700">Email</label>
+								<label className={labelClassName}>Email</label>
 								<p className="mt-1 text-sm text-neutral-600">{user.email}</p>
 							</div>
 						</div>
@@ -99,7 +91,7 @@ export default async function AccountPage({
 					<form action={changePasswordWithChannel} className="px-6 py-4">
 						<div className="space-y-4">
 							<div>
-								<label htmlFor="oldPassword" className="block text-sm font-medium text-neutral-700">
+								<label htmlFor="oldPassword" className={labelClassName}>
 									Current Password
 								</label>
 								<input
@@ -108,11 +100,11 @@ export default async function AccountPage({
 									type="password"
 									required
 									autoComplete="current-password"
-									className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+									className={inputClassName}
 								/>
 							</div>
 							<div>
-								<label htmlFor="newPassword" className="block text-sm font-medium text-neutral-700">
+								<label htmlFor="newPassword" className={labelClassName}>
 									New Password
 								</label>
 								<input
@@ -122,13 +114,13 @@ export default async function AccountPage({
 									required
 									minLength={8}
 									autoComplete="new-password"
-									className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+									className={inputClassName}
 								/>
 							</div>
 							<div>
 								<label
 									htmlFor="confirmPassword"
-									className="block text-sm font-medium text-neutral-700"
+									className={labelClassName}
 								>
 									Confirm New Password
 								</label>
@@ -139,7 +131,7 @@ export default async function AccountPage({
 									required
 									minLength={8}
 									autoComplete="new-password"
-									className="mt-1 w-full rounded border bg-neutral-50 px-4 py-2"
+									className={inputClassName}
 								/>
 							</div>
 						</div>

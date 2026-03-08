@@ -1,13 +1,3 @@
-export type AccountAddress = {
-	id: string;
-	firstName: string;
-	lastName: string;
-	companyName: string;
-	streetAddress1: string;
-	streetAddress2: string;
-	city: string;
-	postalCode: string;
-	countryArea: string;
-	country: { country: string; code: string };
-	phone?: string | null;
-};
+import type { MeWithAddressesQuery } from "@/gql/graphql";
+
+export type AccountAddress = NonNullable<MeWithAddressesQuery["me"]>["addresses"][number];
