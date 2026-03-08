@@ -1,4 +1,4 @@
-type StatusMessage = { type: "success" | "error"; text: string };
+export type StatusMessage = { type: "success" | "error"; text: string };
 
 export function StatusBanner({ message }: { message: StatusMessage | null }) {
 	if (!message) return null;

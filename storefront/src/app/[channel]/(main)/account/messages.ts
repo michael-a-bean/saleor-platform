@@ -1,4 +1,4 @@
-type StatusMessage = { type: "success" | "error"; text: string };
+import type { StatusMessage } from "@/ui/components/StatusBanner";
 
 const accountMessages: Record<string, StatusMessage> = {
 	profile_updated: { type: "success", text: "Profile updated successfully." },
