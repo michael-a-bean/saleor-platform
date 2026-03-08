@@ -1,9 +1,10 @@
+import { useCallback } from "react";
 import { useSaleorAuthContext } from "@saleor/auth-sdk/react";
-import { object, string } from "yup";
 import { useErrorMessages } from "@/checkout/hooks/useErrorMessages";
 import { useForm } from "@/checkout/hooks/useForm";
 import { useFormSubmit } from "@/checkout/hooks/useFormSubmit";
 import { clearQueryParams, getQueryParams } from "@/checkout/lib/utils/url";
+import { type ValidationFn } from "@/checkout/hooks/useForm/types";
 
 interface ResetPasswordFormData {
 	password: string;
@@ -13,9 +14,16 @@ export const useResetPasswordForm = ({ onSuccess }: { onSuccess: () => void }) =
 	const { errorMessages } = useErrorMessages();
 	const { resetPassword } = useSaleorAuthContext();
 
-	const validationSchema = object({
-		password: string().required(errorMessages.required),
-	});
+	const validationSchema: ValidationFn<ResetPasswordFormData> = useCallback(
+		(values) => {
+			const errors: Partial<Record<keyof ResetPasswordFormData, string>> = {};
+			if (!values.password) {
+				errors.password = errorMessages.required;
+			}
+			return errors;
+		},
+		[errorMessages.required],
+	);
 
 	const onSubmit = useFormSubmit<ResetPasswordFormData, typeof resetPassword>({
 		onSubmit: resetPassword,

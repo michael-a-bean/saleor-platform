@@ -1,6 +1,5 @@
 import clsx from "clsx";
 import { type HTMLAttributes } from "react";
-import { useField } from "formik";
 import { type Children, type Classes } from "@/checkout/lib/globalTypes";
 import { useFormContext } from "@/checkout/hooks/useForm";
 
@@ -21,7 +20,6 @@ export const SelectBox = <TFieldName extends string>({
 	value,
 }: SelectBoxProps<TFieldName>) => {
 	const { values, handleChange } = useFormContext<Record<TFieldName, string>>();
-	const [field] = useField(name);
 	const selected = values[name] === value;
 
 	return (
@@ -35,7 +33,7 @@ export const SelectBox = <TFieldName extends string>({
 		>
 			<input
 				type="radio"
-				{...field}
+				name={name}
 				onChange={handleChange}
 				value={value}
 				checked={selected}

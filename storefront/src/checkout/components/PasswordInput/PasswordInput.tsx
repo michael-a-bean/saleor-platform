@@ -2,7 +2,7 @@
 
 import { useState, type AllHTMLAttributes } from "react";
 import clsx from "clsx";
-import { Field, type FieldProps } from "formik";
+import { useField } from "@/checkout/hooks/useForm/useField";
 import { EyeHiddenIcon, EyeIcon } from "@/checkout/ui-kit/icons";
 import { IconButton } from "@/checkout/components/IconButton";
 
@@ -11,18 +11,14 @@ export interface PasswordInputProps<TName extends string> extends AllHTMLAttribu
 	label: string;
 }
 
-export const PasswordInput = <TName extends string>(props: PasswordInputProps<TName>) => (
-	<Field {...props} component={PasswordInputComponent} />
-);
-
-export const PasswordInputComponent = <TName extends string>({
-	field,
-	form: { touched, errors },
+export const PasswordInput = <TName extends string>({
+	name,
 	label,
 	required,
+	className,
 	...props
-}: PasswordInputProps<TName> & FieldProps) => {
-	const error = touched[field.name] ? (errors[field.name] as string) : undefined;
+}: PasswordInputProps<TName>) => {
+	const { error, value, onChange, handleBlur } = useField(name);
 	const [passwordVisible, setPasswordVisible] = useState(false);
 
 	return (
@@ -38,12 +34,15 @@ export const PasswordInputComponent = <TName extends string>({
 							type={passwordVisible ? "text" : "password"}
 							autoCapitalize="off"
 							autoComplete="off"
-							{...field}
+							name={name}
+							value={value ?? ""}
+							onChange={onChange}
+							onBlur={handleBlur}
 							{...props}
 							className={clsx(
 								"block w-full appearance-none rounded-md border-neutral-300 pr-10 transition-colors focus:border-neutral-300 focus:outline-none focus:ring focus:ring-neutral-200 focus:ring-opacity-50 active:border-neutral-200 active:outline-none",
 								{ "border-red-300": error },
-								props.className,
+								className,
 							)}
 						/>
 						<IconButton

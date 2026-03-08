@@ -1,34 +1,33 @@
-import { useCallback, useMemo, useState } from "react";
-import { mixed, object, string } from "yup";
+import { useMemo, useState } from "react";
 import { type AddressField } from "@/checkout/components/AddressForm/types";
 import { useAddressFormUtils } from "@/checkout/components/AddressForm/useAddressFormUtils";
 import { type CountryCode } from "@/checkout/graphql";
 import { useErrorMessages } from "@/checkout/hooks/useErrorMessages";
+import { type ValidationFn } from "@/checkout/hooks/useForm/types";
 
 export const useAddressFormSchema = (initialCountryCode?: CountryCode) => {
 	const { errorMessages } = useErrorMessages();
 	const [countryCode, setCountryCode] = useState(initialCountryCode);
 	const { allowedFields, requiredFields } = useAddressFormUtils(countryCode);
 
-	const getFieldValidator = useCallback(
-		(field: AddressField) => {
-			if (field === "countryCode") {
-				return mixed<CountryCode>().required(errorMessages.required);
+	const validationSchema: ValidationFn<any> = useMemo(() => {
+		return (values: Record<string, any>) => {
+			const errors: Record<string, string> = {};
+
+			if (!values.countryCode) {
+				errors.countryCode = errorMessages.required;
 			}
 
-			return requiredFields.includes(field) ? string().required(errorMessages.required) : string();
-		},
-		[errorMessages.required, requiredFields],
-	);
+			for (const field of allowedFields || []) {
+				if (field === "countryCode") continue;
+				if (requiredFields.includes(field as AddressField) && !values[field]) {
+					errors[field] = errorMessages.required;
+				}
+			}
 
-	const validationSchema = useMemo(
-		() =>
-			allowedFields?.reduce(
-				(schema, field) => schema.concat(object().shape({ [field]: getFieldValidator(field) })),
-				object().shape({}),
-			),
-		[allowedFields, getFieldValidator],
-	);
+			return errors;
+		};
+	}, [allowedFields, requiredFields, errorMessages.required]);
 
 	return { validationSchema, setCountryCode };
 };

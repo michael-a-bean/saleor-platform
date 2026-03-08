@@ -37,23 +37,18 @@ export const useAutoSaveAddressForm = ({
 
 	const formHelpers = pick(form, [
 		"setErrors",
-		"setStatus",
 		"setTouched",
 		"setValues",
 		"setSubmitting",
-		"setFormikState",
 		"setFieldValue",
 		"setFieldTouched",
 		"setFieldError",
 		"validateForm",
-		"validateField",
 		"resetForm",
 		"submitForm",
 	]) as FormHelpers<AutoSaveAddressFormData>;
 
-	// it'd make sense for onSubmit prop to be optional but formik has ignored this
-	// request for forever now https://github.com/jaredpalmer/formik/issues/2675
-	// so we're just gonna add a partial submit for guest address form to work
+	// partial submit for guest address form — validates before submitting
 	const partialSubmit = useCallback(async () => {
 		const formErrors = validateForm(values);
 

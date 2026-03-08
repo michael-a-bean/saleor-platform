@@ -1,4 +1,4 @@
-import { string } from "yup";
+export const EMAIL_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
 export const getById =
 	<TId extends string = string>(idToCompare: TId | undefined) =>
@@ -10,6 +10,6 @@ export const getByUnmatchingId =
 	(obj: T) =>
 		obj.id !== idToCompare;
 
-export const isValidEmail = async (email: string) => {
-	return string().required().email().isValidSync(email);
+export const isValidEmail = (email: string): boolean => {
+	return !!email && EMAIL_REGEX.test(email);
 };
