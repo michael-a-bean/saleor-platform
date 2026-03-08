@@ -32,7 +32,7 @@ export const useAddressFormSchema = (initialCountryCode?: CountryCode) => {
 
 			return errors;
 		};
-	}, [allowedFields, requiredFields, errorMessages.required]);
+	}, [allowedFields, requiredFields, errorMessages.required, errorMessages.invalid]);
 
 	return { validationSchema, setCountryCode };
 };

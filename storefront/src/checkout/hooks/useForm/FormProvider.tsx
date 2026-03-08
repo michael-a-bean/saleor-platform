@@ -1,4 +1,4 @@
-import { type PropsWithChildren, type FormEvent, useCallback } from "react";
+import { type PropsWithChildren, type FormEvent } from "react";
 import { type FormDataBase, type UseFormReturn } from "@/checkout/hooks/useForm";
 import { FormContext } from "@/checkout/hooks/useForm/useForm";
 
@@ -8,13 +8,10 @@ export const FormProvider = <TData extends FormDataBase>({
 }: PropsWithChildren<{
 	form: UseFormReturn<TData>;
 }>) => {
-	const onSubmit = useCallback(
-		(e: FormEvent) => {
-			e.preventDefault();
-			form.handleSubmit();
-		},
-		[form.handleSubmit],
-	);
+	const onSubmit = (e: FormEvent) => {
+		e.preventDefault();
+		form.handleSubmit();
+	};
 
 	return (
 		<FormContext.Provider value={form as UseFormReturn<any>}>
