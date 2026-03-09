@@ -834,9 +834,9 @@ module "meilisearch" {
   master_key_secret_arn = aws_secretsmanager_secret.meilisearch_master_key[0].arn
   meilisearch_image     = var.meilisearch_image
 
-  # Sizing: staging = 256 CPU / 512MB (right-sized: 42MB avg usage), production = 1024 CPU / 4GB
-  cpu    = var.environment == "production" ? 1024 : 256
-  memory = var.environment == "production" ? 4096 : 512
+  # Sizing: staging = 512 CPU / 1GB (needs headroom for re-indexing 76k docs), production = 1024 CPU / 4GB
+  cpu    = var.environment == "production" ? 1024 : 512
+  memory = var.environment == "production" ? 4096 : 1024
 
   # Scheduled scaling (shares settings with ECS module)
   enable_scheduled_scaling   = var.enable_scheduled_scaling
