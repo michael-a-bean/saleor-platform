@@ -8,12 +8,15 @@ import { UserAvatar } from "./components/UserAvatar";
 import { type UserDetailsFragment } from "@/gql/graphql";
 import { logout } from "@/app/actions";
 import { LinkWithChannel } from "@/ui/atoms/LinkWithChannel";
+import { formatMoney } from "@/lib/utils";
 
 type Props = {
 	user: UserDetailsFragment;
+	creditBalance?: number;
+	creditCurrency?: string;
 };
 
-export function UserMenu({ user }: Props) {
+export function UserMenu({ user, creditBalance = 0, creditCurrency = "USD" }: Props) {
 	return (
 		<Menu as="div" className="relative">
 			<Menu.Button className="relative flex rounded-full bg-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-neutral-800">
@@ -31,7 +34,26 @@ export function UserMenu({ user }: Props) {
 			>
 				<Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right divide-y divide-neutral-200 bg-white py-1 text-start shadow ring-1 ring-neutral-200 ring-opacity-5 focus:outline-none">
 					<UserInfo user={user} />
+					{creditBalance > 0 && (
+						<div className="px-4 py-2 text-sm text-green-700">
+							<span className="font-medium">Store Credit:</span>{" "}
+							{formatMoney(creditBalance, creditCurrency)}
+						</div>
+					)}
 					<div className="flex flex-col px-1 py-1">
+						<Menu.Item>
+							{({ active }) => (
+								<LinkWithChannel
+									href="/account"
+									className={clsx(
+										active && "bg-neutral-100",
+										"block px-4 py-2 text-sm font-medium text-neutral-500 hover:text-neutral-700",
+									)}
+								>
+									My Account
+								</LinkWithChannel>
+							)}
+						</Menu.Item>
 						<Menu.Item>
 							{({ active }) => (
 								<LinkWithChannel
@@ -41,7 +63,7 @@ export function UserMenu({ user }: Props) {
 										"block px-4 py-2 text-sm font-medium text-neutral-500 hover:text-neutral-700",
 									)}
 								>
-									My orders
+									My Orders
 								</LinkWithChannel>
 							)}
 						</Menu.Item>

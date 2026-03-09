@@ -1,0 +1,12 @@
+mutation AccountAddressCreate($address: AddressInput!, $type: AddressTypeEnum) {
+	accountAddressCreate(type: $type, input: $address) {
+		user {
+			...UserDetails
+		}
+		errors {
+			message
+			field
+			code
+		}
+	}
+}

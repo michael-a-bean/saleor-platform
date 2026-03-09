@@ -87,3 +87,6 @@ It shouldn't — the skill only handles CI failures. If this happens, verify you
 
 ### Stale REQUEST_CHANGES blocking merge after fix
 Push a new commit. The `synchronize` event triggers a new Codex review, which dismisses the previous REQUEST_CHANGES before submitting a fresh review.
+
+### Auto-merge not firing after CI passes
+The auto-merge workflow uses `workflow_run` (not `check_suite`) to listen for `test-platform` and `Codex PR Review` completion. `check_suite` events from `GITHUB_TOKEN` don't trigger other workflows due to GitHub's anti-cascade protection — this is why `workflow_run` is required.

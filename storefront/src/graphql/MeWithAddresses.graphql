@@ -1,0 +1,14 @@
+query MeWithAddresses {
+	me {
+		...UserDetails
+		addresses {
+			...AccountAddressDetails
+		}
+		defaultShippingAddress {
+			id
+		}
+		defaultBillingAddress {
+			id
+		}
+	}
+}

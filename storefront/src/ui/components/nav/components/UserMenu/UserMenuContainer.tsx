@@ -2,6 +2,7 @@ import { UserIcon } from "lucide-react";
 import { UserMenu } from "./UserMenu";
 import { CurrentUserDocument } from "@/gql/graphql";
 import { executeGraphQL } from "@/lib/graphql";
+import { getStoreCredit } from "@/lib/customer-api";
 import { LinkWithChannel } from "@/ui/atoms/LinkWithChannel";
 
 export async function UserMenuContainer() {
@@ -10,7 +11,14 @@ export async function UserMenuContainer() {
 	});
 
 	if (user) {
-		return <UserMenu user={user} />;
+		const credit = await getStoreCredit();
+		return (
+			<UserMenu
+				user={user}
+				creditBalance={credit?.balance ?? 0}
+				creditCurrency={credit?.currency ?? "USD"}
+			/>
+		);
 	} else {
 		return (
 			<LinkWithChannel href="/login" className="h-6 w-6 flex-shrink-0">

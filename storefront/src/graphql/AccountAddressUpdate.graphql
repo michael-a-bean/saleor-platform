@@ -1,0 +1,12 @@
+mutation AccountAddressUpdate($id: ID!, $address: AddressInput!) {
+	accountAddressUpdate(id: $id, input: $address) {
+		user {
+			...UserDetails
+		}
+		errors {
+			message
+			field
+			code
+		}
+	}
+}
