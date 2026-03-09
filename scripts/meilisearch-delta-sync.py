@@ -230,6 +230,8 @@ def transform_product(product: dict) -> dict:
     set_name = get_attribute_value(attrs, "mtg-set-name") or ""
     set_code = get_attribute_value(attrs, "mtg-set-code") or ""
     collector_number = get_attribute_value(attrs, "mtg-collector-number") or ""
+    tcgplayer_id = get_attribute_value(attrs, "mtg-tcgplayer-id") or ""
+    scryfall_id = get_attribute_value(attrs, "mtg-scryfall-id") or ""
     rarity = get_attribute_value(attrs, "mtg-rarity") or ""
     colors = get_attribute_value(attrs, "mtg-colors") or ""
     mana_cost = get_attribute_value(attrs, "mtg-mana-cost") or ""
@@ -292,6 +294,8 @@ def transform_product(product: dict) -> dict:
         "set_name": set_name,
         "set_code": set_code.upper() if set_code else "",
         "collector_number": collector_number,
+        "tcgplayer_id": tcgplayer_id,
+        "scryfall_id": scryfall_id,
         "rarity": rarity.lower() if rarity else "",
         "colors": colors,
         "mana_cost": mana_cost,

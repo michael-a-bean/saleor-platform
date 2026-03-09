@@ -227,6 +227,9 @@ def transform_product(product: dict) -> dict:
     mana_cost = get_attribute_value(attrs, "mtg-mana-cost") or ""
     type_line = get_attribute_value(attrs, "mtg-type-line") or ""
     oracle_text = get_attribute_value(attrs, "mtg-oracle-text") or ""
+    # IDs for deterministic collection import matching
+    tcgplayer_id = get_attribute_value(attrs, "mtg-tcgplayer-id") or ""
+    scryfall_id = get_attribute_value(attrs, "mtg-scryfall-id") or ""
     # NEW: Council recommendations - additional filterable attributes
     mana_value_raw = get_attribute_value(attrs, "mtg-mana-value")
     mana_value = int(float(mana_value_raw)) if mana_value_raw else 0
@@ -303,6 +306,8 @@ def transform_product(product: dict) -> dict:
         "set_name": set_name,
         "set_code": set_code.upper() if set_code else "",
         "collector_number": collector_number,
+        "tcgplayer_id": tcgplayer_id,
+        "scryfall_id": scryfall_id,
         "rarity": rarity.lower() if rarity else "",
         "colors": colors,
         "mana_cost": mana_cost,
@@ -397,6 +402,10 @@ def setup_meilisearch_index(index_name: str, full_reindex: bool = False):
             "mana_value",     # CMC for "show me all 3-drops"
             "color_identity", # Commander players need this
             "keywords",       # Flying, Trample, etc.
+            # Collection import deterministic matching
+            "collector_number",  # Set code + collector number = unique card
+            "tcgplayer_id",      # TCGPlayer product ID lookup
+            "scryfall_id",       # Scryfall UUID lookup
         ],
         "sortableAttributes": [
             "name",
