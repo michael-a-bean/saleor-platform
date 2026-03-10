@@ -4,6 +4,38 @@
 - Prisma schema is shared via symlink: `inventory-ops/prisma/schema.prisma` is the source, symlinked to POS and Buylist apps. Edit inventory-ops, run migration, regenerate in POS/Buylist.
 - SKU format: `{scryfall_uuid}-{condition}-{finish}` (e.g., `ff1b8fc5-NM-NF`). Used in price sync cron to parse condition/finish.
 - Both `price_amount` AND `discounted_price_amount` must be set on channel listings. NULL `discounted_price_amount` causes currency AttributeError crash.
+- **Research & reports go in `docs-private`** (submodule at `michael-a-bean/saleor-platform-docs`). Commit+push docs-private first, then update ref in saleor-platform.
+
+### Saleor App Routing
+- **RoutePropagator + basePath = double prefix**: SDK's `RoutePropagator` passes URL with basePath to Dashboard, which appends again → 404. Fix: custom `RoutePropagator` in `@saleor/apps-shared/route-propagator` strips basePath. All 4 custom apps use it.
+
+### Macaw UI
+- `__borderBottom` is NOT a valid escape hatch on Box — use `borderBottomStyle`/`borderBottomWidth`
+- `SemanticChip` is in `@saleor/apps-ui`, not `@saleor/macaw-ui`
+- `useDashboardNotification` import: `@saleor/apps-shared/use-dashboard-notification` (sub-path export)
+
+### Saleor Channel/Stock Model (verified 2026-02-23)
+- **Critical triangle**: For `quantityAvailable > 0`, all three must connect: ProductVariantChannelListing + Warehouse→Channel + ShippingZone→Channel→Warehouse. Missing any leg = qty 0.
+- **Click & Collect bypass**: C&C warehouses (`LOCAL_STOCK`/`ALL_WAREHOUSES`) skip shipping zone requirement. Relevant for POS.
+- **Stock is warehouse-scoped**, NOT channel-scoped. `Stock` FKs to Warehouse + ProductVariant, no direct Channel FK.
+- **Silent failure**: Product with `ProductChannelListing` but variants WITHOUT `ProductVariantChannelListing` = visible but unpurchasable, no error.
+- **productBulkCreate does NOT auto-create dropdown values** — must pre-exist via `attributeValueCreate`.
+- **Attribute value bug**: Variant attributes may contain base64 GraphQL IDs instead of display names. VariantSelector.tsx validates against known sets.
+
+### Storefront VariantSelector
+- **Variant name format**: `"{condition} - {finish}"` using short codes: `"DMG - Foil"`, `"NM - Nonfoil"`
+- **CONDITION_SHORT_TO_FULL**: NM→Near Mint, LP→Lightly Played, MP→Moderately Played, HP→Heavily Played, DMG→Damaged
+- **FINISH_NORMALIZE**: "Nonfoil"→"Non-Foil" (variant names lack hyphen, FINISH_ORDER requires it)
+
+### Saleor GraphQL Schema Gaps (3.22)
+- **`productBulkUpdate` DOES NOT EXIST** in Saleor 3.22. Use individual `productUpdate` with concurrency. `productVariantBulkUpdate` does exist.
+- Always introspect live schema before writing mutations.
+
+### MTG Import App
+- Port: 3005, shared Prisma schema with inventory-ops (symlink). Use `@prisma/client` (NOT `@/generated/prisma`).
+- ECS `desired_count=0` (batch importer, run on-demand). UI components: `src/ui/components/`
+- **Sentinel `saleorProductId: "existing"`**: Duplicate products get this placeholder. ALL queries must filter `{ not: "existing" }`. ~16% of rows.
+- **Backfill product attributes** (2026-02-27): Full session doc at `memory/backfill-product-attributes.md`. Uses `productUpdate` with concurrency 10, batches of 25.
 
 ### Key File Locations
 - WAC service: `saleor-apps/apps/inventory-ops/src/modules/cost-layers/wac-service.ts` (~820 LOC)
@@ -135,45 +167,27 @@
 - Same RDS host as Saleor (`saleor-platform-staging-saleor`), different database name (`inventory_ops`)
 - Can connect from API container via ECS exec (mtg-import and inventory-ops containers don't have exec enabled)
 
-### Image Management Audit (Feb 26, 2026)
-- **PRD**: `~/.claude/MEMORY/WORK/20260226-184241_fully-analyze-image-management-across-the-platform/PRD-20260226-image-management-audit.md` (PLANNED, 27 ISC, 3 plan tiers)
-- **SECURITY**: `storefront/next.config.js` has `hostname: "*"` wildcard — open image proxy/SSRF risk (HIGH)
-- **SECURITY**: `middleware.ts` CSP `img-src` includes direct S3 URLs despite CloudFront-only access in Terraform
-- **SECURITY**: S3 CORS `allowed_headers = ["*"]` — overly permissive
-- **PERF**: `OrderDetailsFragment.graphql` fetches thumbnails with NO size/format (gets 4096px default)
-- **PERF**: Hero/preorder/magic `fill` images missing `sizes` prop — downloads full viewport width
-- **PERF**: Checkout queries missing `format: WEBP`
-- Key image config: `storefront/next.config.js` (AVIF/WebP, deviceSizes, 86400s cache TTL)
-- Image pattern: `media[0].url || thumbnail.url` used consistently across storefront
-- MTG Import uses `mediaUrl` (external Scryfall CDN reference), not S3 upload
-- POS/Buylist fetch thumbnails but don't render them — no optimization needed there
-- 3 plan tiers: Quick Wins (1-2h, 8 items), Moderate (4-8h, 5 items), Strategic (1-2d, 3 items)
+### Storefront Image & Performance (COMPLETE 2026-02-28)
+- **PRD**: `.prd/PRD-20260226-image-management-audit.md` — COMPLETE, 25/25 criteria passing
+- Phase 1: Security hardening (domain allowlist), responsive sizes, GraphQL thumbnail optimization
+- Phase 2: 69 ECL PNGs→WebP (86MB→7.8MB), eager loading, shimmer animation
+- Phase 3: `/_next/image` proxy bypass (`unoptimized`), Saleor CDN primary, hero preload, category PNGs→WebP
+- **ProductImageWrapper**: `unoptimized` prop bypasses proxy. `"use client"` required for `onLoad` shimmer.
+- **Product image source order**: `thumbnail.url` (Saleor CDN) primary, `media[0].url` (Scryfall) fallback.
+- **GraphQL thumbnail sizes**: List=256, Detail=1024, Checkout/Order=256, SinglesCart=128 — all WebP.
+- **Root URL rewrite**: Middleware rewrites `/` → `/webstore` (not redirect).
 
 ### Dashboard Orders Not Visible (Mar 4, 2026) — RESOLVED
-- **Symptom**: Orders page (`fulfillment/orders`) shows empty list. Customer → Orders view shows orders fine.
-- **Root cause**: `get_user_accessible_channels()` in Saleor 3.22 resolver filters orders by channels the user's permission groups have access to. Two problems:
-  1. `michael@michaelbean.org` is NOT in any permission group (other 3 staff users are in `Full Access`)
-  2. `account_group_channels` table is EMPTY — the `Full Access` group has no channels assigned
-- **Resolver code** (`saleor/graphql/order/resolvers.py`): `accessible_channels = get_user_accessible_channels(info, user)` → `qs.filter(channel_id__in=channel_ids)` → empty list = 0 orders
-- **Why Customer→Orders works**: User type's `orders` field loads via `user.orders` relationship, bypasses channel access filtering
-- **DB state**: 7 orders exist, all in `webstore` channel (id=2), status=`unfulfilled`, `search_document` is empty on all
-- **Group table**: `account_group` id=1 name=`Full Access` restricted_access_to_channels=`False`
-- **Fix via Dashboard** (Configuration → Permission Groups → Full Access):
-  1. Add `michael@michaelbean.org` to the Full Access group
-  2. Add all channels (default-channel, webstore, singles-builder) to the group
-- **Fix via SQL alternative**:
-  ```sql
-  INSERT INTO account_user_groups (user_id, group_id)
-  SELECT id, 1 FROM account_user WHERE email='michael@michaelbean.org';
-  INSERT INTO account_group_channels (group_id, channel_id)
-  SELECT 1, id FROM channel_channel;
-  ```
-- **Webstore channel settings to review**: "Use Transaction flow" should be ENABLED (using Stripe payment app, not legacy plugin)
+- **Root cause**: `get_user_accessible_channels()` filters orders by permission group channels. User not in group + group had no channels = 0 orders.
+- **Fix**: Dashboard → Permission Groups → Full Access → add user + all channels. Or see SQL in `mvp-staging-verification.md`.
+- **Gotcha**: Saleor 3.22 returns 0 orders (not error) when channel access is empty.
 
-### MTG Import Singles Builder Investigation (Feb 24, 2026) — RESOLVED
-- See `mtg-import-singles-builder-investigation.md` for full details
-- **Root cause**: `singles-builder` channel had `is_active = False`. Public API excludes inactive channels entirely (returns 0, no error).
-- **Import worked perfectly**: 99,339 product listings and 708,369 variant listings exist for singles-builder in DB
-- **Fix**: Activate channel via Dashboard → Configuration → Channels → Singles Builder → toggle Active
-- **Gotcha**: Saleor returns 0 products for inactive channels with NO error — indistinguishable from "no listings"
-- **Still open**: Duplicate products from slug case mismatch (old mixed-case vs new lowercase)
+### MTG Import Singles Builder (Feb 24, 2026) — RESOLVED
+- **Root cause**: `singles-builder` channel `is_active = False`. Saleor returns 0 products for inactive channels with NO error.
+- **Fix**: Activate channel in Dashboard. See `mtg-import-singles-builder-investigation.md` for full details.
+- **Still open**: Duplicate products from slug case mismatch (old mixed-case vs new lowercase).
+
+### MVP Progress (verified 2026-02-28)
+- **Overall**: ~94% complete. Full details: `memory/mvp-staging-verification.md`
+- **Remaining**: (1) Email SMTP GUI setup, (2) Buylist manual FOH→BOH test, (3) Place test order
+- **App IDs**: Buylist=QXBwOjMy, Inventory Ops=QXBwOjMx, MTG Import=QXBwOjMw, POS=QXBwOjMz, Stripe=QXBwOjM0
