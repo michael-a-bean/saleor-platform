@@ -88,11 +88,23 @@ if [[ -z "$IMAGE" ]]; then
     exit 1
 fi
 
-# Get current task definition JSON
-TASK_DEF_JSON=$(aws ecs describe-task-definition \
-    --task-definition "$CURRENT_TASK_DEF" \
-    --query 'taskDefinition' \
-    --output json)
+# Get task definition JSON
+# For custom-built images, use the LATEST revision (managed by Terraform) as the base
+# so that env var changes from terraform apply are preserved.
+# For KEEP images, use the current running revision to preserve CI/CD-applied images.
+if [[ "${IMAGE_MAP[$SERVICE]:-}" != "KEEP" ]]; then
+    TASK_DEF_FAMILY="${CLUSTER}-${SERVICE}"
+    log_info "  Using latest task def family: ${TASK_DEF_FAMILY}"
+    TASK_DEF_JSON=$(aws ecs describe-task-definition \
+        --task-definition "$TASK_DEF_FAMILY" \
+        --query 'taskDefinition' \
+        --output json)
+else
+    TASK_DEF_JSON=$(aws ecs describe-task-definition \
+        --task-definition "$CURRENT_TASK_DEF" \
+        --query 'taskDefinition' \
+        --output json)
+fi
 
 # Handle image update
 if [[ "$IMAGE" == "KEEP" ]]; then
