@@ -6,6 +6,11 @@
 # - Selective builds: skip unchanged services via path detection
 # - Matrix builds: parallel image builds across separate runners
 # - Parallel deploys: apps deploy alongside core (only need API, not storefront)
+#
+# Optimizations (2026-03-10):
+# - Selective deploys: skip deploy for unchanged services (not just builds)
+# - Selective migrations: skip when no Prisma schema/migration files changed
+# - Core services (api/worker/dashboard) only redeploy when migrations ran or force_all
 
 name: Deploy to Staging
 
@@ -47,6 +52,7 @@ jobs:
       buylist: ${{ steps.merge.outputs.buylist }}
       pos: ${{ steps.merge.outputs.pos }}
       mtg-import: ${{ steps.merge.outputs.mtg-import }}
+      migrations: ${{ steps.merge.outputs.migrations }}
       any_app: ${{ steps.merge.outputs.stripe == 'true' || steps.merge.outputs.inventory-ops == 'true' || steps.merge.outputs.buylist == 'true' || steps.merge.outputs.pos == 'true' || steps.merge.outputs.mtg-import == 'true' }}
       any_changed: ${{ steps.check.outputs.any_changed }}
 
@@ -80,6 +86,9 @@ jobs:
             mtg-import:
               - 'saleor-apps/apps/mtg-import/**'
               - 'saleor-apps/packages/**'
+            migrations:
+              - 'saleor-apps/apps/inventory-ops/prisma/**'
+              - 'saleor-apps/apps/mtg-import/prisma/**'
 
       # dorny/paths-filter can't see inside submodule content changes —
       # it only sees the pointer diff. This step inspects the actual files
@@ -98,6 +107,7 @@ jobs:
             echo "pos=false" >> $GITHUB_OUTPUT
             echo "mtg-import=false" >> $GITHUB_OUTPUT
             echo "packages=false" >> $GITHUB_OUTPUT
+            echo "migrations=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -128,6 +138,15 @@ jobs:
           echo "mtg-import=$(check_app apps/mtg-import)" >> $GITHUB_OUTPUT
           echo "packages=$(check_app packages)" >> $GITHUB_OUTPUT
 
+          # Migration-specific detection (Prisma schema/migration files)
+          INVOPS_PRISMA=$(check_app apps/inventory-ops/prisma)
+          MTGIMP_PRISMA=$(check_app apps/mtg-import/prisma)
+          if [[ "$INVOPS_PRISMA" == "true" ]] || [[ "$MTGIMP_PRISMA" == "true" ]]; then
+            echo "migrations=true" >> $GITHUB_OUTPUT
+          else
+            echo "migrations=false" >> $GITHUB_OUTPUT
+          fi
+
       # Merge: an app needs rebuild if EITHER dorny detected changes
       # OR the submodule content inspection found changes in that app.
       # Shared packages changes trigger all apps (same as before).
@@ -154,11 +173,21 @@ jobs:
           POS=$(merge pos "${{ steps.filter.outputs.pos }}" "${{ steps.submodule.outputs.pos }}" "$SUB_PKG")
           MTGIMP=$(merge mtg-import "${{ steps.filter.outputs.mtg-import }}" "${{ steps.submodule.outputs.mtg-import }}" "$SUB_PKG")
 
+          # Migrations: dorny OR submodule detection
+          DORNY_MIG="${{ steps.filter.outputs.migrations }}"
+          SUB_MIG="${{ steps.submodule.outputs.migrations }}"
+          if [[ "$DORNY_MIG" == "true" ]] || [[ "$SUB_MIG" == "true" ]]; then
+            MIGRATIONS="true"
+          else
+            MIGRATIONS="false"
+          fi
+
           echo "stripe=$STRIPE" >> $GITHUB_OUTPUT
           echo "inventory-ops=$INVOPS" >> $GITHUB_OUTPUT
           echo "buylist=$BUYLIST" >> $GITHUB_OUTPUT
           echo "pos=$POS" >> $GITHUB_OUTPUT
           echo "mtg-import=$MTGIMP" >> $GITHUB_OUTPUT
+          echo "migrations=$MIGRATIONS" >> $GITHUB_OUTPUT
 
           echo "## Change Detection Results" >> $GITHUB_STEP_SUMMARY
           echo "| Service | dorny | submodule | merged |" >> $GITHUB_STEP_SUMMARY
@@ -168,6 +197,7 @@ jobs:
           echo "| buylist | ${{ steps.filter.outputs.buylist }} | ${{ steps.submodule.outputs.buylist }} | $BUYLIST |" >> $GITHUB_STEP_SUMMARY
           echo "| pos | ${{ steps.filter.outputs.pos }} | ${{ steps.submodule.outputs.pos }} | $POS |" >> $GITHUB_STEP_SUMMARY
           echo "| mtg-import | ${{ steps.filter.outputs.mtg-import }} | ${{ steps.submodule.outputs.mtg-import }} | $MTGIMP |" >> $GITHUB_STEP_SUMMARY
+          echo "| migrations | $DORNY_MIG | $SUB_MIG | $MIGRATIONS |" >> $GITHUB_STEP_SUMMARY
 
       - name: Check if any service changed
         id: check
@@ -363,8 +393,12 @@ jobs:
   # ==========================================================================
   migrate:
     name: Run Migrations
-    needs: [validate, build]
-    if: always() && needs.validate.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped')
+    needs: [changes, validate, build]
+    if: >-
+      always()
+      && needs.validate.result == 'success'
+      && (needs.build.result == 'success' || needs.build.result == 'skipped')
+      && (needs.changes.outputs.migrations == 'true' || inputs.force_all == 'true')
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -465,8 +499,8 @@ jobs:
   # ==========================================================================
   deploy:
     name: Deploy ${{ matrix.service }}
-    needs: [validate, build, migrate]
-    if: always() && needs.migrate.result == 'success'
+    needs: [changes, validate, build, migrate]
+    if: always() && needs.validate.result == 'success' && (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -476,21 +510,54 @@ jobs:
       fail-fast: false
 
     steps:
+      # Core services use KEEP images (no new code). Only deploy when:
+      # - api/worker: migrations ran (need restart for new schema) or force_all
+      # - storefront: image was rebuilt or force_all
+      # - dashboard: force_all only (scaled to 0)
+      - name: Check if deploy needed
+        id: should-deploy
+        run: |
+          SERVICE="${{ matrix.service }}"
+          FORCE="${{ inputs.force_all }}"
+          MIGRATIONS="${{ needs.changes.outputs.migrations }}"
+          STOREFRONT="${{ needs.changes.outputs.storefront }}"
+          MIGRATE_RAN="${{ needs.migrate.result }}"
+
+          DEPLOY=false
+          case "$SERVICE" in
+            api|worker)
+              [[ "$MIGRATE_RAN" == "success" || "$FORCE" == "true" ]] && DEPLOY=true ;;
+            storefront)
+              [[ "$STOREFRONT" == "true" || "$FORCE" == "true" ]] && DEPLOY=true ;;
+            dashboard)
+              [[ "$FORCE" == "true" ]] && DEPLOY=true ;;
+          esac
+
+          echo "deploy=$DEPLOY" >> $GITHUB_OUTPUT
+          if [[ "$DEPLOY" == "false" ]]; then
+            echo "::notice::Skipping $SERVICE deploy — no relevant changes"
+          else
+            echo "Deploying $SERVICE (force=$FORCE, migrations=$MIGRATIONS, storefront=$STOREFRONT)"
+          fi
+
       - name: Checkout
+        if: steps.should-deploy.outputs.deploy == 'true'
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials
+        if: steps.should-deploy.outputs.deploy == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/saleor-platform-staging-github-actions-deploy
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy ${{ matrix.service }}
+        if: steps.should-deploy.outputs.deploy == 'true'
         run: |
           ./scripts/deploy/aws/deploy-service.sh staging ${{ matrix.service }} ${{ needs.validate.outputs.sha_short }}
 
       - name: Wait for service stability
-        if: matrix.service != 'dashboard'  # Skip if dashboard is scaled to 0
+        if: steps.should-deploy.outputs.deploy == 'true' && matrix.service != 'dashboard'
         run: |
           echo "Waiting for ${{ matrix.service }} to reach steady state..."
           aws ecs wait services-stable \
@@ -505,8 +572,8 @@ jobs:
   # ==========================================================================
   deploy-apps:
     name: Deploy ${{ matrix.app }}
-    needs: [validate, build, migrate]
-    if: always() && needs.migrate.result == 'success'
+    needs: [changes, validate, build, migrate]
+    if: always() && needs.validate.result == 'success' && (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -526,16 +593,32 @@ jobs:
       fail-fast: false
 
     steps:
+      - name: Check if deploy needed
+        id: should-deploy
+        run: |
+          CHANGED="${{ needs.changes.outputs[matrix.app] }}"
+          FORCE="${{ inputs.force_all }}"
+          if [[ "$CHANGED" == "true" ]] || [[ "$FORCE" == "true" ]]; then
+            echo "deploy=true" >> $GITHUB_OUTPUT
+            echo "Deploying ${{ matrix.app }} (changed=$CHANGED, force=$FORCE)"
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "::notice::Skipping ${{ matrix.app }} deploy — no changes detected"
+          fi
+
       - name: Checkout
+        if: steps.should-deploy.outputs.deploy == 'true'
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials
+        if: steps.should-deploy.outputs.deploy == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/saleor-platform-staging-github-actions-deploy
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Check if service exists
+        if: steps.should-deploy.outputs.deploy == 'true'
         id: check-service
         run: |
           SERVICE_STATUS=$(aws ecs describe-services \
@@ -549,12 +632,12 @@ jobs:
           fi
 
       - name: Deploy ${{ matrix.app }}
-        if: steps.check-service.outputs.status == 'ACTIVE'
+        if: steps.should-deploy.outputs.deploy == 'true' && steps.check-service.outputs.status == 'ACTIVE'
         run: |
           ./scripts/deploy/aws/deploy-service.sh staging ${{ matrix.service }} ${{ needs.validate.outputs.sha_short }}
 
       - name: Wait for service stability
-        if: steps.check-service.outputs.status == 'ACTIVE'
+        if: steps.should-deploy.outputs.deploy == 'true' && steps.check-service.outputs.status == 'ACTIVE'
         run: |
           echo "Waiting for ${{ matrix.service }} to reach steady state..."
           aws ecs wait services-stable \
@@ -568,8 +651,11 @@ jobs:
   # ==========================================================================
   validate-urls:
     name: Validate URLs
-    needs: [deploy, deploy-apps]
-    if: always() && (needs.deploy.result == 'success' || needs.deploy-apps.result == 'success')
+    needs: [changes, deploy, deploy-apps]
+    if: >-
+      always()
+      && (needs.deploy.result == 'success' || needs.deploy-apps.result == 'success')
+      && (needs.changes.outputs.any_changed == 'true' || inputs.force_all == 'true')
     runs-on: ubuntu-latest
 
     steps:
@@ -588,8 +674,11 @@ jobs:
   # ==========================================================================
   smoke-test:
     name: Smoke Tests
-    needs: [validate, validate-urls]
-    if: always() && needs.validate-urls.result == 'success'
+    needs: [changes, validate, validate-urls]
+    if: >-
+      always()
+      && needs.validate-urls.result == 'success'
+      && (needs.changes.outputs.any_changed == 'true' || inputs.force_all == 'true')
     runs-on: ubuntu-latest
 
     steps:

@@ -53,6 +53,8 @@ PR code review is handled by **Codex web-based review** (ChatGPT Plus subscripti
 
 3. **babysit-pr ignores review comments** — The babysit skill only fixes CI failures. Code review findings are for human consideration.
 
+4. **test-platform runs on PRs only** — Not on push to `platform/main`. Deploy-staging handles post-merge builds (with Trivy scans) and deploys. Running test-platform again after merge is redundant.
+
 ## Workflow Files
 
 | File | Purpose |
