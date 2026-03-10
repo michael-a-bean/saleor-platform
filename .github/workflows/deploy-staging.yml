@@ -62,7 +62,7 @@ jobs:
         with:
           submodules: recursive
           token: ${{ secrets.SUBMODULES_TOKEN }}
-          fetch-depth: 0  # Needed for change detection
+          fetch-depth: 2  # Only need HEAD~1 for change detection
 
       - name: Detect changed paths (non-submodule)
         uses: dorny/paths-filter@v3
@@ -227,9 +227,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Validate environment configuration
         run: |
