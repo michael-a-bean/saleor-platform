@@ -9,10 +9,180 @@ concurrency:
 
 jobs:
   # =============================================================================
+  # CHANGE DETECTION
+  # =============================================================================
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      storefront: ${{ steps.filter.outputs.storefront }}
+      apps: ${{ steps.merge.outputs.apps }}
+      inventory-ops: ${{ steps.merge.outputs.inventory-ops }}
+      buylist: ${{ steps.merge.outputs.buylist }}
+      pos: ${{ steps.merge.outputs.pos }}
+      stripe: ${{ steps.merge.outputs.stripe }}
+      migrations: ${{ steps.merge.outputs.migrations }}
+      terraform: ${{ steps.filter.outputs.terraform }}
+      compose: ${{ steps.filter.outputs.compose }}
+      any_build: ${{ steps.check.outputs.any_build }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULES_TOKEN }}
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            storefront:
+              - 'storefront/**'
+            apps:
+              - 'saleor-apps/**'
+            stripe:
+              - 'saleor-apps/apps/stripe/**'
+              - 'saleor-apps/packages/**'
+            inventory-ops:
+              - 'saleor-apps/apps/inventory-ops/**'
+              - 'saleor-apps/packages/**'
+            buylist:
+              - 'saleor-apps/apps/buylist/**'
+              - 'saleor-apps/packages/**'
+            pos:
+              - 'saleor-apps/apps/pos/**'
+              - 'saleor-apps/packages/**'
+            migrations:
+              - 'saleor-apps/apps/inventory-ops/prisma/**'
+              - 'saleor-apps/apps/mtg-import/prisma/**'
+            terraform:
+              - 'infra/terraform/**'
+            compose:
+              - 'docker-compose*.yml'
+              - 'docker-compose*.yaml'
+
+      # dorny/paths-filter can't see inside submodule content changes —
+      # it only sees the pointer diff. This step inspects the actual files
+      # that changed inside saleor-apps between the PR base and head.
+      - name: Detect submodule content changes
+        id: submodule
+        run: |
+          DIFF=$(git diff --submodule=diff origin/${{ github.base_ref }}...HEAD -- saleor-apps 2>/dev/null || echo "")
+
+          if [[ -z "$DIFF" ]]; then
+            echo "No submodule changes detected"
+            echo "apps=false" >> $GITHUB_OUTPUT
+            echo "stripe=false" >> $GITHUB_OUTPUT
+            echo "inventory-ops=false" >> $GITHUB_OUTPUT
+            echo "buylist=false" >> $GITHUB_OUTPUT
+            echo "pos=false" >> $GITHUB_OUTPUT
+            echo "packages=false" >> $GITHUB_OUTPUT
+            echo "migrations=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Submodule diff detected, checking which apps changed..."
+          CHANGED_FILES=$(echo "$DIFF" | grep '^diff --git' | sed 's|diff --git a/||; s| b/.*||; s|^saleor-apps/||')
+          echo "Changed files in submodule:"
+          echo "$CHANGED_FILES"
+
+          check_app() {
+            local app_dir="$1"
+            if echo "$CHANGED_FILES" | grep -q "^${app_dir}/"; then
+              echo "true"
+            else
+              echo "false"
+            fi
+          }
+
+          echo "apps=true" >> $GITHUB_OUTPUT
+          echo "stripe=$(check_app apps/stripe)" >> $GITHUB_OUTPUT
+          echo "inventory-ops=$(check_app apps/inventory-ops)" >> $GITHUB_OUTPUT
+          echo "buylist=$(check_app apps/buylist)" >> $GITHUB_OUTPUT
+          echo "pos=$(check_app apps/pos)" >> $GITHUB_OUTPUT
+          echo "packages=$(check_app packages)" >> $GITHUB_OUTPUT
+
+          INVOPS_PRISMA=$(check_app apps/inventory-ops/prisma)
+          MTGIMP_PRISMA=$(check_app apps/mtg-import/prisma)
+          if [[ "$INVOPS_PRISMA" == "true" ]] || [[ "$MTGIMP_PRISMA" == "true" ]]; then
+            echo "migrations=true" >> $GITHUB_OUTPUT
+          else
+            echo "migrations=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Merge change detection results
+        id: merge
+        run: |
+          merge() {
+            local dorny="${1}"
+            local sub="${2}"
+            local sub_packages="${3}"
+            if [[ "$dorny" == "true" ]] || [[ "$sub" == "true" ]] || [[ "$sub_packages" == "true" ]]; then
+              echo "true"
+            else
+              echo "false"
+            fi
+          }
+
+          SUB_PKG="${{ steps.submodule.outputs.packages }}"
+          SUB_APPS="${{ steps.submodule.outputs.apps }}"
+
+          APPS=$(merge "${{ steps.filter.outputs.apps }}" "$SUB_APPS" "false")
+          STRIPE=$(merge "${{ steps.filter.outputs.stripe }}" "${{ steps.submodule.outputs.stripe }}" "$SUB_PKG")
+          INVOPS=$(merge "${{ steps.filter.outputs.inventory-ops }}" "${{ steps.submodule.outputs.inventory-ops }}" "$SUB_PKG")
+          BUYLIST=$(merge "${{ steps.filter.outputs.buylist }}" "${{ steps.submodule.outputs.buylist }}" "$SUB_PKG")
+          POS=$(merge "${{ steps.filter.outputs.pos }}" "${{ steps.submodule.outputs.pos }}" "$SUB_PKG")
+
+          DORNY_MIG="${{ steps.filter.outputs.migrations }}"
+          SUB_MIG="${{ steps.submodule.outputs.migrations }}"
+          if [[ "$DORNY_MIG" == "true" ]] || [[ "$SUB_MIG" == "true" ]]; then
+            MIGRATIONS="true"
+          else
+            MIGRATIONS="false"
+          fi
+
+          echo "apps=$APPS" >> $GITHUB_OUTPUT
+          echo "stripe=$STRIPE" >> $GITHUB_OUTPUT
+          echo "inventory-ops=$INVOPS" >> $GITHUB_OUTPUT
+          echo "buylist=$BUYLIST" >> $GITHUB_OUTPUT
+          echo "pos=$POS" >> $GITHUB_OUTPUT
+          echo "migrations=$MIGRATIONS" >> $GITHUB_OUTPUT
+
+          echo "## Change Detection Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Area | dorny | submodule | merged |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| storefront | ${{ steps.filter.outputs.storefront }} | - | ${{ steps.filter.outputs.storefront }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| apps (any) | ${{ steps.filter.outputs.apps }} | $SUB_APPS | $APPS |" >> $GITHUB_STEP_SUMMARY
+          echo "| stripe | ${{ steps.filter.outputs.stripe }} | ${{ steps.submodule.outputs.stripe }} | $STRIPE |" >> $GITHUB_STEP_SUMMARY
+          echo "| inventory-ops | ${{ steps.filter.outputs.inventory-ops }} | ${{ steps.submodule.outputs.inventory-ops }} | $INVOPS |" >> $GITHUB_STEP_SUMMARY
+          echo "| buylist | ${{ steps.filter.outputs.buylist }} | ${{ steps.submodule.outputs.buylist }} | $BUYLIST |" >> $GITHUB_STEP_SUMMARY
+          echo "| pos | ${{ steps.filter.outputs.pos }} | ${{ steps.submodule.outputs.pos }} | $POS |" >> $GITHUB_STEP_SUMMARY
+          echo "| migrations | $DORNY_MIG | $SUB_MIG | $MIGRATIONS |" >> $GITHUB_STEP_SUMMARY
+          echo "| terraform | ${{ steps.filter.outputs.terraform }} | - | ${{ steps.filter.outputs.terraform }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check if any container build needed
+        id: check
+        run: |
+          if [[ "${{ steps.filter.outputs.storefront }}" == "true" ]] || \
+             [[ "${{ steps.merge.outputs.stripe }}" == "true" ]] || \
+             [[ "${{ steps.merge.outputs.inventory-ops }}" == "true" ]] || \
+             [[ "${{ steps.merge.outputs.buylist }}" == "true" ]] || \
+             [[ "${{ steps.merge.outputs.pos }}" == "true" ]]; then
+            echo "any_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "any_build=false" >> $GITHUB_OUTPUT
+          fi
+
+  # =============================================================================
   # STOREFRONT CHECKS
   # =============================================================================
   verify_storefront:
     name: Storefront Checks
+    needs: changes
+    if: needs.changes.outputs.storefront == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -54,6 +224,8 @@ jobs:
   # =============================================================================
   verify_apps:
     name: Apps Checks
+    needs: changes
+    if: needs.changes.outputs.apps == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -105,6 +277,8 @@ jobs:
   # =============================================================================
   validate_migrations:
     name: Migration Validation
+    needs: changes
+    if: needs.changes.outputs.migrations == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -139,7 +313,7 @@ jobs:
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
   # =============================================================================
-  # SECURITY SCANNING
+  # SECURITY SCANNING (always run)
   # =============================================================================
   security_scan:
     name: Secret Scanning
@@ -157,80 +331,90 @@ jobs:
           GITLEAKS_ENABLE_SUMMARY: true
 
   # =============================================================================
-  # CONTAINER BUILDS
+  # CONTAINER BUILDS (parallel matrix — only changed services)
   # =============================================================================
   verify_builds:
-    name: Container Builds
+    name: Build ${{ matrix.service }}
+    needs: changes
+    if: needs.changes.outputs.any_build == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: storefront
+            context: ./storefront
+            dockerfile: ./storefront/Dockerfile
+            change_key: storefront
+            build_args: |
+              NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/
+              NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
+              NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
+          - service: inventory-ops
+            context: ./saleor-apps
+            dockerfile: ./saleor-apps/apps/inventory-ops/Dockerfile
+            change_key: inventory-ops
+            build_args: ""
+          - service: buylist
+            context: ./saleor-apps
+            dockerfile: ./saleor-apps/apps/buylist/Dockerfile
+            change_key: buylist
+            build_args: ""
+          - service: pos
+            context: ./saleor-apps
+            dockerfile: ./saleor-apps/apps/pos/Dockerfile
+            change_key: pos
+            build_args: ""
+          - service: stripe
+            context: ./saleor-apps
+            dockerfile: ./saleor-apps/apps/stripe/Dockerfile
+            change_key: stripe
+            build_args: ""
+      fail-fast: false
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Check if service changed
+        id: should-build
+        run: |
+          CHANGED="${{ needs.changes.outputs[matrix.change_key] }}"
+          if [[ "$CHANGED" == "true" ]]; then
+            echo "build=true" >> $GITHUB_OUTPUT
+            echo "Building ${{ matrix.service }}"
+          else
+            echo "build=false" >> $GITHUB_OUTPUT
+            echo "::notice::Skipping ${{ matrix.service }} build — no changes detected"
+          fi
+
+      - name: Checkout
+        if: steps.should-build.outputs.build == 'true'
+        uses: actions/checkout@v4
         with:
           submodules: recursive
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Set up Docker Buildx
+        if: steps.should-build.outputs.build == 'true'
         uses: docker/setup-buildx-action@v3
 
-      - name: Build storefront
+      - name: Build ${{ matrix.service }}
+        if: steps.should-build.outputs.build == 'true'
         uses: docker/build-push-action@v6
         with:
-          context: ./storefront
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: false
-          build-args: |
-            NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/
-            NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
-            NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
-          tags: storefront:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build inventory-ops app
-        uses: docker/build-push-action@v6
-        with:
-          context: ./saleor-apps
-          file: ./saleor-apps/apps/inventory-ops/Dockerfile
-          push: false
-          tags: inventory-ops:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build buylist app
-        uses: docker/build-push-action@v6
-        with:
-          context: ./saleor-apps
-          file: ./saleor-apps/apps/buylist/Dockerfile
-          push: false
-          tags: buylist:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build pos app
-        uses: docker/build-push-action@v6
-        with:
-          context: ./saleor-apps
-          file: ./saleor-apps/apps/pos/Dockerfile
-          push: false
-          tags: pos:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build stripe app
-        uses: docker/build-push-action@v6
-        with:
-          context: ./saleor-apps
-          file: ./saleor-apps/apps/stripe/Dockerfile
-          push: false
-          tags: stripe:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          build-args: ${{ matrix.build_args }}
+          tags: ${{ matrix.service }}:ci
+          cache-from: type=gha,scope=ci-${{ matrix.service }}
+          cache-to: type=gha,scope=ci-${{ matrix.service }},mode=max
 
   # =============================================================================
   # CONTAINER SECURITY SCAN
   # =============================================================================
   container_scan:
     name: Container Security Scan
+    needs: [changes, verify_builds]
+    if: always() && needs.changes.outputs.storefront == 'true' && needs.verify_builds.result == 'success'
     runs-on: ubuntu-latest
-    needs: verify_builds
     steps:
       - uses: actions/checkout@v4
         with:
@@ -251,7 +435,7 @@ jobs:
             NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
             NEXT_PUBLIC_DEFAULT_CHANNEL=webstore
           tags: storefront:scan
-          cache-from: type=gha
+          cache-from: type=gha,scope=ci-storefront
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -271,7 +455,7 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
   # =============================================================================
-  # DOCKER COMPOSE VALIDATION
+  # DOCKER COMPOSE VALIDATION (always run — fast)
   # =============================================================================
   validate_compose:
     name: Docker Compose Validation
@@ -308,6 +492,8 @@ jobs:
   # =============================================================================
   terraform_validate:
     name: Terraform Validation
+    needs: changes
+    if: needs.changes.outputs.terraform == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -330,7 +516,7 @@ jobs:
         run: terraform validate
 
   # =============================================================================
-  # LOCAL REVIEW GATE
+  # LOCAL REVIEW GATE (always run)
   # =============================================================================
   localreview_ci:
     name: Local Review Gate
