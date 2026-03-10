@@ -30,9 +30,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
           token: ${{ secrets.SUBMODULES_TOKEN }}
-          fetch-depth: 0
+          fetch-depth: 2
 
       - name: Detect changed paths
         uses: dorny/paths-filter@v3
@@ -233,7 +233,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Setup pnpm
@@ -283,7 +283,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Setup pnpm
@@ -321,7 +321,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
 
       - name: Run gitleaks
         uses: gitleaks/gitleaks-action@v2
@@ -388,7 +388,7 @@ jobs:
         if: steps.should-build.outputs.build == 'true'
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Set up Docker Buildx
@@ -418,7 +418,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Set up Docker Buildx
@@ -463,7 +463,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Set up environment
@@ -525,7 +525,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
 
       - name: Fetch base branch
         run: git fetch origin platform/main
