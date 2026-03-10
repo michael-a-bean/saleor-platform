@@ -170,7 +170,7 @@ check_workflow_changes() {
         [[ -z "$file" ]] && continue
 
         if [[ "$file" =~ \.github/workflows/ ]]; then
-            add_finding "HIGH" "CI/CD" \
+            add_finding "MEDIUM" "CI/CD" \
                 "GitHub Actions workflow modified" \
                 "$file" \
                 "Review workflow changes carefully. Ensure no secrets are exposed and jobs follow security best practices."
