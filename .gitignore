@@ -44,6 +44,8 @@ infra/terraform/*.tfplan
 infra/terraform/tfplan
 infra/terraform/.terraform.lock.hcl
 .claude/worktrees/
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
 
 # Private docs (migrated to docs-private submodule)
 docs/reports/
