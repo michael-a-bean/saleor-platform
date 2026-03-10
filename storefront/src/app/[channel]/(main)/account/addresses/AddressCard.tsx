@@ -1,5 +1,6 @@
 "use client";
 
+import { useTransition } from "react";
 import { LinkWithChannel } from "@/ui/atoms/LinkWithChannel";
 import { deleteAddress, setDefaultAddress } from "../actions";
 import { AddressTypeEnum } from "@/gql/graphql";
@@ -13,6 +14,8 @@ type Props = {
 };
 
 export function AddressCard({ address, channelSlug, isDefaultShipping, isDefaultBilling }: Props) {
+	const [isPending, startTransition] = useTransition();
+
 	return (
 		<div className="rounded-lg border bg-white p-4">
 			<div className="mb-2 flex flex-wrap gap-1">
@@ -52,7 +55,8 @@ export function AddressCard({ address, channelSlug, isDefaultShipping, isDefault
 				</LinkWithChannel>
 				{!isDefaultShipping && (
 					<button
-						onClick={() => setDefaultAddress(channelSlug, address.id, AddressTypeEnum.Shipping)}
+						disabled={isPending}
+						onClick={() => startTransition(() => setDefaultAddress(channelSlug, address.id, AddressTypeEnum.Shipping))}
 						className="text-xs font-medium text-neutral-600 hover:text-neutral-900"
 					>
 						Set as Shipping
@@ -60,16 +64,18 @@ export function AddressCard({ address, channelSlug, isDefaultShipping, isDefault
 				)}
 				{!isDefaultBilling && (
 					<button
-						onClick={() => setDefaultAddress(channelSlug, address.id, AddressTypeEnum.Billing)}
+						disabled={isPending}
+						onClick={() => startTransition(() => setDefaultAddress(channelSlug, address.id, AddressTypeEnum.Billing))}
 						className="text-xs font-medium text-neutral-600 hover:text-neutral-900"
 					>
 						Set as Billing
 					</button>
 				)}
 				<button
+					disabled={isPending}
 					onClick={() => {
 						if (confirm("Delete this address?")) {
-							deleteAddress(channelSlug, address.id);
+							startTransition(() => deleteAddress(channelSlug, address.id));
 						}
 					}}
 					className="text-xs font-medium text-red-600 hover:text-red-800"

@@ -1,5 +1,5 @@
 import { pick } from "lodash-es";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { type AddressFormData } from "@/checkout/components/AddressForm/types";
 import { useAddressFormSchema } from "@/checkout/components/AddressForm/useAddressFormSchema";
 import { type CountryCode } from "@/checkout/graphql";
@@ -33,6 +33,10 @@ export const useAutoSaveAddressForm = ({
 	const form = useForm<AutoSaveAddressFormData>({ ...formProps, validationSchema });
 	const { values, validateForm, dirty, handleBlur, handleChange } = form;
 
+	// Keep a ref to latest values so partialSubmit always reads current state
+	const valuesRef = useRef(values);
+	valuesRef.current = values;
+
 	const debouncedSubmit = useDebouncedSubmit(onSubmit);
 
 	const formHelpers = pick(form, [
@@ -49,14 +53,17 @@ export const useAutoSaveAddressForm = ({
 	]) as FormHelpers<AutoSaveAddressFormData>;
 
 	// partial submit for guest address form — validates before submitting
+	// Uses valuesRef to always read the latest values, even when called
+	// immediately after handleChange (before React re-renders with new state)
 	const partialSubmit = useCallback(async () => {
-		const formErrors = validateForm(values);
+		const currentValues = valuesRef.current;
+		const formErrors = validateForm(currentValues);
 
 		if (!hasErrors(formErrors) && dirty) {
 			setCheckoutUpdateState("loading");
-			void debouncedSubmit({ ...initialValues, countryCode: values.countryCode, ...values }, formHelpers);
+			void debouncedSubmit({ ...initialValues, countryCode: currentValues.countryCode, ...currentValues }, formHelpers);
 		}
-	}, [validateForm, values, dirty, setCheckoutUpdateState, debouncedSubmit, initialValues, formHelpers]);
+	}, [validateForm, dirty, setCheckoutUpdateState, debouncedSubmit, initialValues, formHelpers]);
 
 	const onChange: ChangeHandler = (event) => {
 		const { name, value } = event.target;

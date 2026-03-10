@@ -73,7 +73,10 @@ function sleep(ms: number): Promise<void> {
 }
 
 // Module-level singleton — shared across all server-side GraphQL calls
-const maxConcurrent = parseInt(process.env.SALEOR_MAX_CONCURRENT_REQUESTS || "3", 10);
-const minDelay = parseInt(process.env.SALEOR_MIN_REQUEST_DELAY_MS || "200", 10);
+const rawMaxConcurrent = parseInt(process.env.SALEOR_MAX_CONCURRENT_REQUESTS || "3", 10);
+const rawMinDelay = parseInt(process.env.SALEOR_MIN_REQUEST_DELAY_MS || "200", 10);
+
+const maxConcurrent = Number.isFinite(rawMaxConcurrent) && rawMaxConcurrent > 0 ? rawMaxConcurrent : 3;
+const minDelay = Number.isFinite(rawMinDelay) && rawMinDelay >= 0 ? rawMinDelay : 200;
 
 export const requestQueue = new RequestQueue(maxConcurrent, minDelay);

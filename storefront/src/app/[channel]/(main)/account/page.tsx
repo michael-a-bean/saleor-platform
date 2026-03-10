@@ -25,7 +25,7 @@ export default async function AccountPage({
 	});
 
 	if (!user) {
-		return <LoginForm />;
+		return <LoginForm redirectTo={`/${channel}/account`} />;
 	}
 
 	const message = getAccountMessage(status);

@@ -17,12 +17,17 @@ export async function updateProfile(channelSlug: string, formData: FormData) {
 	const firstName = formData.get("firstName")?.toString() ?? "";
 	const lastName = formData.get("lastName")?.toString() ?? "";
 
-	const { accountUpdate } = await executeGraphQL(AccountUpdateDocument, {
-		variables: { input: { firstName, lastName } },
-		cache: "no-cache",
-	});
+	let result;
+	try {
+		result = await executeGraphQL(AccountUpdateDocument, {
+			variables: { input: { firstName, lastName } },
+			cache: "no-cache",
+		});
+	} catch {
+		redirect(`/${channelSlug}/account?status=profile_error`);
+	}
 
-	const errors = accountUpdate?.errors ?? [];
+	const errors = result.accountUpdate?.errors ?? [];
 	if (errors.length > 0) {
 		redirect(`/${channelSlug}/account?status=profile_error`);
 	}
@@ -47,12 +52,17 @@ export async function changePassword(channelSlug: string, formData: FormData) {
 		redirect(`/${channelSlug}/account?status=password_too_short`);
 	}
 
-	const { passwordChange } = await executeGraphQL(PasswordChangeDocument, {
-		variables: { newPassword, oldPassword },
-		cache: "no-cache",
-	});
+	let result;
+	try {
+		result = await executeGraphQL(PasswordChangeDocument, {
+			variables: { newPassword, oldPassword },
+			cache: "no-cache",
+		});
+	} catch {
+		redirect(`/${channelSlug}/account?status=password_error`);
+	}
 
-	const errors = passwordChange?.errors ?? [];
+	const errors = result.passwordChange?.errors ?? [];
 	if (errors.length > 0) {
 		redirect(`/${channelSlug}/account?status=password_error`);
 	}
@@ -65,12 +75,17 @@ export async function deleteAddress(channelSlug: string, addressId: string) {
 		redirect(`/${channelSlug}/account/addresses?status=invalid_address`);
 	}
 
-	const { accountAddressDelete } = await executeGraphQL(AccountAddressDeleteDocument, {
-		variables: { id: addressId },
-		cache: "no-cache",
-	});
+	let result;
+	try {
+		result = await executeGraphQL(AccountAddressDeleteDocument, {
+			variables: { id: addressId },
+			cache: "no-cache",
+		});
+	} catch {
+		redirect(`/${channelSlug}/account/addresses?status=delete_error`);
+	}
 
-	const errors = accountAddressDelete?.errors ?? [];
+	const errors = result.accountAddressDelete?.errors ?? [];
 	if (errors.length > 0) {
 		redirect(`/${channelSlug}/account/addresses?status=delete_error`);
 	}
@@ -83,12 +98,17 @@ export async function setDefaultAddress(channelSlug: string, addressId: string, 
 		redirect(`/${channelSlug}/account/addresses?status=invalid_address`);
 	}
 
-	const { accountSetDefaultAddress } = await executeGraphQL(AccountSetDefaultAddressDocument, {
-		variables: { id: addressId, type },
-		cache: "no-cache",
-	});
+	let result;
+	try {
+		result = await executeGraphQL(AccountSetDefaultAddressDocument, {
+			variables: { id: addressId, type },
+			cache: "no-cache",
+		});
+	} catch {
+		redirect(`/${channelSlug}/account/addresses?status=default_error`);
+	}
 
-	const errors = accountSetDefaultAddress?.errors ?? [];
+	const errors = result.accountSetDefaultAddress?.errors ?? [];
 	if (errors.length > 0) {
 		redirect(`/${channelSlug}/account/addresses?status=default_error`);
 	}
@@ -99,12 +119,17 @@ export async function setDefaultAddress(channelSlug: string, addressId: string, 
 export async function createAddress(channelSlug: string, formData: FormData) {
 	const address = extractAddressFromForm(formData);
 
-	const { accountAddressCreate } = await executeGraphQL(AccountAddressCreateDocument, {
-		variables: { address },
-		cache: "no-cache",
-	});
+	let result;
+	try {
+		result = await executeGraphQL(AccountAddressCreateDocument, {
+			variables: { address },
+			cache: "no-cache",
+		});
+	} catch {
+		redirect(`/${channelSlug}/account/addresses?status=create_error`);
+	}
 
-	const errors = accountAddressCreate?.errors ?? [];
+	const errors = result.accountAddressCreate?.errors ?? [];
 	if (errors.length > 0) {
 		redirect(`/${channelSlug}/account/addresses?status=create_error`);
 	}
@@ -119,12 +144,17 @@ export async function updateAddress(channelSlug: string, addressId: string, form
 
 	const address = extractAddressFromForm(formData);
 
-	const { accountAddressUpdate } = await executeGraphQL(AccountAddressUpdateDocument, {
-		variables: { id: addressId, address },
-		cache: "no-cache",
-	});
+	let result;
+	try {
+		result = await executeGraphQL(AccountAddressUpdateDocument, {
+			variables: { id: addressId, address },
+			cache: "no-cache",
+		});
+	} catch {
+		redirect(`/${channelSlug}/account/addresses?status=update_error`);
+	}
 
-	const errors = accountAddressUpdate?.errors ?? [];
+	const errors = result.accountAddressUpdate?.errors ?? [];
 	if (errors.length > 0) {
 		redirect(`/${channelSlug}/account/addresses?status=update_error`);
 	}

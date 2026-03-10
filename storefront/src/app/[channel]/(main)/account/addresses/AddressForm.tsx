@@ -1,9 +1,17 @@
 "use client";
 
+import { CountryCode } from "@/gql/graphql";
 import { LinkWithChannel } from "@/ui/atoms/LinkWithChannel";
 import { createAddress, updateAddress } from "../actions";
 import { inputClassName, labelClassName } from "../styles";
 import type { AccountAddress } from "./types";
+
+const countryNames = new Intl.DisplayNames("en-US", { type: "region" });
+
+const countryOptions = Object.values(CountryCode).map((code) => ({
+	code,
+	name: countryNames.of(code) ?? code,
+}));
 
 type Props = {
 	channelSlug: string;
@@ -135,8 +143,11 @@ export function AddressForm({ channelSlug, address }: Props) {
 						defaultValue={address?.country.code ?? "US"}
 						className={inputClassName}
 					>
-						<option value="US">United States</option>
-						<option value="CA">Canada</option>
+						{countryOptions.map(({ code, name }) => (
+							<option key={code} value={code}>
+								{name}
+							</option>
+						))}
 					</select>
 				</div>
 				<div className="sm:col-span-2">

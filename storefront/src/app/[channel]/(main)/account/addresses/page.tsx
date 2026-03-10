@@ -24,7 +24,7 @@ export default async function AddressesPage({
 	});
 
 	if (!user) {
-		return <LoginForm />;
+		return <LoginForm redirectTo={`/${channel}/account/addresses`} />;
 	}
 
 	const addresses = user.addresses ?? [];
