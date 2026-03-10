@@ -1,5 +1,5 @@
 import { pick } from "lodash-es";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { type AddressFormData } from "@/checkout/components/AddressForm/types";
 import { useAddressFormSchema } from "@/checkout/components/AddressForm/useAddressFormSchema";
 import { type CountryCode } from "@/checkout/graphql";
@@ -35,7 +35,9 @@ export const useAutoSaveAddressForm = ({
 
 	// Keep a ref to latest values so partialSubmit always reads current state
 	const valuesRef = useRef(values);
-	valuesRef.current = values;
+	useEffect(() => {
+		valuesRef.current = values;
+	}, [values]);
 
 	const debouncedSubmit = useDebouncedSubmit(onSubmit);
 

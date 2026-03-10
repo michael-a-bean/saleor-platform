@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, createContext, useContext } from "react";
+import { useState, useCallback, useRef, useEffect, createContext, useContext } from "react";
 import {
 	type FormDataBase,
 	type FormProps,
@@ -37,7 +37,9 @@ export const useForm = <TData extends FormDataBase>(formProps: FormProps<TData>)
 
 	// Keep a ref to latest values for use in submitForm callback
 	const valuesRef = useRef(values);
-	valuesRef.current = values;
+	useEffect(() => {
+		valuesRef.current = values;
+	}, [values]);
 
 	const validateForm = useCallback(
 		(vals: TData): FormErrors<TData> => {
