@@ -64,6 +64,12 @@ jobs:
           token: ${{ secrets.SUBMODULES_TOKEN }}
           fetch-depth: 2  # Only need HEAD~1 for change detection
 
+      # Shallow clone (fetch-depth: 2) doesn't give the submodule enough
+      # history for `git diff --submodule=diff` to compute file-level diffs.
+      # Unshallow just the submodule so the diff step can see actual changes.
+      - name: Ensure submodule history for diff
+        run: git -C saleor-apps fetch --unshallow 2>/dev/null || true
+
       - name: Detect changed paths (non-submodule)
         uses: dorny/paths-filter@v3
         id: filter
