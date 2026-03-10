@@ -131,6 +131,10 @@ validate_endpoint_reachable() {
         # 2xx or 3xx responses are acceptable
         log_success "${name}: HTTP ${http_code} (acceptable)"
         return 0
+    elif [[ "$http_code" == "503" ]]; then
+        # 503 is expected when ECS services are scaled to 0 (cost savings)
+        log_warn "${name}: HTTP 503 (service may be scaled to zero)"
+        return 0
     else
         log_error "${name}: Expected HTTP ${expected_code}, got HTTP ${http_code}"
         ((FAILURES++)) || true

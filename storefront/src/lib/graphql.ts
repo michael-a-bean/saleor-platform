@@ -44,7 +44,9 @@ export async function executeGraphQL<Result, Variables>(
 
 	const response = await requestQueue.enqueue(async () => {
 		if (withAuth) {
-			return (await getServerAuthClient()).fetchWithAuth(apiUrl, input);
+			const authClient = await getServerAuthClient();
+			const authFetch = withRetry(authClient.fetchWithAuth.bind(authClient));
+			return authFetch(apiUrl, input);
 		}
 		return resilientFetch(apiUrl, input);
 	});

@@ -3,7 +3,7 @@
 # Provides common developer operations for the hobby gaming platform.
 # See docs/DELIVERY_CONTRACT.md for validation requirements.
 
-.PHONY: help validate validate-with-env validate-quick lint typecheck test migration-check docker-check localreview env-check
+.PHONY: help validate validate-with-env validate-quick lint typecheck test migration-check docker-check localreview codex-review env-check
 
 # Default target
 help:
@@ -14,6 +14,7 @@ help:
 	@echo "    make validate-with-env Run validation with strict .env check"
 	@echo "    make validate-quick    Quick validation (skip tests/migrations)"
 	@echo "    make localreview       Run local review gate (checks diffs)"
+	@echo "    make codex-review      Run Codex CLI AI review (requires auth)"
 	@echo ""
 	@echo "  Individual checks:"
 	@echo "    make lint              Run linters for all projects"
@@ -29,11 +30,17 @@ help:
 	@echo "    FAIL_ON=HIGH|MEDIUM|LOW|NONE   Minimum severity to fail (default: HIGH)"
 	@echo "    OUTPUT_PATH=path/to/report.md  Where to write report"
 	@echo ""
+	@echo "  Codex Review Options:"
+	@echo "    BASE_REF=platform/main         Branch to diff against (default: platform/main)"
+	@echo "    FAIL_ON=P0|P1|NONE             Minimum severity to block (default: P0)"
+	@echo ""
 	@echo "Examples:"
 	@echo "  make validate                       # Full validation suite"
 	@echo "  make localreview"
 	@echo "  make localreview BASE_REF=HEAD~5"
 	@echo "  make localreview SCOPE=staged FAIL_ON=MEDIUM"
+	@echo "  make codex-review"
+	@echo "  make codex-review FAIL_ON=P1"
 
 # =============================================================================
 # Environment Check
@@ -188,6 +195,11 @@ docker-check:
 localreview:
 	@echo "Running local review..."
 	@bash scripts/localreview.sh
+
+# Run Codex CLI AI-powered review (requires: npm i -g @openai/codex && codex login)
+codex-review:
+	@echo "Running Codex CLI review..."
+	@bash scripts/codex-review.sh
 
 # =============================================================================
 # Full Validation Suite

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, createContext, useContext } from "react";
+import { useState, useCallback, useRef, useEffect, createContext, useContext } from "react";
 import {
 	type FormDataBase,
 	type FormProps,
@@ -25,11 +25,21 @@ export const useForm = <TData extends FormDataBase>(formProps: FormProps<TData>)
 	);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const initialValuesRef = useRef(initialValues);
-	const [dirty, setDirty] = useState(initialDirty);
+
+	const computeDirty = useCallback(
+		(current: TData) => {
+			if (initialDirty) return true;
+			return JSON.stringify(current) !== JSON.stringify(initialValuesRef.current);
+		},
+		[initialDirty],
+	);
+	const [dirty, setDirty] = useState(() => computeDirty(initialValues));
 
 	// Keep a ref to latest values for use in submitForm callback
 	const valuesRef = useRef(values);
-	valuesRef.current = values;
+	useEffect(() => {
+		valuesRef.current = values;
+	}, [values]);
 
 	const validateForm = useCallback(
 		(vals: TData): FormErrors<TData> => {
@@ -47,7 +57,7 @@ export const useForm = <TData extends FormDataBase>(formProps: FormProps<TData>)
 		<TFieldName extends string>(field: TFieldName, value: any) => {
 			setValuesState((prev) => {
 				const next = { ...prev, [field]: value };
-				setDirty(true);
+				setDirty(computeDirty(next));
 				if (validateOnChange && validationSchema) {
 					const formErrors = validationSchema(next);
 					setErrorsState(formErrors);
@@ -55,21 +65,21 @@ export const useForm = <TData extends FormDataBase>(formProps: FormProps<TData>)
 				return next;
 			});
 		},
-		[validateOnChange, validationSchema],
+		[validateOnChange, validationSchema, computeDirty],
 	);
 
 	const setValues = useCallback(
 		(newValues: Partial<TData>, shouldValidate?: boolean) => {
 			setValuesState((prev) => {
 				const next = { ...prev, ...newValues };
-				setDirty(true);
+				setDirty(computeDirty(next));
 				if (shouldValidate && validationSchema) {
 					setErrorsState(validationSchema(next));
 				}
 				return next;
 			});
 		},
-		[validationSchema],
+		[validationSchema, computeDirty],
 	);
 
 	const setErrors = useCallback((newErrors: FormErrors<TData>) => {
@@ -100,6 +110,9 @@ export const useForm = <TData extends FormDataBase>(formProps: FormProps<TData>)
 
 	const resetForm = useCallback((nextState?: { values?: TData }) => {
 		const resetValues = nextState?.values ?? initialValuesRef.current;
+		if (nextState?.values) {
+			initialValuesRef.current = nextState.values;
+		}
 		setValuesState(resetValues);
 		setErrorsState({});
 		setTouchedState({});
@@ -116,7 +129,7 @@ export const useForm = <TData extends FormDataBase>(formProps: FormProps<TData>)
 			const fieldValue = type === "checkbox" ? checked : value;
 			setValuesState((prev) => {
 				const next = { ...prev, [name]: fieldValue };
-				setDirty(true);
+				setDirty(computeDirty(next));
 				if (validateOnChange && validationSchema) {
 					const formErrors = validationSchema(next);
 					setErrorsState(formErrors);
@@ -124,7 +137,7 @@ export const useForm = <TData extends FormDataBase>(formProps: FormProps<TData>)
 				return next;
 			});
 		},
-		[validateOnChange, validationSchema],
+		[validateOnChange, validationSchema, computeDirty],
 	);
 
 	const handleBlur = useCallback(
