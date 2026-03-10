@@ -36,19 +36,20 @@ if [[ -d "$APPS_DIR" ]]; then
     pnpm install --frozen-lockfile >/dev/null 2>&1 || true
   fi
 
-  LINT_OUTPUT=""
+  APPS_LINT_EXIT=0
   LINT_OUTPUT=$(pnpm turbo run lint \
     --filter=saleor-app-inventory-ops \
     --filter=saleor-app-buylist \
-    --filter=saleor-app-pos 2>&1) || true
+    --filter=saleor-app-pos 2>&1) || APPS_LINT_EXIT=$?
 
-  # Check for actual errors (not warnings)
-  if echo "$LINT_OUTPUT" | grep -qE '^\s+\d+:\d+\s+error\s'; then
+  if [[ $APPS_LINT_EXIT -ne 0 ]]; then
+    # Extract error lines (not warnings) for a clear message
     ERROR_LINES=$(echo "$LINT_OUTPUT" | grep -E '\d+:\d+\s+error\s' | head -20)
-    ERRORS="${ERRORS}saleor-apps lint errors:\n${ERROR_LINES}\n\n"
-  elif echo "$LINT_OUTPUT" | grep -q 'Failed:'; then
-    TAIL=$(echo "$LINT_OUTPUT" | tail -10)
-    ERRORS="${ERRORS}saleor-apps lint failed:\n${TAIL}\n\n"
+    if [[ -n "$ERROR_LINES" ]]; then
+      ERRORS="${ERRORS}saleor-apps lint errors:\n${ERROR_LINES}\n\n"
+    else
+      ERRORS="${ERRORS}saleor-apps lint failed:\n$(echo "$LINT_OUTPUT" | tail -10)\n\n"
+    fi
   fi
 fi
 
@@ -66,16 +67,16 @@ if [[ -d "$SF_DIR" ]]; then
     USE_SCHEMA_FILE=true pnpm generate >/dev/null 2>&1 || true
   fi
 
-  LINT_OUTPUT=""
-  LINT_OUTPUT=$(pnpm lint 2>&1) || true
-  if echo "$LINT_OUTPUT" | grep -qE '(error|Error)'; then
-    ERRORS="${ERRORS}storefront lint failed:\n$(echo "$LINT_OUTPUT" | tail -10)\n\n"
+  LINT_EXIT=0
+  LINT_OUTPUT=$(pnpm lint 2>&1) || LINT_EXIT=$?
+  if [[ $LINT_EXIT -ne 0 ]]; then
+    ERRORS="${ERRORS}storefront lint failed (exit $LINT_EXIT):\n$(echo "$LINT_OUTPUT" | tail -15)\n\n"
   fi
 
-  TSC_OUTPUT=""
-  TSC_OUTPUT=$(pnpm exec tsc --noEmit 2>&1) || true
-  if echo "$TSC_OUTPUT" | grep -qE '(error TS|Error)'; then
-    ERRORS="${ERRORS}storefront tsc failed:\n$(echo "$TSC_OUTPUT" | grep 'error TS' | head -15)\n\n"
+  TSC_EXIT=0
+  TSC_OUTPUT=$(pnpm exec tsc --noEmit 2>&1) || TSC_EXIT=$?
+  if [[ $TSC_EXIT -ne 0 ]]; then
+    ERRORS="${ERRORS}storefront tsc failed (exit $TSC_EXIT):\n$(echo "$TSC_OUTPUT" | tail -15)\n\n"
   fi
 fi
 
