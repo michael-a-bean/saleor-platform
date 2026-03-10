@@ -80,6 +80,38 @@ if [[ -d "$SF_DIR" ]]; then
   fi
 fi
 
+# --- 3. Submodule reference validation (prevents CI checkout failures) ---
+cd "$PROJECT_ROOT"
+
+check_nested_submodule_refs() {
+  local base_dir="$1"
+  local missing=""
+
+  while IFS= read -r line; do
+    SHA=$(echo "$line" | awk '{print $1}' | sed 's/^[+ -]*//')
+    SUBPATH=$(echo "$line" | awk '{print $2}')
+    [[ -z "$SHA" || -z "$SUBPATH" ]] && continue
+
+    local full_path="${base_dir:+$base_dir/}$SUBPATH"
+    if ! git -C "$full_path" branch -r --contains "$SHA" >/dev/null 2>&1; then
+      missing="${missing}  $full_path ($SHA)\n"
+    fi
+
+    # Check nested submodules
+    if [[ -f "$full_path/.gitmodules" ]]; then
+      nested=$(cd "$full_path" && check_nested_submodule_refs "$full_path")
+      [[ -n "$nested" ]] && missing="${missing}${nested}"
+    fi
+  done < <(git -C "${base_dir:-.}" submodule status 2>/dev/null)
+
+  echo -n "$missing"
+}
+
+MISSING_REFS=$(check_nested_submodule_refs "")
+if [[ -n "$MISSING_REFS" ]]; then
+  ERRORS="${ERRORS}Submodule commits not pushed to remote (CI will fail at checkout):\n${MISSING_REFS}\nFix: push submodule commits before creating PR.\n\n"
+fi
+
 # --- Report results ---
 if [[ -n "$ERRORS" ]]; then
   REASON=$(echo -e "$ERRORS" | jq -Rs .)
