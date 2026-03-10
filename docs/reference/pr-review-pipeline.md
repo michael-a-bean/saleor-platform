@@ -7,64 +7,57 @@ push to feature/* branch
         │
         ▼
 ┌───────────────┐     ┌──────────────────┐
-│  CI Checks    │     │  Codex PR Review  │
-│  (lint, test, │     │  (severity-based) │
-│   build, etc) │     │                   │
+│  CI Checks    │     │  Codex Web Review │
+│  (lint, test, │     │  (via ChatGPT     │
+│   build, etc) │     │   Plus, advisory) │
 └───────┬───────┘     └────────┬──────────┘
         │                      │
-        │              ┌───────┴────────┐
-        │              │                │
-        │        [critical]        [warning/note]
-        │         found?             only?
-        │              │                │
-        │       REQUEST_CHANGES     COMMENT
-        │       (blocks merge)    (informational)
-        │              │                │
-        │              │         ┌──────┴──────┐
-        │              │         │ Create GitHub│
-        │              │         │ issues for   │
-        │              │         │ each finding │
-        │              │         └──────────────┘
-        ▼              ▼                ▼
+        │               COMMENT only
+        │              (inline feedback,
+        │               never blocks)
+        │                      │
+        ▼                      ▼
 ┌─────────────────────────────────────────────┐
 │              Auto-Merge Check               │
 │                                             │
 │  ✅ All CI checks pass                      │
 │  ✅ `auto-merge` label present              │
 │  ✅ Not a draft PR                          │
-│  ✅ No active Codex REQUEST_CHANGES         │
 │                                             │
-│  All four → squash merge                    │
+│  All three → squash merge                   │
 └─────────────────────────────────────────────┘
 ```
 
-## Severity Taxonomy
+## Code Review
 
-| Label | Meaning | Codex Action | Blocks Merge? |
-|-------|---------|--------------|---------------|
-| `[critical]` | Security, data loss, crashes, broken auth | REQUEST_CHANGES | Yes |
-| `[warning]` | Bugs, logic errors, race conditions | COMMENT | No |
-| `[note]` | Style, naming, minor improvements | COMMENT | No |
+PR code review is handled by **Codex web-based review** (ChatGPT Plus subscription), not a GitHub Action.
+
+- Reviews are **advisory only** — posted as `COMMENTED`, never blocking
+- Triggered automatically on PR open (configured in chatgpt.com/codex settings)
+- Can also be triggered manually with `@codex review` in a PR comment
+- Review guidelines are customized via `AGENTS.md` in the repo root
+
+### Severity (defined in AGENTS.md)
+
+| Level | Meaning | Action |
+|-------|---------|--------|
+| P0 (critical) | Security, data loss, crashes | Review manually before merge |
+| P1 (warning) | Bugs, logic errors, race conditions | Address when convenient |
+| P2 (note) | Style, naming, minor improvements | Informational |
 
 ## Key Design Decisions
 
-1. **Codex blocks only on `[critical]`** — REQUEST_CHANGES is reserved for security/data-loss/crash issues. Everything else is a COMMENT. This prevents infinite nit-pick fix loops.
+1. **Reviews are advisory, not blocking** — Codex web review only posts COMMENT reviews. Critical findings require human judgment, not automated merge gates.
 
-2. **Verdict derived from content** — The workflow scans for `[critical]` labels in Codex output rather than trusting a first-line verdict format. This is more reliable.
+2. **Auto-merge requires no review approval** — Only green CI + `auto-merge` label + not draft. This keeps velocity high for routine changes.
 
-3. **Non-blocking findings become GitHub issues** — `[warning]` and `[note]` findings are automatically created as GitHub issues with `codex-review` + severity labels. This ensures findings are tracked even when they don't block the PR. Dedup by title prevents duplicates on re-runs.
-
-4. **babysit-pr ignores review comments** — The babysit skill only fixes CI failures. Codex REQUEST_CHANGES (critical findings) are escalated to a human, not auto-fixed.
-
-5. **Auto-merge requires no approval** — Only green CI + `auto-merge` label + not draft + no active REQUEST_CHANGES. No Codex APPROVE needed.
-
-6. **Previous REQUEST_CHANGES are dismissed on re-review** — When a new push triggers Codex, any prior REQUEST_CHANGES is dismissed so stale blocks don't persist.
+3. **babysit-pr ignores review comments** — The babysit skill only fixes CI failures. Code review findings are for human consideration.
 
 ## Workflow Files
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/codex-pr-review.yml` | Codex review with severity rubric |
+| `AGENTS.md` | Codex review guidelines and project context |
 | `.github/workflows/auto-merge.yml` | Auto-merge on green CI |
 | `.claude/skills/babysit-pr.md` | CI failure auto-fix, human escalation |
 | `.claude/skills/create-pr.md` | PR creation with pre-flight checks |
@@ -72,21 +65,14 @@ push to feature/* branch
 
 ## Troubleshooting
 
-### Codex keeps submitting REQUEST_CHANGES for non-critical issues
-The workflow derives verdict from `[critical]` labels in the output. If Codex uses `[critical]` for minor issues, update the prompt in `codex-pr-review.yml` to be more specific about what constitutes critical.
-
 ### Auto-merge not triggering
-Check all four conditions:
+Check all three conditions:
 1. All CI checks completed successfully (not just pending)
 2. PR has the `auto-merge` label
 3. PR is not in draft state
-4. No active Codex REQUEST_CHANGES review exists
+
+### Auto-merge not firing after CI passes
+The auto-merge workflow uses `workflow_run` (not `check_suite`) to listen for `test-platform` completion. If Container Builds finishes after auto-merge first runs, remove and re-add the `auto-merge` label to re-trigger.
 
 ### babysit-pr trying to fix review comments
 It shouldn't — the skill only handles CI failures. If this happens, verify you're using the updated `babysit-pr.md` that removed Step 4 (Address Codex Review).
-
-### Stale REQUEST_CHANGES blocking merge after fix
-Push a new commit. The `synchronize` event triggers a new Codex review, which dismisses the previous REQUEST_CHANGES before submitting a fresh review.
-
-### Auto-merge not firing after CI passes
-The auto-merge workflow uses `workflow_run` (not `check_suite`) to listen for `test-platform` and `Codex PR Review` completion. `check_suite` events from `GITHUB_TOKEN` don't trigger other workflows due to GitHub's anti-cascade protection — this is why `workflow_run` is required.

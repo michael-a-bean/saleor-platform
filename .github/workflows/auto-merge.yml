@@ -2,7 +2,7 @@ name: Auto-Merge on Green CI
 
 on:
   workflow_run:
-    workflows: ["test-platform", "Codex PR Review"]
+    workflows: ["test-platform"]
     types: [completed]
   pull_request:
     types: [labeled]
@@ -127,25 +127,8 @@ jobs:
               return;
             }
 
-            // Check for active Codex REQUEST_CHANGES (critical finding blocks merge)
-            const { data: reviews } = await github.rest.pulls.listReviews({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-            });
-
-            const activeBlock = reviews.find(r =>
-              r.body?.startsWith('## Codex Review') &&
-              r.state === 'CHANGES_REQUESTED' &&
-              r.user?.login === 'github-actions[bot]'
-            );
-
-            if (activeBlock) {
-              console.log('Codex has active REQUEST_CHANGES (critical finding) — not merging');
-              return;
-            }
-
-            console.log('All checks pass + no active REQUEST_CHANGES — eligible for merge');
+            // Codex web review posts COMMENTED reviews (advisory only, non-blocking)
+            console.log('All required checks pass — eligible for merge');
             core.setOutput('eligible', 'true');
 
       - name: Merge PR
