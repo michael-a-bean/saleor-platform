@@ -15,19 +15,33 @@ interface RetryOptions {
 
 type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
-/** Wrap fetch with automatic retry for transient failures (network errors, 5xx). */
+/** Check if a GraphQL request body contains a mutation (not safe to retry). */
+function isMutation(init?: RequestInit): boolean {
+	if (!init?.body || typeof init.body !== "string") return false;
+	try {
+		const parsed = JSON.parse(init.body) as { query?: string };
+		return typeof parsed.query === "string" && parsed.query.trimStart().startsWith("mutation");
+	} catch {
+		return false;
+	}
+}
+
+/** Wrap fetch with automatic retry for transient failures (network errors, 5xx).
+ *  Mutations are never retried to prevent duplicate side effects. */
 export function withRetry(
 	baseFetch: FetchFn,
 	{ maxRetries = 2, baseDelay = 500 }: RetryOptions = {},
 ): FetchFn {
 	return async (input, init) => {
+		// Never retry mutations — they may have already been applied server-side
+		const effectiveRetries = isMutation(init) ? 0 : maxRetries;
 		let lastError: Error | null = null;
 
-		for (let attempt = 0; attempt <= maxRetries; attempt++) {
+		for (let attempt = 0; attempt <= effectiveRetries; attempt++) {
 			try {
 				const response = await baseFetch(input, init);
 
-				if (RETRYABLE_STATUS_CODES.has(response.status) && attempt < maxRetries) {
+				if (RETRYABLE_STATUS_CODES.has(response.status) && attempt < effectiveRetries) {
 					await sleep(baseDelay * Math.pow(2, attempt));
 					continue;
 				}
@@ -36,7 +50,7 @@ export function withRetry(
 			} catch (error) {
 				lastError = error instanceof Error ? error : new Error(String(error));
 
-				if (attempt < maxRetries) {
+				if (attempt < effectiveRetries) {
 					await sleep(baseDelay * Math.pow(2, attempt));
 					continue;
 				}

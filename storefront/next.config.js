@@ -65,9 +65,9 @@ const config = {
 	async headers() {
 		const isDev = process.env.NODE_ENV === "development";
 		return [
-			// Versioned assets (hashed filenames) — cache forever
+			// Versioned static assets (hashed filenames) — cache forever
 			{
-				source: "/:path*",
+				source: "/_next/static/:path*",
 				has: [{ type: "query", key: "v" }],
 				headers: [
 					{
