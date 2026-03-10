@@ -84,7 +84,7 @@ check_submodule_refs() {
 
         # Recursively check nested submodules
         if [ -f "$full_path/.gitmodules" ]; then
-            if ! (cd "$full_path" && check_submodule_refs "$full_path"); then
+            if ! (cd "$full_path" && check_submodule_refs ""); then
                 error=1
             fi
         fi

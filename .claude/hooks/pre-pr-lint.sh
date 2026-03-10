@@ -99,7 +99,7 @@ check_nested_submodule_refs() {
 
     # Check nested submodules
     if [[ -f "$full_path/.gitmodules" ]]; then
-      nested=$(cd "$full_path" && check_nested_submodule_refs "$full_path")
+      nested=$(cd "$full_path" && check_nested_submodule_refs "")
       [[ -n "$nested" ]] && missing="${missing}${nested}"
     fi
   done < <(git -C "${base_dir:-.}" submodule status 2>/dev/null)
