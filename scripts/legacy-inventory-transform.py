@@ -152,23 +152,31 @@ def download_scryfall_bulk(cache_dir: str) -> str:
     return cache_path
 
 
-def build_scryfall_lookup(cache_path: str) -> dict:
+def build_scryfall_lookup(cache_path: str) -> tuple[dict, dict]:
     """
-    Build a lookup from Scryfall bulk data.
+    Build lookups from Scryfall bulk data.
 
-    Returns dict keyed by (normalized_name, set_code) → {
-        "collector_number": str,
-        "tcgplayer_id": str,
-        "scryfall_id": str,
-    }
+    Returns (name_lookup, tcg_lookup):
 
-    For double-faced cards, also indexes by front face name alone.
+    name_lookup — keyed by name tuples:
+    - Specific: (normalized_name, set_code, collector_number) → entry
+    - Generic:  (normalized_name, set_code) → entry (first match only)
+
+    tcg_lookup — keyed by TCGPlayer ID (str) → entry
+    Resolves art variants when source has TCG ID but no collector number.
+
+    Each entry: {"collector_number", "tcgplayer_id", "scryfall_id"}
     """
     print("  Parsing Scryfall bulk data...")
     with open(cache_path, "r", encoding="utf-8") as f:
         cards = json.load(f)
 
     lookup = {}
+    tcg_lookup = {}
+
+    def add_entry(key, entry):
+        if key not in lookup:
+            lookup[key] = entry
 
     for card in cards:
         # Only MTG cards in paper
@@ -189,54 +197,74 @@ def build_scryfall_lookup(cache_path: str) -> dict:
             "scryfall_id": scryfall_id,
         }
 
-        # Primary key: full normalized name + set
-        norm = normalize_name(name)
-        key = (norm, set_code)
-        if key not in lookup:
-            lookup[key] = entry
+        # TCGPlayer ID lookup (most precise — 1:1 with Scryfall cards)
+        if tcg_id:
+            tcg_lookup[str(tcg_id)] = entry
 
-        # Also index by no-apostrophe variant (S&C strips apostrophes:
-        # "Aang's Iceberg" → "Aangs Iceberg")
+        norm = normalize_name(name)
         norm_no_apo = normalize_name_no_apostrophe(name)
+
+        # Specific key: name + set + collector_number (distinguishes art variants)
+        add_entry((norm, set_code, cn), entry)
         if norm_no_apo != norm:
-            apo_key = (norm_no_apo, set_code)
-            if apo_key not in lookup:
-                lookup[apo_key] = entry
+            add_entry((norm_no_apo, set_code, cn), entry)
+
+        # Generic key: name + set (first match wins — used when CN unknown)
+        add_entry((norm, set_code), entry)
+        if norm_no_apo != norm:
+            add_entry((norm_no_apo, set_code), entry)
 
         # For DFCs like "Delver of Secrets // Insectile Aberration",
         # also index by front face name only (with and without apostrophes)
         if " // " in name:
             front_name = normalize_name(name.split(" // ")[0])
-            front_key = (front_name, set_code)
-            if front_key not in lookup:
-                lookup[front_key] = entry
             front_no_apo = normalize_name_no_apostrophe(name.split(" // ")[0])
+            add_entry((front_name, set_code, cn), entry)
+            add_entry((front_name, set_code), entry)
             if front_no_apo != front_name:
-                front_apo_key = (front_no_apo, set_code)
-                if front_apo_key not in lookup:
-                    lookup[front_apo_key] = entry
+                add_entry((front_no_apo, set_code, cn), entry)
+                add_entry((front_no_apo, set_code), entry)
 
-    print(f"  Built lookup with {len(lookup):,} entries")
-    return lookup
+    print(f"  Built lookup with {len(lookup):,} name entries, {len(tcg_lookup):,} TCG entries")
+    return lookup, tcg_lookup
 
 
 def enrich_row(card_name: str, set_code: str, collector_number: str,
-               tcgplayer_id: str, lookup: dict) -> tuple[str, str, str]:
+               tcgplayer_id: str, name_lookup: dict,
+               tcg_lookup: dict) -> tuple[str, str, str]:
     """
     Enrich a row with Scryfall data if fields are missing.
+
+    Lookup priority:
+    1. TCGPlayer ID (most precise — 1:1 with Scryfall, resolves art variants)
+    2. Name + set + collector_number (distinguishes art variants when CN known)
+    3. Name + set (generic fallback)
 
     Returns (collector_number, tcgplayer_id, scryfall_id) — original values
     preserved if already populated, Scryfall values filled in if missing.
     """
-    # Try exact normalized match first
-    norm_name = normalize_name(card_name)
-    key = (norm_name, set_code)
-    entry = lookup.get(key)
+    entry = None
 
-    # Fallback: try without apostrophes (S&C strips them)
+    # Try TCGPlayer ID first — most precise, resolves art variants like
+    # Abbey Matron 2a (TCG 4436) vs 2b (TCG 18266)
+    if tcgplayer_id:
+        entry = tcg_lookup.get(tcgplayer_id)
+
+    # Try specific name key (name + set + collector_number)
     if not entry:
+        norm_name = normalize_name(card_name)
         norm_no_apo = normalize_name_no_apostrophe(card_name)
-        entry = lookup.get((norm_no_apo, set_code))
+
+        if collector_number:
+            entry = name_lookup.get((norm_name, set_code, collector_number))
+            if not entry and norm_no_apo != norm_name:
+                entry = name_lookup.get((norm_no_apo, set_code, collector_number))
+
+        # Fall back to generic key (name + set)
+        if not entry:
+            entry = name_lookup.get((norm_name, set_code))
+        if not entry and norm_no_apo != norm_name:
+            entry = name_lookup.get((norm_no_apo, set_code))
 
     if not entry:
         return collector_number, tcgplayer_id, ""
@@ -310,22 +338,18 @@ def map_condition(cond: str) -> str:
 
 # ── Transform ────────────────────────────────────────────────────────
 
-def transform(input_path: str, output_dir: str, scryfall_lookup: dict | None = None):
-    """Transform legacy CSV into 3 warehouse-specific collection import CSVs."""
+def transform(input_path: str, output_dir: str,
+              scryfall_lookup: tuple[dict, dict] | None = None):
+    """Transform legacy CSV into 3 warehouse-specific collection import CSVs.
+
+    Aggregates rows that map to the same variant (same card_name, set_code,
+    collector_number, scryfall_id, condition, foil) by summing quantities and
+    computing weighted-average unit cost.
+    """
     os.makedirs(output_dir, exist_ok=True)
 
-    # Output files
-    files = {}
-    writers = {}
-    headers = ["card_name", "set_code", "collector_number", "tcgplayer_id", "condition", "foil", "quantity", "unit_cost"]
-
-    for warehouse in ("main", "frank", "rc"):
-        path = os.path.join(output_dir, f"stock_{warehouse}.csv")
-        f = open(path, "w", newline="", encoding="utf-8")
-        w = csv.writer(f)
-        w.writerow(headers)
-        files[warehouse] = f
-        writers[warehouse] = w
+    headers = ["card_name", "set_code", "collector_number", "tcgplayer_id",
+               "scryfall_id", "condition", "foil", "quantity", "unit_cost"]
 
     # Stats
     stats = {
@@ -342,6 +366,7 @@ def transform(input_path: str, output_dir: str, scryfall_lookup: dict | None = N
         "enriched_cn": 0,
         "enriched_tcg": 0,
         "enriched_miss": 0,
+        "aggregated_dupes": 0,
     }
 
     stock_columns = {
@@ -350,7 +375,12 @@ def transform(input_path: str, output_dir: str, scryfall_lookup: dict | None = N
         "rc": "stock_rc",
     }
 
-    with open(input_path, encoding="latin1") as f:
+    # Accumulate rows per warehouse, keyed by dedup key
+    # Value: {"card_name", "set_code", "collector_number", "tcgplayer_id",
+    #         "scryfall_id", "condition", "foil", "total_qty", "total_cost"}
+    aggregated: dict[str, dict[tuple, dict]] = {w: {} for w in stock_columns}
+
+    with open(input_path, encoding="cp1252") as f:
         reader = csv.DictReader(f)
 
         for row in reader:
@@ -372,18 +402,21 @@ def transform(input_path: str, output_dir: str, scryfall_lookup: dict | None = N
             foil = map_foil(row["foil"])
             buy_price = row["buy_price"]
             card_id = row["card_id"]
+            scryfall_id = ""
 
-            # Scryfall enrichment: fill in missing collector_number and tcgplayer_id
-            if scryfall_lookup and (not collector_number or not tcgplayer_id):
+            # Scryfall enrichment
+            if scryfall_lookup:
+                name_lookup, tcg_lookup = scryfall_lookup
                 orig_cn, orig_tcg = collector_number, tcgplayer_id
-                collector_number, tcgplayer_id, _ = enrich_row(
-                    card_name, scryfall_set, collector_number, tcgplayer_id, scryfall_lookup
+                collector_number, tcgplayer_id, scryfall_id = enrich_row(
+                    card_name, scryfall_set, collector_number, tcgplayer_id,
+                    name_lookup, tcg_lookup,
                 )
                 if collector_number != orig_cn:
                     stats["enriched_cn"] += 1
                 if tcgplayer_id != orig_tcg:
                     stats["enriched_tcg"] += 1
-                if not collector_number and not tcgplayer_id:
+                if not collector_number and not tcgplayer_id and not scryfall_id:
                     stats["enriched_miss"] += 1
 
             stats["unique_cards"].add(card_id)
@@ -398,7 +431,13 @@ def transform(input_path: str, output_dir: str, scryfall_lookup: dict | None = N
             if has_tcg or has_cn:
                 stats["with_either"] += 1
 
-            # Write a row per warehouse where stock > 0
+            # Parse buy_price as float for weighted average
+            try:
+                cost = float(buy_price)
+            except (ValueError, TypeError):
+                cost = 0.0
+
+            # Accumulate per warehouse where stock > 0
             for warehouse, col in stock_columns.items():
                 try:
                     qty = int(row[col])
@@ -412,21 +451,56 @@ def transform(input_path: str, output_dir: str, scryfall_lookup: dict | None = N
                     stats["skipped_overflow"] += 1
                     continue
 
-                writers[warehouse].writerow([
-                    card_name,
-                    scryfall_set,
-                    collector_number,
-                    tcgplayer_id,
-                    condition,
-                    foil,
+                # Dedup key: everything that identifies a unique Saleor variant
+                # Use scryfall_id as primary dedup (most precise), fall back to
+                # name+set+cn when scryfall_id is empty
+                dedup_key = (card_name, scryfall_set, collector_number,
+                             scryfall_id, condition, foil)
+
+                bucket = aggregated[warehouse]
+                if dedup_key in bucket:
+                    existing = bucket[dedup_key]
+                    existing["total_qty"] += qty
+                    existing["total_cost"] += cost * qty
+                    # Keep the richer tcgplayer_id (non-empty wins)
+                    if tcgplayer_id and not existing["tcgplayer_id"]:
+                        existing["tcgplayer_id"] = tcgplayer_id
+                    stats["aggregated_dupes"] += 1
+                else:
+                    bucket[dedup_key] = {
+                        "card_name": card_name,
+                        "set_code": scryfall_set,
+                        "collector_number": collector_number,
+                        "tcgplayer_id": tcgplayer_id,
+                        "scryfall_id": scryfall_id,
+                        "condition": condition,
+                        "foil": foil,
+                        "total_qty": qty,
+                        "total_cost": cost * qty,
+                    }
+
+    # Write aggregated rows to CSV
+    for warehouse in ("main", "frank", "rc"):
+        path = os.path.join(output_dir, f"stock_{warehouse}.csv")
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(headers)
+            for entry in aggregated[warehouse].values():
+                qty = entry["total_qty"]
+                # Weighted average unit cost
+                unit_cost = entry["total_cost"] / qty if qty > 0 else 0.0
+                w.writerow([
+                    entry["card_name"],
+                    entry["set_code"],
+                    entry["collector_number"],
+                    entry["tcgplayer_id"],
+                    entry["scryfall_id"],
+                    entry["condition"],
+                    entry["foil"],
                     qty,
-                    buy_price,
+                    f"{unit_cost:.2f}",
                 ])
                 stats["written"][warehouse] += 1
-
-    # Close files
-    for f in files.values():
-        f.close()
 
     return stats
 
@@ -484,6 +558,7 @@ def main():
     print()
     print(f"Skipped (no set map): {stats['skipped_unmappable_set']:,}")
     print(f"Skipped (overflow):   {stats['skipped_overflow']:,}")
+    print(f"Duplicates merged:    {stats['aggregated_dupes']:,}")
     print()
     print("── Matching identifier coverage ──")
     print(f"With TCGPlayer ID:    {stats['with_tcgplayer_id']:,} ({stats['with_tcgplayer_id']/stats['total_rows']*100:.1f}%)")
