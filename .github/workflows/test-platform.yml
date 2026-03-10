@@ -30,7 +30,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
           fetch-depth: 2
 
@@ -239,7 +239,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Setup pnpm
@@ -289,7 +289,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Setup pnpm
@@ -394,7 +394,7 @@ jobs:
         if: steps.should-build.outputs.build == 'true'
         uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Set up Docker Buildx
@@ -424,7 +424,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Set up Docker Buildx
@@ -469,7 +469,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Set up environment

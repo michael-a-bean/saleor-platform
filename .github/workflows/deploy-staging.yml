@@ -60,7 +60,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: true  # One level only — nested submodule refs don't exist on remotes
+          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
           fetch-depth: 2  # Only need HEAD~1 for change detection
 
@@ -326,7 +326,7 @@ jobs:
         if: steps.should-build.outputs.build == 'true'
         uses: actions/checkout@v4
         with:
-          submodules: true  # One level only — nested submodule refs don't exist on remotes
+          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Configure AWS credentials
