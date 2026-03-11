@@ -6,7 +6,7 @@
 # Usage: ./deploy-single.sh <environment> <service> [--skip-wait] [--dry-run]
 #
 # Services:
-#   storefront, stripe, inventory-ops, buylist, pos, mtg-import
+#   storefront, stripe, inventory-ops, pos
 #
 # Examples:
 #   ./deploy-single.sh staging inventory-ops          # Build + deploy inventory-ops
@@ -50,7 +50,7 @@ done
 if [[ -z "$ENV" || -z "$SERVICE" ]]; then
     echo "Usage: $0 <environment> <service> [--skip-wait] [--dry-run]"
     echo ""
-    echo "Services: storefront, stripe, inventory-ops, buylist, pos, mtg-import"
+    echo "Services: storefront, stripe, inventory-ops, pos"
     exit 1
 fi
 
@@ -81,44 +81,34 @@ declare -A ECR_REPO_MAP=(
     ["storefront"]="saleor-platform/storefront"
     ["stripe"]="saleor-platform/stripe-app"
     ["inventory-ops"]="saleor-platform/inventory-ops-app"
-    ["buylist"]="saleor-platform/buylist-app"
     ["pos"]="saleor-platform/pos-app"
-    ["mtg-import"]="saleor-platform/mtg-import-app"
 )
 
 declare -A CONTEXT_MAP=(
     ["storefront"]="./storefront"
     ["stripe"]="./saleor-apps"
     ["inventory-ops"]="./saleor-apps"
-    ["buylist"]="./saleor-apps"
     ["pos"]="./saleor-apps"
-    ["mtg-import"]="./saleor-apps"
 )
 
 declare -A DOCKERFILE_MAP=(
     ["storefront"]="./storefront/Dockerfile"
     ["stripe"]="./saleor-apps/apps/stripe/Dockerfile"
     ["inventory-ops"]="./saleor-apps/apps/inventory-ops/Dockerfile"
-    ["buylist"]="./saleor-apps/apps/buylist/Dockerfile"
     ["pos"]="./saleor-apps/apps/pos/Dockerfile"
-    ["mtg-import"]="./saleor-apps/apps/mtg-import/Dockerfile"
 )
 
 declare -A ECS_SERVICE_MAP=(
     ["storefront"]="storefront"
     ["stripe"]="stripe"
     ["inventory-ops"]="inventory-ops"
-    ["buylist"]="buylist"
     ["pos"]="pos"
-    ["mtg-import"]="mtg-import"
 )
 
 declare -A BASE_PATH_MAP=(
     ["stripe"]="/apps/stripe"
     ["inventory-ops"]="/apps/inventory"
-    ["buylist"]="/apps/buylist"
     ["pos"]="/apps/pos"
-    ["mtg-import"]="/apps/mtg-import"
 )
 
 # Validate service name

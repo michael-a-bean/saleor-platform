@@ -7,7 +7,7 @@
 # Arguments:
 #   environment - staging or production
 #   type        - django or prisma
-#   app         - (prisma only) app name: inventory-ops, mtg-import (default: inventory-ops)
+#   app         - (prisma only) app name: inventory-ops (default: inventory-ops)
 #
 # Required Environment Variables:
 #   ECS_TASK_SUBNETS          - Comma-separated subnet IDs for task networking
@@ -38,7 +38,7 @@ PRISMA_APP="${3:-inventory-ops}"  # Default to inventory-ops for backwards compa
 if [[ -z "$ENV" || -z "$MIGRATION_TYPE" ]]; then
     log_error "Usage: $0 <environment> <type> [app]"
     log_error "  type: django or prisma"
-    log_error "  app:  (prisma only) inventory-ops, mtg-import (default: inventory-ops)"
+    log_error "  app:  (prisma only) inventory-ops (default: inventory-ops)"
     exit 1
 fi
 
@@ -50,11 +50,11 @@ fi
 # Validate Prisma app name
 if [[ "$MIGRATION_TYPE" == "prisma" ]]; then
     case "$PRISMA_APP" in
-        inventory-ops|mtg-import)
+        inventory-ops)
             ;;
         *)
             log_error "Invalid Prisma app: ${PRISMA_APP}"
-            log_error "Valid apps: inventory-ops, mtg-import"
+            log_error "Valid apps: inventory-ops"
             exit 1
             ;;
     esac
@@ -329,7 +329,6 @@ else
     # Map Prisma app names to ECR image names
     declare -A PRISMA_IMAGE_MAP=(
         ["inventory-ops"]="inventory-ops-app"
-        ["mtg-import"]="mtg-import-app"
     )
 
     # Override container image with newly-built image if SHA is provided

@@ -122,8 +122,7 @@ saleor_api_image       = "ghcr.io/saleor/saleor:3.22.39"
 saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.22.34"
 
 # Saleor Apps image tags
-stripe_app_image_tag     = "document-polyfill-v1"
-mtg_import_app_image_tag = "staging-latest"
+stripe_app_image_tag = "document-polyfill-v1"
 
 # GitHub
 github_org    = "michael-a-bean"

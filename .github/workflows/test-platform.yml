@@ -18,7 +18,6 @@ jobs:
       storefront: ${{ steps.filter.outputs.storefront }}
       apps: ${{ steps.merge.outputs.apps }}
       inventory-ops: ${{ steps.merge.outputs.inventory-ops }}
-      buylist: ${{ steps.merge.outputs.buylist }}
       pos: ${{ steps.merge.outputs.pos }}
       stripe: ${{ steps.merge.outputs.stripe }}
       migrations: ${{ steps.merge.outputs.migrations }}
@@ -30,7 +29,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
+          submodules: recursive  # Nested submodules: pos, inventory-ops inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
           fetch-depth: 2
 
@@ -55,15 +54,11 @@ jobs:
             inventory-ops:
               - 'saleor-apps/apps/inventory-ops/**'
               - 'saleor-apps/packages/**'
-            buylist:
-              - 'saleor-apps/apps/buylist/**'
-              - 'saleor-apps/packages/**'
             pos:
               - 'saleor-apps/apps/pos/**'
               - 'saleor-apps/packages/**'
             migrations:
               - 'saleor-apps/apps/inventory-ops/prisma/**'
-              - 'saleor-apps/apps/mtg-import/prisma/**'
             terraform:
               - 'infra/terraform/**'
             compose:
@@ -83,7 +78,6 @@ jobs:
             echo "apps=false" >> $GITHUB_OUTPUT
             echo "stripe=false" >> $GITHUB_OUTPUT
             echo "inventory-ops=false" >> $GITHUB_OUTPUT
-            echo "buylist=false" >> $GITHUB_OUTPUT
             echo "pos=false" >> $GITHUB_OUTPUT
             echo "packages=false" >> $GITHUB_OUTPUT
             echo "migrations=false" >> $GITHUB_OUTPUT
@@ -107,13 +101,11 @@ jobs:
           echo "apps=true" >> $GITHUB_OUTPUT
           echo "stripe=$(check_app apps/stripe)" >> $GITHUB_OUTPUT
           echo "inventory-ops=$(check_app apps/inventory-ops)" >> $GITHUB_OUTPUT
-          echo "buylist=$(check_app apps/buylist)" >> $GITHUB_OUTPUT
           echo "pos=$(check_app apps/pos)" >> $GITHUB_OUTPUT
           echo "packages=$(check_app packages)" >> $GITHUB_OUTPUT
 
           INVOPS_PRISMA=$(check_app apps/inventory-ops/prisma)
-          MTGIMP_PRISMA=$(check_app apps/mtg-import/prisma)
-          if [[ "$INVOPS_PRISMA" == "true" ]] || [[ "$MTGIMP_PRISMA" == "true" ]]; then
+          if [[ "$INVOPS_PRISMA" == "true" ]]; then
             echo "migrations=true" >> $GITHUB_OUTPUT
           else
             echo "migrations=false" >> $GITHUB_OUTPUT
@@ -139,7 +131,6 @@ jobs:
           APPS=$(merge "${{ steps.filter.outputs.apps }}" "$SUB_APPS" "false")
           STRIPE=$(merge "${{ steps.filter.outputs.stripe }}" "${{ steps.submodule.outputs.stripe }}" "$SUB_PKG")
           INVOPS=$(merge "${{ steps.filter.outputs.inventory-ops }}" "${{ steps.submodule.outputs.inventory-ops }}" "$SUB_PKG")
-          BUYLIST=$(merge "${{ steps.filter.outputs.buylist }}" "${{ steps.submodule.outputs.buylist }}" "$SUB_PKG")
           POS=$(merge "${{ steps.filter.outputs.pos }}" "${{ steps.submodule.outputs.pos }}" "$SUB_PKG")
 
           DORNY_MIG="${{ steps.filter.outputs.migrations }}"
@@ -153,7 +144,6 @@ jobs:
           echo "apps=$APPS" >> $GITHUB_OUTPUT
           echo "stripe=$STRIPE" >> $GITHUB_OUTPUT
           echo "inventory-ops=$INVOPS" >> $GITHUB_OUTPUT
-          echo "buylist=$BUYLIST" >> $GITHUB_OUTPUT
           echo "pos=$POS" >> $GITHUB_OUTPUT
           echo "migrations=$MIGRATIONS" >> $GITHUB_OUTPUT
 
@@ -164,7 +154,6 @@ jobs:
           echo "| apps (any) | ${{ steps.filter.outputs.apps }} | $SUB_APPS | $APPS |" >> $GITHUB_STEP_SUMMARY
           echo "| stripe | ${{ steps.filter.outputs.stripe }} | ${{ steps.submodule.outputs.stripe }} | $STRIPE |" >> $GITHUB_STEP_SUMMARY
           echo "| inventory-ops | ${{ steps.filter.outputs.inventory-ops }} | ${{ steps.submodule.outputs.inventory-ops }} | $INVOPS |" >> $GITHUB_STEP_SUMMARY
-          echo "| buylist | ${{ steps.filter.outputs.buylist }} | ${{ steps.submodule.outputs.buylist }} | $BUYLIST |" >> $GITHUB_STEP_SUMMARY
           echo "| pos | ${{ steps.filter.outputs.pos }} | ${{ steps.submodule.outputs.pos }} | $POS |" >> $GITHUB_STEP_SUMMARY
           echo "| migrations | $DORNY_MIG | $SUB_MIG | $MIGRATIONS |" >> $GITHUB_STEP_SUMMARY
           echo "| terraform | ${{ steps.filter.outputs.terraform }} | - | ${{ steps.filter.outputs.terraform }} |" >> $GITHUB_STEP_SUMMARY
@@ -175,7 +164,6 @@ jobs:
           if [[ "${{ steps.filter.outputs.storefront }}" == "true" ]] || \
              [[ "${{ steps.merge.outputs.stripe }}" == "true" ]] || \
              [[ "${{ steps.merge.outputs.inventory-ops }}" == "true" ]] || \
-             [[ "${{ steps.merge.outputs.buylist }}" == "true" ]] || \
              [[ "${{ steps.merge.outputs.pos }}" == "true" ]]; then
             echo "any_build=true" >> $GITHUB_OUTPUT
           else
@@ -239,7 +227,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
+          submodules: recursive  # Nested submodules: pos, inventory-ops inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Setup pnpm
@@ -261,7 +249,7 @@ jobs:
         run: |
           # Only lint our custom apps, not upstream Saleor apps
           # Upstream apps (avatax, cms, klaviyo, etc.) have pre-existing lint issues
-          pnpm turbo run lint --filter=saleor-app-inventory-ops --filter=saleor-app-buylist --filter=saleor-app-pos
+          pnpm turbo run lint --filter=saleor-app-inventory-ops --filter=saleor-app-pos
 
       # Type check (tsc --noEmit) skipped for custom apps
       # Source code compiles clean — remaining errors are in test files only:
@@ -289,7 +277,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
+          submodules: recursive  # Nested submodules: pos, inventory-ops inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Setup pnpm
@@ -360,11 +348,6 @@ jobs:
             dockerfile: ./saleor-apps/apps/inventory-ops/Dockerfile
             change_key: inventory-ops
             build_args: ""
-          - service: buylist
-            context: ./saleor-apps
-            dockerfile: ./saleor-apps/apps/buylist/Dockerfile
-            change_key: buylist
-            build_args: ""
           - service: pos
             context: ./saleor-apps
             dockerfile: ./saleor-apps/apps/pos/Dockerfile
@@ -394,7 +377,7 @@ jobs:
         if: steps.should-build.outputs.build == 'true'
         uses: actions/checkout@v4
         with:
-          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
+          submodules: recursive  # Nested submodules: pos, inventory-ops inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Set up Docker Buildx
@@ -424,7 +407,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
+          submodules: recursive  # Nested submodules: pos, inventory-ops inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Set up Docker Buildx
@@ -469,7 +452,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
+          submodules: recursive  # Nested submodules: pos, inventory-ops inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Set up environment
@@ -481,9 +464,7 @@ jobs:
           POSTGRES_PASSWORD=saleor
           STRIPE_APP_SECRET_KEY=ci-stripe-key
           INVENTORY_OPS_SECRET_KEY=ci-inventory-key
-          BUYLIST_SECRET_KEY=ci-buylist-key
           POS_SECRET_KEY=ci-pos-key
-          MTG_IMPORT_SECRET_KEY=ci-mtg-import-key
           INVENTORY_DATABASE_URL=postgresql://inventory:inventory@inventory-ops-db:5432/inventory_ops
           INVENTORY_POSTGRES_USER=inventory
           INVENTORY_POSTGRES_PASSWORD=inventory

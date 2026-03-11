@@ -53,7 +53,7 @@ CLUSTER="$(get_cluster_name "$ENV")"
 
 # Services to rollback
 if [[ "$SERVICE" == "all" ]]; then
-    SERVICES=(api worker storefront dashboard stripe-app inventory-ops-app buylist-app pos-app)
+    SERVICES=(api worker storefront dashboard stripe-app inventory-ops-app pos-app)
 else
     SERVICES=("$SERVICE")
 fi

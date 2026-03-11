@@ -41,7 +41,7 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 resource "aws_cloudwatch_log_group" "services" {
   for_each = toset([
     "api", "worker", "beat", "storefront", "dashboard",
-    "stripe-app", "inventory-ops-app", "buylist-app", "pos-app", "mtg-import-app",
+    "stripe-app", "inventory-ops-app", "pos-app",
     "meilisearch", "migrate"
   ])
 
@@ -814,7 +814,7 @@ resource "aws_ecs_service" "apps" {
 locals {
   enable_scaling = var.enable_autoscaling || var.enable_scheduled_scaling
 
-  # All apps participate in auto-scaling (including batch jobs like mtg-import).
+  # All apps participate in auto-scaling.
   # Batch jobs (desired_count=0) get scale-up min=0 so they don't auto-start,
   # but their max is restored so they CAN be started manually during business hours.
   scalable_apps = local.enable_scaling && var.apps_enabled ? var.apps : {}
