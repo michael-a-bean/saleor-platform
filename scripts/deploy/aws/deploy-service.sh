@@ -51,9 +51,7 @@ declare -A IMAGE_MAP=(
     ["storefront"]="${ECR_REGISTRY}/saleor-platform/storefront:${SHA}"
     ["stripe"]="${ECR_REGISTRY}/saleor-platform/stripe-app:${SHA}"
     ["inventory-ops"]="${ECR_REGISTRY}/saleor-platform/inventory-ops-app:${SHA}"
-    ["buylist"]="${ECR_REGISTRY}/saleor-platform/buylist-app:${SHA}"
     ["pos"]="${ECR_REGISTRY}/saleor-platform/pos-app:${SHA}"
-    ["mtg-import"]="${ECR_REGISTRY}/saleor-platform/mtg-import-app:${SHA}"
     ["meilisearch"]="KEEP"
 )
 
@@ -125,9 +123,7 @@ else
         case "$SERVICE" in
             stripe) REPO_NAME="saleor-platform/stripe-app" ;;
             inventory-ops) REPO_NAME="saleor-platform/inventory-ops-app" ;;
-            buylist) REPO_NAME="saleor-platform/buylist-app" ;;
             pos) REPO_NAME="saleor-platform/pos-app" ;;
-            mtg-import) REPO_NAME="saleor-platform/mtg-import-app" ;;
             *) REPO_NAME="saleor-platform/${SERVICE}" ;;
         esac
         if ! image_exists_in_ecr "$REPO_NAME" "$SHA"; then

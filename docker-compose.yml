@@ -26,7 +26,7 @@ services:
       - SECRET_KEY=${SECRET_KEY:?SECRET_KEY is required}
       - DATABASE_URL=postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db/saleor
       - DASHBOARD_URL=http://localhost:9000/
-      - ALLOWED_HOSTS=localhost,127.0.0.1,api,stripe-app,inventory-ops-app,buylist-app,pos-app,mtg-import-app,host.docker.internal
+      - ALLOWED_HOSTS=localhost,127.0.0.1,api,stripe-app,inventory-ops-app,pos-app,host.docker.internal
       - HTTP_IP_FILTER_ENABLED=False
       - RSA_PRIVATE_KEY=${RSA_PRIVATE_KEY:-}
       - OTEL_EXPORTER_OTLP_HEADERS=${OTEL_EXPORTER_OTLP_HEADERS:-}
@@ -239,37 +239,6 @@ services:
       - ALLOWED_DOMAIN_PATTERN=.*
       - LOGLEVEL=INFO
 
-  # Buylist App - shares inventory-ops database
-  buylist-app:
-    build:
-      context: ./saleor-apps
-      dockerfile: apps/buylist/Dockerfile
-    ports:
-      - 3003:3003
-    restart: unless-stopped
-    networks:
-      - saleor-backend-tier
-    extra_hosts:
-      - "localhost:host-gateway"
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - api
-      - inventory-ops-db
-    volumes:
-      - buylist-apl:/app/apps/buylist/data
-    environment:
-      - SECRET_KEY=${BUYLIST_SECRET_KEY:?BUYLIST_SECRET_KEY is required}
-      - DATABASE_URL=${INVENTORY_DATABASE_URL:?INVENTORY_DATABASE_URL is required}
-      - ALLOWED_DOMAIN_PATTERN=/.*/
-      - APP_IFRAME_BASE_URL=http://localhost:3003
-      - APP_API_BASE_URL=http://buylist-app:3003
-      - APP_LOG_LEVEL=debug
-      - DEFAULT_CURRENCY=USD
-      - DEFAULT_CHANNEL_SLUG=webstore
-      - MEILISEARCH_URL=http://meilisearch:7700
-      - SCRYFALL_API_BASE_URL=https://api.scryfall.com
-      - SCRYFALL_RATE_LIMIT_MS=100
-
   # POS App - Point of Sale for in-store transactions
   pos-app:
     build:
@@ -300,36 +269,6 @@ services:
       # Stripe Terminal settings (Phase 2)
       # - STRIPE_SECRET_KEY=sk_test_...
       # - STRIPE_TERMINAL_LOCATION_ID=tml_...
-
-  # MTG Import App - bulk card import from Scryfall
-  mtg-import-app:
-    build:
-      context: ./saleor-apps
-      dockerfile: apps/mtg-import/Dockerfile
-    ports:
-      - 3005:3005
-    restart: unless-stopped
-    networks:
-      - saleor-backend-tier
-    extra_hosts:
-      - "localhost:host-gateway"
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - api
-      - inventory-ops-db
-    volumes:
-      - mtg-import-apl:/app/apps/mtg-import/data
-    environment:
-      - SECRET_KEY=${MTG_IMPORT_SECRET_KEY:?MTG_IMPORT_SECRET_KEY is required}
-      - DATABASE_URL=${INVENTORY_DATABASE_URL:?INVENTORY_DATABASE_URL is required}
-      - ALLOWED_DOMAIN_PATTERN=/.*/
-      - APP_IFRAME_BASE_URL=http://localhost:3005
-      - APP_API_BASE_URL=http://mtg-import-app:3005
-      - APP_LOG_LEVEL=debug
-      - DEFAULT_CURRENCY=USD
-      - SCRYFALL_API_BASE_URL=https://api.scryfall.com
-      - SCRYFALL_RATE_LIMIT_MS=100
-      - SCRYFALL_CONTACT_EMAIL=${SCRYFALL_CONTACT_EMAIL:-dev@localhost.local}
 
   # Meilisearch - fast search engine for singles-builder
   meilisearch:
@@ -386,11 +325,7 @@ volumes:
     driver: local
   inventory-ops-apl:
     driver: local
-  buylist-apl:
-    driver: local
   pos-apl:
-    driver: local
-  mtg-import-apl:
     driver: local
   meilisearch-data:
     driver: local

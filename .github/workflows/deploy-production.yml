@@ -121,7 +121,7 @@ jobs:
           SHA="${{ inputs.staging_sha }}"
           echo "Verifying images with SHA: ${SHA}"
 
-          SERVICES="storefront stripe-app inventory-ops-app buylist-app pos-app"
+          SERVICES="storefront stripe-app inventory-ops-app pos-app"
           ALL_EXIST=true
 
           for SERVICE in $SERVICES; do
@@ -326,7 +326,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [stripe-app, inventory-ops-app, buylist-app, pos-app]
+        service: [stripe-app, inventory-ops-app, pos-app]
       fail-fast: true
 
     steps:

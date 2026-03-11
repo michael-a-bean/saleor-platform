@@ -33,13 +33,11 @@ FAILURES=0
 APPS=(
   "stripe|/apps/stripe|3001"
   "inventory-ops|/apps/inventory|3002"
-  "buylist|/apps/buylist|3003"
   "pos|/apps/pos|3004"
-  "mtg-import|/apps/mtg-import|3005"
 )
 
 # Apps that run on-demand (desired_count=0) — accept 503 as passing
-ON_DEMAND_APPS=("mtg-import")
+ON_DEMAND_APPS=()
 
 log_info() {
   echo -e "${GREEN}[INFO]${NC} $1"

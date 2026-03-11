@@ -59,7 +59,7 @@ data "aws_iam_policy_document" "github_actions_assume" {
 
     # Restrict to specific repo and branch (hardened per GPT-5.2 and Gemini 3 reviews)
     # SECURITY: Using StringEquals (not StringLike) to prevent wildcard bypass
-    # Only exact branch match and environment-based claims are allowed
+    # Only exact branch match, environment-based claims, and PR events are allowed
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
@@ -68,7 +68,9 @@ data "aws_iam_policy_document" "github_actions_assume" {
         "repo:${var.github_org}/${var.github_repo}:ref:refs/heads/${var.github_branch}",
         # Environment-based claim for workflows using GitHub Environments
         # This enforces GitHub Environment protection rules (required reviewers)
-        "repo:${var.github_org}/${var.github_repo}:environment:${var.environment}"
+        "repo:${var.github_org}/${var.github_repo}:environment:${var.environment}",
+        # Pull request events — needed for terraform plan on PRs (read-only)
+        "repo:${var.github_org}/${var.github_repo}:pull_request"
       ]
     }
   }
