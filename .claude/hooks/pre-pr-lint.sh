@@ -53,9 +53,10 @@ if [[ -d "$APPS_DIR" ]]; then
   fi
 fi
 
-# --- 2. Storefront lint + type check ---
+# --- 2. Storefront lint + type check (only if storefront files changed) ---
 SF_DIR="$PROJECT_ROOT/storefront"
-if [[ -d "$SF_DIR" ]]; then
+SF_CHANGED=$(cd "$PROJECT_ROOT" && git diff platform/main --name-only -- storefront/ 2>/dev/null | head -1)
+if [[ -d "$SF_DIR" ]] && [[ -n "$SF_CHANGED" ]]; then
   cd "$SF_DIR"
 
   if [[ ! -d "node_modules" ]]; then
