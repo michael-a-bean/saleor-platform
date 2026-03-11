@@ -327,7 +327,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0  # gitleaks needs full history to resolve commit^..commit
 
       - name: Run gitleaks
         uses: gitleaks/gitleaks-action@v2
