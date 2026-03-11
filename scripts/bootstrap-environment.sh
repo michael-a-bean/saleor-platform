@@ -248,7 +248,7 @@ log_info "========================================="
 log_info "Step 5/5: Force-restart ECS services"
 log_info "========================================="
 
-SERVICES=(api worker beat storefront dashboard stripe inventory-ops buylist pos meilisearch)
+SERVICES=(api worker beat storefront dashboard stripe inventory-ops pos meilisearch)
 
 for svc in "${SERVICES[@]}"; do
     log_info "Restarting: ${svc}..."
@@ -295,15 +295,13 @@ log_info ""
 log_info "3. Install Saleor apps (via Dashboard → Apps → Install external app):"
 log_info "   - Stripe:        https://apps.staging.michaelbean.org/apps/stripe/api/manifest"
 log_info "   - Inventory Ops: https://apps.staging.michaelbean.org/apps/inventory/api/manifest"
-log_info "   - Buylist:       https://apps.staging.michaelbean.org/apps/buylist/api/manifest"
 log_info "   - POS:           https://apps.staging.michaelbean.org/apps/pos/api/manifest"
-log_info "   - MTG Import:    https://apps.staging.michaelbean.org/apps/mtg-import/api/manifest"
 log_info ""
 log_info "4. Configure Stripe webhooks (in Stripe Dashboard):"
 log_info "   Endpoint: https://apps.staging.michaelbean.org/apps/stripe/api/webhooks/stripe"
 log_info ""
 log_info "5. Import MTG catalog (30-60 min):"
-log_info "   Trigger mtg-import ECS task or use Dashboard"
+log_info "   Use Inventory Ops app Import section in Dashboard"
 log_info ""
 log_info "6. Trigger initial price sync:"
 log_info "   After import completes, run the price sync cron endpoint"

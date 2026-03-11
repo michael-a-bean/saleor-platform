@@ -25,19 +25,9 @@ output "inventory_ops_app_repository_url" {
   value       = aws_ecr_repository.repos["inventory-ops-app"].repository_url
 }
 
-output "buylist_app_repository_url" {
-  description = "URL of buylist-app repository"
-  value       = aws_ecr_repository.repos["buylist-app"].repository_url
-}
-
 output "pos_app_repository_url" {
   description = "URL of pos-app repository"
   value       = aws_ecr_repository.repos["pos-app"].repository_url
-}
-
-output "mtg_import_app_repository_url" {
-  description = "URL of mtg-import-app repository"
-  value       = aws_ecr_repository.repos["mtg-import-app"].repository_url
 }
 
 

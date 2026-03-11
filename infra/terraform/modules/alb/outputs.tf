@@ -61,19 +61,9 @@ output "inventory_ops_app_target_group_arn" {
   value       = aws_lb_target_group.inventory_ops_app.arn
 }
 
-output "buylist_app_target_group_arn" {
-  description = "ARN of Buylist app target group"
-  value       = aws_lb_target_group.buylist_app.arn
-}
-
 output "pos_app_target_group_arn" {
   description = "ARN of POS app target group"
   value       = aws_lb_target_group.pos_app.arn
-}
-
-output "mtg_import_app_target_group_arn" {
-  description = "ARN of MTG Import app target group"
-  value       = aws_lb_target_group.mtg_import_app.arn
 }
 
 output "alb_arn_suffix" {

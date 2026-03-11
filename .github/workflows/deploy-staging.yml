@@ -49,18 +49,16 @@ jobs:
       storefront: ${{ steps.filter.outputs.storefront }}
       stripe: ${{ steps.merge.outputs.stripe }}
       inventory-ops: ${{ steps.merge.outputs.inventory-ops }}
-      buylist: ${{ steps.merge.outputs.buylist }}
       pos: ${{ steps.merge.outputs.pos }}
-      mtg-import: ${{ steps.merge.outputs.mtg-import }}
       migrations: ${{ steps.merge.outputs.migrations }}
-      any_app: ${{ steps.merge.outputs.stripe == 'true' || steps.merge.outputs.inventory-ops == 'true' || steps.merge.outputs.buylist == 'true' || steps.merge.outputs.pos == 'true' || steps.merge.outputs.mtg-import == 'true' }}
+      any_app: ${{ steps.merge.outputs.stripe == 'true' || steps.merge.outputs.inventory-ops == 'true' || steps.merge.outputs.pos == 'true' }}
       any_changed: ${{ steps.check.outputs.any_changed }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
+          submodules: recursive  # Nested submodules: pos, inventory-ops inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
           fetch-depth: 2  # Only need HEAD~1 for change detection
 
@@ -83,18 +81,11 @@ jobs:
             inventory-ops:
               - 'saleor-apps/apps/inventory-ops/**'
               - 'saleor-apps/packages/**'
-            buylist:
-              - 'saleor-apps/apps/buylist/**'
-              - 'saleor-apps/packages/**'
             pos:
               - 'saleor-apps/apps/pos/**'
               - 'saleor-apps/packages/**'
-            mtg-import:
-              - 'saleor-apps/apps/mtg-import/**'
-              - 'saleor-apps/packages/**'
             migrations:
               - 'saleor-apps/apps/inventory-ops/prisma/**'
-              - 'saleor-apps/apps/mtg-import/prisma/**'
 
       # dorny/paths-filter can't see inside submodule content changes —
       # it only sees the pointer diff. This step inspects the actual files
@@ -109,9 +100,7 @@ jobs:
             echo "No submodule changes detected"
             echo "stripe=false" >> $GITHUB_OUTPUT
             echo "inventory-ops=false" >> $GITHUB_OUTPUT
-            echo "buylist=false" >> $GITHUB_OUTPUT
             echo "pos=false" >> $GITHUB_OUTPUT
-            echo "mtg-import=false" >> $GITHUB_OUTPUT
             echo "packages=false" >> $GITHUB_OUTPUT
             echo "migrations=false" >> $GITHUB_OUTPUT
             exit 0
@@ -139,15 +128,12 @@ jobs:
 
           echo "stripe=$(check_app apps/stripe)" >> $GITHUB_OUTPUT
           echo "inventory-ops=$(check_app apps/inventory-ops)" >> $GITHUB_OUTPUT
-          echo "buylist=$(check_app apps/buylist)" >> $GITHUB_OUTPUT
           echo "pos=$(check_app apps/pos)" >> $GITHUB_OUTPUT
-          echo "mtg-import=$(check_app apps/mtg-import)" >> $GITHUB_OUTPUT
           echo "packages=$(check_app packages)" >> $GITHUB_OUTPUT
 
           # Migration-specific detection (Prisma schema/migration files)
           INVOPS_PRISMA=$(check_app apps/inventory-ops/prisma)
-          MTGIMP_PRISMA=$(check_app apps/mtg-import/prisma)
-          if [[ "$INVOPS_PRISMA" == "true" ]] || [[ "$MTGIMP_PRISMA" == "true" ]]; then
+          if [[ "$INVOPS_PRISMA" == "true" ]]; then
             echo "migrations=true" >> $GITHUB_OUTPUT
           else
             echo "migrations=false" >> $GITHUB_OUTPUT
@@ -175,9 +161,7 @@ jobs:
 
           STRIPE=$(merge stripe "${{ steps.filter.outputs.stripe }}" "${{ steps.submodule.outputs.stripe }}" "$SUB_PKG")
           INVOPS=$(merge inventory-ops "${{ steps.filter.outputs.inventory-ops }}" "${{ steps.submodule.outputs.inventory-ops }}" "$SUB_PKG")
-          BUYLIST=$(merge buylist "${{ steps.filter.outputs.buylist }}" "${{ steps.submodule.outputs.buylist }}" "$SUB_PKG")
           POS=$(merge pos "${{ steps.filter.outputs.pos }}" "${{ steps.submodule.outputs.pos }}" "$SUB_PKG")
-          MTGIMP=$(merge mtg-import "${{ steps.filter.outputs.mtg-import }}" "${{ steps.submodule.outputs.mtg-import }}" "$SUB_PKG")
 
           # Migrations: dorny OR submodule detection
           DORNY_MIG="${{ steps.filter.outputs.migrations }}"
@@ -190,9 +174,7 @@ jobs:
 
           echo "stripe=$STRIPE" >> $GITHUB_OUTPUT
           echo "inventory-ops=$INVOPS" >> $GITHUB_OUTPUT
-          echo "buylist=$BUYLIST" >> $GITHUB_OUTPUT
           echo "pos=$POS" >> $GITHUB_OUTPUT
-          echo "mtg-import=$MTGIMP" >> $GITHUB_OUTPUT
           echo "migrations=$MIGRATIONS" >> $GITHUB_OUTPUT
 
           echo "## Change Detection Results" >> $GITHUB_STEP_SUMMARY
@@ -200,9 +182,7 @@ jobs:
           echo "|---------|-------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| stripe | ${{ steps.filter.outputs.stripe }} | ${{ steps.submodule.outputs.stripe }} | $STRIPE |" >> $GITHUB_STEP_SUMMARY
           echo "| inventory-ops | ${{ steps.filter.outputs.inventory-ops }} | ${{ steps.submodule.outputs.inventory-ops }} | $INVOPS |" >> $GITHUB_STEP_SUMMARY
-          echo "| buylist | ${{ steps.filter.outputs.buylist }} | ${{ steps.submodule.outputs.buylist }} | $BUYLIST |" >> $GITHUB_STEP_SUMMARY
           echo "| pos | ${{ steps.filter.outputs.pos }} | ${{ steps.submodule.outputs.pos }} | $POS |" >> $GITHUB_STEP_SUMMARY
-          echo "| mtg-import | ${{ steps.filter.outputs.mtg-import }} | ${{ steps.submodule.outputs.mtg-import }} | $MTGIMP |" >> $GITHUB_STEP_SUMMARY
           echo "| migrations | $DORNY_MIG | $SUB_MIG | $MIGRATIONS |" >> $GITHUB_STEP_SUMMARY
 
       - name: Check if any service changed
@@ -212,9 +192,7 @@ jobs:
              [[ "${{ steps.filter.outputs.storefront }}" == "true" ]] || \
              [[ "${{ steps.merge.outputs.stripe }}" == "true" ]] || \
              [[ "${{ steps.merge.outputs.inventory-ops }}" == "true" ]] || \
-             [[ "${{ steps.merge.outputs.buylist }}" == "true" ]] || \
-             [[ "${{ steps.merge.outputs.pos }}" == "true" ]] || \
-             [[ "${{ steps.merge.outputs.mtg-import }}" == "true" ]]; then
+             [[ "${{ steps.merge.outputs.pos }}" == "true" ]]; then
             echo "any_changed=true" >> $GITHUB_OUTPUT
           else
             echo "any_changed=false" >> $GITHUB_OUTPUT
@@ -282,13 +260,6 @@ jobs:
             change_key: inventory-ops
             build_args_extra: |
               BASE_PATH=/apps/inventory
-          - service: buylist-app
-            image_name: saleor-platform/buylist-app
-            context: ./saleor-apps
-            dockerfile: ./saleor-apps/apps/buylist/Dockerfile
-            change_key: buylist
-            build_args_extra: |
-              BASE_PATH=/apps/buylist
           - service: pos-app
             image_name: saleor-platform/pos-app
             context: ./saleor-apps
@@ -296,13 +267,6 @@ jobs:
             change_key: pos
             build_args_extra: |
               BASE_PATH=/apps/pos
-          - service: mtg-import-app
-            image_name: saleor-platform/mtg-import-app
-            context: ./saleor-apps
-            dockerfile: ./saleor-apps/apps/mtg-import/Dockerfile
-            change_key: mtg-import
-            build_args_extra: |
-              BASE_PATH=/apps/mtg-import
       fail-fast: false
 
     outputs:
@@ -326,7 +290,7 @@ jobs:
         if: steps.should-build.outputs.build == 'true'
         uses: actions/checkout@v4
         with:
-          submodules: recursive  # Nested submodules: pos, inventory-ops, buylist inside saleor-apps
+          submodules: recursive  # Nested submodules: pos, inventory-ops inside saleor-apps
           token: ${{ secrets.SUBMODULES_TOKEN }}
 
       - name: Configure AWS credentials
@@ -473,24 +437,6 @@ jobs:
             exit 1
           fi
 
-          echo "::group::Prisma migrations (mtg-import)"
-          if ./scripts/deploy/aws/run-migrations.sh staging prisma mtg-import; then
-            echo "✅ Prisma mtg-import migrations succeeded"
-            MIGRATION_STATUS="${MIGRATION_STATUS},prisma-mtg-import:success"
-          else
-            echo "❌ Prisma mtg-import migrations FAILED"
-            MIGRATION_STATUS="${MIGRATION_STATUS},prisma-mtg-import:FAILED"
-            FAILED=true
-          fi
-          echo "::endgroup::"
-
-          if [[ "$FAILED" == "true" ]]; then
-            echo "::error::Prisma mtg-import migrations failed"
-            echo "::warning::PARTIAL MIGRATION STATE: ${MIGRATION_STATUS}"
-            echo "::warning::Django + inventory-ops Prisma succeeded, but mtg-import Prisma failed."
-            exit 1
-          fi
-
           echo "✅ All migrations succeeded: ${MIGRATION_STATUS}"
         env:
           SHA: ${{ needs.validate.outputs.sha_short }}
@@ -587,12 +533,8 @@ jobs:
             service: stripe
           - app: inventory-ops
             service: inventory-ops
-          - app: buylist
-            service: buylist
           - app: pos
             service: pos
-          - app: mtg-import
-            service: mtg-import
       fail-fast: false
 
     steps:
@@ -712,7 +654,5 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Apps Verified" >> $GITHUB_STEP_SUMMARY
           echo "- Stripe: ${{ vars.STAGING_APPS_URL }}/apps/stripe" >> $GITHUB_STEP_SUMMARY
-          echo "- Inventory: ${{ vars.STAGING_APPS_URL }}/apps/inventory" >> $GITHUB_STEP_SUMMARY
-          echo "- Buylist: ${{ vars.STAGING_APPS_URL }}/apps/buylist" >> $GITHUB_STEP_SUMMARY
+          echo "- Inventory Ops: ${{ vars.STAGING_APPS_URL }}/apps/inventory" >> $GITHUB_STEP_SUMMARY
           echo "- POS: ${{ vars.STAGING_APPS_URL }}/apps/pos" >> $GITHUB_STEP_SUMMARY
-          echo "- MTG Import: ${{ vars.STAGING_APPS_URL }}/apps/mtg-import" >> $GITHUB_STEP_SUMMARY

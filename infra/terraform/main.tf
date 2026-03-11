@@ -283,7 +283,7 @@ module "grafana_dashboards" {
   ecs_cluster_name = local.name_prefix
   ecs_service_names = concat(
     ["api", "worker", "beat", "storefront", "dashboard"],
-    var.apps_enabled ? ["stripe", "inventory-ops", "buylist", "pos", "mtg-import"] : [],
+    var.apps_enabled ? ["stripe", "inventory-ops", "pos"] : [],
     var.meilisearch_enabled ? ["meilisearch"] : []
   )
 
@@ -485,7 +485,7 @@ module "ecs" {
     inventory-ops = {
       port             = 3002
       cpu              = 256
-      memory           = 512
+      memory           = 1024  # Bumped: now handles inventory-ops + buylist + mtg-import workloads
       base_path        = "/apps/inventory"
       image            = "${module.ecr.inventory_ops_app_repository_url}:${var.inventory_ops_app_image_tag}"
       target_group_arn = module.alb.inventory_ops_app_target_group_arn
@@ -508,28 +508,13 @@ module "ecs" {
         ] : []
       )
       environment = {
-        APL             = "redis"
-        REDIS_URL       = module.elasticache.cache_url
-        MEILISEARCH_URL = var.meilisearch_enabled ? module.meilisearch[0].service_url : "http://meilisearch.${local.name_prefix}.local:7700"
-      }
-    }
-
-    buylist = {
-      port             = 3003
-      cpu              = 256
-      memory           = 512
-      base_path        = "/apps/buylist"
-      image            = "${module.ecr.buylist_app_repository_url}:${var.buylist_app_image_tag}"
-      target_group_arn = module.alb.buylist_app_target_group_arn
-      secrets = [
-        {
-          name      = "DATABASE_URL"
-          valueFrom = "/saleor/${var.environment}/apps/inventory-ops/DATABASE_URL"
-        }
-      ]
-      environment = {
-        APL       = "redis"
-        REDIS_URL = module.elasticache.cache_url
+        APL                = "redis"
+        REDIS_URL          = module.elasticache.cache_url
+        MEILISEARCH_URL    = var.meilisearch_enabled ? module.meilisearch[0].service_url : "http://meilisearch.${local.name_prefix}.local:7700"
+        SCRYFALL_CACHE_DIR = "/tmp/scryfall-cache"
+        DEFAULT_CURRENCY   = "USD"
+        IMPORT_BATCH_SIZE  = "50"
+        IMPORT_CONCURRENCY = "5"
       }
     }
 
@@ -552,29 +537,6 @@ module "ecs" {
       }
     }
 
-    mtg-import = {
-      port             = 3005
-      cpu              = 256  # Right-sized: 2.8% avg CPU, I/O-bound workload
-      memory           = 1024 # Right-sized: 39% peak of 2048 = ~800 MB fits in 1024
-      desired_count    = 1    # Always-on service for catalog management
-      base_path        = "/apps/mtg-import"
-      image            = "${module.ecr.mtg_import_app_repository_url}:${var.mtg_import_app_image_tag}"
-      target_group_arn = module.alb.mtg_import_app_target_group_arn
-      secrets = [
-        {
-          name      = "DATABASE_URL"
-          valueFrom = "/saleor/${var.environment}/apps/inventory-ops/DATABASE_URL"
-        }
-      ]
-      environment = {
-        APL                = "redis"
-        REDIS_URL          = module.elasticache.cache_url
-        SCRYFALL_CACHE_DIR = "/tmp/scryfall-cache"
-        DEFAULT_CURRENCY   = "USD"
-        IMPORT_BATCH_SIZE  = "50" # Doubled from default 25; RDS db.t3.medium handles larger batches
-        IMPORT_CONCURRENCY = "5"  # Up from default 3; more DB RAM = more parallel writes
-      }
-    }
   }
 }
 

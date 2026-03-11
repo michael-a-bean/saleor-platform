@@ -179,7 +179,7 @@ resource "aws_ssm_parameter" "inventory_database_url" {
   name        = "${local.ssm_path_prefix}/apps/inventory-ops/DATABASE_URL"
   type        = "SecureString"
   value       = "postgresql://${var.rds_username}:${var.rds_password}@${var.rds_endpoint}/inventory_ops"
-  description = "PostgreSQL connection URL for inventory apps (inventory-ops, buylist, pos, mtg-import)"
+  description = "PostgreSQL connection URL for inventory apps (inventory-ops, pos)"
 
   tags = {
     Name        = "${local.name_prefix}-inventory-database-url"

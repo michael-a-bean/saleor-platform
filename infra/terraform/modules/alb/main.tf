@@ -262,7 +262,7 @@ resource "aws_lb_target_group" "dashboard" {
 }
 
 # =============================================================================
-# Apps Target Groups (stripe, inventory-ops, buylist, pos)
+# Apps Target Groups (stripe, inventory-ops, pos)
 # NOTE: Health check paths include basePath since ALB preserves full request path
 # =============================================================================
 
@@ -312,29 +312,6 @@ resource "aws_lb_target_group" "inventory_ops_app" {
   }
 }
 
-resource "aws_lb_target_group" "buylist_app" {
-  name        = "${local.name_prefix}-buylist"
-  port        = 3003
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    enabled             = true
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    timeout             = 5
-    interval            = 30
-    path                = "/apps/buylist/api/health"
-    matcher             = "200"
-  }
-
-  tags = {
-    Name    = "${local.name_prefix}-buylist-app"
-    Service = "buylist-app"
-  }
-}
-
 resource "aws_lb_target_group" "pos_app" {
   name        = "${local.name_prefix}-pos"
   port        = 3004
@@ -355,29 +332,6 @@ resource "aws_lb_target_group" "pos_app" {
   tags = {
     Name    = "${local.name_prefix}-pos-app"
     Service = "pos-app"
-  }
-}
-
-resource "aws_lb_target_group" "mtg_import_app" {
-  name        = "${local.name_prefix}-mtg-imp"
-  port        = 3005
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    enabled             = true
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    timeout             = 5
-    interval            = 30
-    path                = "/apps/mtg-import/api/health"
-    matcher             = "200"
-  }
-
-  tags = {
-    Name    = "${local.name_prefix}-mtg-import-app"
-    Service = "mtg-import-app"
   }
 }
 
@@ -524,32 +478,6 @@ resource "aws_lb_listener_rule" "inventory_ops_app" {
   }
 }
 
-# Buylist app routing: apps.{domain}/apps/buylist/*
-# Path must match the app's BASE_PATH=/apps/buylist set at Docker build time
-resource "aws_lb_listener_rule" "buylist_app" {
-  count = var.enable_https ? 1 : 0
-
-  listener_arn = aws_lb_listener.https[0].arn
-  priority     = 220
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.buylist_app.arn
-  }
-
-  condition {
-    host_header {
-      values = ["apps.${var.domain_name}"]
-    }
-  }
-
-  condition {
-    path_pattern {
-      values = ["/apps/buylist/*", "/apps/buylist"]
-    }
-  }
-}
-
 # POS app routing: apps.{domain}/apps/pos/*
 # Path must match the app's BASE_PATH=/apps/pos set at Docker build time
 resource "aws_lb_listener_rule" "pos_app" {
@@ -572,32 +500,6 @@ resource "aws_lb_listener_rule" "pos_app" {
   condition {
     path_pattern {
       values = ["/apps/pos/*", "/apps/pos"]
-    }
-  }
-}
-
-# MTG Import app routing: apps.{domain}/apps/mtg-import/*
-# Path must match the app's BASE_PATH=/apps/mtg-import set at Docker build time
-resource "aws_lb_listener_rule" "mtg_import_app" {
-  count = var.enable_https ? 1 : 0
-
-  listener_arn = aws_lb_listener.https[0].arn
-  priority     = 240
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.mtg_import_app.arn
-  }
-
-  condition {
-    host_header {
-      values = ["apps.${var.domain_name}"]
-    }
-  }
-
-  condition {
-    path_pattern {
-      values = ["/apps/mtg-import/*", "/apps/mtg-import"]
     }
   }
 }
@@ -709,25 +611,6 @@ resource "aws_lb_listener_rule" "inventory_ops_app_http" {
   }
 }
 
-# Buylist app routing on HTTP: /apps/buylist/*
-resource "aws_lb_listener_rule" "buylist_app_http" {
-  count = !var.enable_https ? 1 : 0
-
-  listener_arn = aws_lb_listener.http.arn
-  priority     = 220
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.buylist_app.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/apps/buylist/*", "/apps/buylist"]
-    }
-  }
-}
-
 # POS app routing on HTTP: /apps/pos/*
 resource "aws_lb_listener_rule" "pos_app_http" {
   count = !var.enable_https ? 1 : 0
@@ -747,21 +630,3 @@ resource "aws_lb_listener_rule" "pos_app_http" {
   }
 }
 
-# MTG Import app routing on HTTP: /apps/mtg-import/*
-resource "aws_lb_listener_rule" "mtg_import_app_http" {
-  count = !var.enable_https ? 1 : 0
-
-  listener_arn = aws_lb_listener.http.arn
-  priority     = 240
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.mtg_import_app.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/apps/mtg-import/*", "/apps/mtg-import"]
-    }
-  }
-}

@@ -22,11 +22,6 @@ import {
 }
 
 import {
-  to = module.ecr.aws_ecr_repository.repos["buylist-app"]
-  id = "saleor-platform/buylist-app"
-}
-
-import {
   to = module.ecr.aws_ecr_repository.repos["pos-app"]
   id = "saleor-platform/pos-app"
 }
@@ -75,11 +70,6 @@ import {
 }
 
 import {
-  to = module.alb.aws_lb_target_group.buylist_app
-  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:targetgroup/saleor-platform-staging-buylist/2d69fd6447cdc796"
-}
-
-import {
   to = module.alb.aws_lb_target_group.pos_app
   id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:targetgroup/saleor-platform-staging-pos/89fd87464e2f1975"
 }
@@ -91,7 +81,7 @@ import {
 # HTTPS mode uses host-based routing on the HTTPS listener instead.
 # Kept as comments for historical reference.
 # Previously imported: api_http, dashboard_http, stripe_app_http,
-#   inventory_ops_app_http, buylist_app_http, pos_app_http
+#   inventory_ops_app_http, pos_app_http
 
 # =============================================================================
 # CloudFront - Added 2026-01-27 after drift analysis
@@ -369,11 +359,6 @@ import {
 }
 
 import {
-  to = module.ecs.aws_cloudwatch_log_group.services["buylist-app"]
-  id = "/ecs/saleor-platform-staging/buylist-app"
-}
-
-import {
   to = module.ecs.aws_cloudwatch_log_group.services["pos-app"]
   id = "/ecs/saleor-platform-staging/pos-app"
 }
@@ -419,11 +404,6 @@ import {
 import {
   to = module.ecs.aws_ecs_service.apps["inventory-ops"]
   id = "saleor-platform-staging/inventory-ops"
-}
-
-import {
-  to = module.ecs.aws_ecs_service.apps["buylist"]
-  id = "saleor-platform-staging/buylist"
 }
 
 import {
@@ -550,24 +530,6 @@ import {
 }
 
 
-# MTG Import resources (created before Terraform adoption)
-import {
-  to = module.ecr.aws_ecr_repository.repos["mtg-import-app"]
-  id = "saleor-platform/mtg-import-app"
-}
-
-import {
-  to = module.ecs.aws_cloudwatch_log_group.services["mtg-import-app"]
-  id = "/ecs/saleor-platform-staging/mtg-import-app"
-}
-
-import {
-  to = module.alb.aws_lb_target_group.mtg_import_app
-  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:targetgroup/saleor-platform-staging-mtg-imp/a7cee7de4721f945"
-}
-
-# mtg_import_app_http[0] removed 2026-02-14 — destroyed with enable_https=true
-
 # =============================================================================
 # Route53 Records (created manually, importing into state 2026-03-06)
 # =============================================================================
@@ -625,18 +587,8 @@ import {
 }
 
 import {
-  to = module.alb.aws_lb_listener_rule.buylist_app[0]
-  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/11f61245eba8645a/de6a0928cd4e6fb8"
-}
-
-import {
   to = module.alb.aws_lb_listener_rule.pos_app[0]
   id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/11f61245eba8645a/dc7830b19d5e064c"
-}
-
-import {
-  to = module.alb.aws_lb_listener_rule.mtg_import_app[0]
-  id = "arn:aws:elasticloadbalancing:us-west-1:546464732019:listener-rule/app/saleor-platform-staging-alb/db6a77fe4c4f68d7/11f61245eba8645a/9537529efefe7bd4"
 }
 
 import {
@@ -683,18 +635,8 @@ import {
 }
 
 import {
-  to = module.ecs.aws_appautoscaling_target.apps["buylist"]
-  id = "ecs/service/saleor-platform-staging/buylist/ecs:service:DesiredCount"
-}
-
-import {
   to = module.ecs.aws_appautoscaling_target.apps["pos"]
   id = "ecs/service/saleor-platform-staging/pos/ecs:service:DesiredCount"
-}
-
-import {
-  to = module.ecs.aws_appautoscaling_target.apps["mtg-import"]
-  id = "ecs/service/saleor-platform-staging/mtg-import/ecs:service:DesiredCount"
 }
 
 # =============================================================================
@@ -704,14 +646,6 @@ import {
   to = module.secrets.aws_ssm_parameter.inventory_cron_secret
   id = "/saleor/staging/apps/inventory-ops/CRON_SECRET"
 }
-
-import {
-  to = module.ecs.aws_ecs_task_definition.apps["mtg-import"]
-  id = "arn:aws:ecs:us-west-1:546464732019:task-definition/saleor-platform-staging-mtg-import:8"
-}
-
-# ECS service imported via CLI (TF 1.5 import blocks don't support for_each service resources)
-# terraform import 'module.ecs.aws_ecs_service.apps["mtg-import"]' 'saleor-platform-staging/mtg-import'
 
 # Application Auto Scaling Targets — originally added 2026-02-21
 # Import blocks removed 2026-02-23: they errored with "does not exist in
@@ -728,6 +662,4 @@ import {
 #   - module.ecs.aws_appautoscaling_target.dashboard[0]
 #   - module.ecs.aws_appautoscaling_target.apps["stripe"]
 #   - module.ecs.aws_appautoscaling_target.apps["inventory-ops"]
-#   - module.ecs.aws_appautoscaling_target.apps["buylist"]
 #   - module.ecs.aws_appautoscaling_target.apps["pos"]
-#   - module.ecs.aws_appautoscaling_target.apps["mtg-import"]
