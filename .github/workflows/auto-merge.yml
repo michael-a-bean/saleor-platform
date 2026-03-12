@@ -130,7 +130,10 @@ jobs:
         if: steps.check.outputs.eligible == 'true'
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # MUST use PAT, not GITHUB_TOKEN — merges via GITHUB_TOKEN don't
+          # trigger downstream workflows (push → deploy-staging). GitHub
+          # prevents this to avoid infinite loops.
+          github-token: ${{ secrets.SUBMODULES_TOKEN }}
           script: |
             const prNumber = parseInt('${{ steps.pr.outputs.number }}');
 
