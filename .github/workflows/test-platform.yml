@@ -528,3 +528,35 @@ jobs:
         with:
           name: localreview-report
           path: docs/ai-reviews/localreview.md
+
+  # =============================================================================
+  # CI GATE — single required status check for branch protection
+  # =============================================================================
+  # All conditional jobs feed into this gate. Branch protection only requires
+  # this job, so skipped conditional jobs don't block merging.
+  ci-gate:
+    name: CI Gate
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - verify_storefront
+      - verify_apps
+      - validate_migrations
+      - security_scan
+      - verify_builds
+      - validate_compose
+      - terraform_validate
+      - localreview_ci
+    steps:
+      - name: Check results
+        run: |
+          # Fail if any required job failed (skipped is OK)
+          results="${{ needs.verify_storefront.result }} ${{ needs.verify_apps.result }} ${{ needs.validate_migrations.result }} ${{ needs.security_scan.result }} ${{ needs.verify_builds.result }} ${{ needs.validate_compose.result }} ${{ needs.terraform_validate.result }} ${{ needs.localreview_ci.result }}"
+          echo "Job results: $results"
+          for result in $results; do
+            if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+              echo "::error::One or more CI jobs failed or were cancelled"
+              exit 1
+            fi
+          done
+          echo "All CI checks passed or were skipped (no relevant changes)"
