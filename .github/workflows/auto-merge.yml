@@ -147,18 +147,27 @@ jobs:
               console.log(`PR #${prNumber} merged via squash`);
 
               // Add merged comment
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: '🤖 Auto-merged after all CI checks passed.',
-              });
+              try {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: '🤖 Auto-merged after all CI checks passed.',
+                });
+              } catch (commentErr) {
+                console.log(`Merge succeeded but comment failed: ${commentErr.message}`);
+              }
             } catch (e) {
               console.log(`Merge failed: ${e.message}`);
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: `⚠️ Auto-merge failed: ${e.message}`,
-              });
+              try {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: `⚠️ Auto-merge failed: ${e.message}`,
+                });
+              } catch (commentErr) {
+                console.log(`Comment also failed: ${commentErr.message}`);
+              }
+              core.setFailed(`Auto-merge failed for PR #${prNumber}: ${e.message}`);
             }
