@@ -102,32 +102,32 @@ export default async function Page(props: {
 		notFound();
 	}
 
-	// Fetch other printings (same card name, different sets)
-	const { products: otherPrintingsResult } = await executeGraphQL(OtherPrintingsDocument, {
-		variables: {
-			search: product.name,
-			channel: params.channel,
-			first: 50, // Reasonable limit for printings
-		},
-		revalidate: 60,
-	});
+	// Fetch other printings and related products in parallel (both depend on product, not each other)
+	const [{ products: otherPrintingsResult }, relatedProducts] = await Promise.all([
+		executeGraphQL(OtherPrintingsDocument, {
+			variables: {
+				search: product.name,
+				channel: params.channel,
+				first: 50,
+			},
+			revalidate: 60,
+		}),
+		product.category?.id
+			? executeGraphQL(RelatedProductsDocument, {
+					variables: {
+						channel: params.channel,
+						categoryId: product.category.id,
+						first: 12,
+					},
+					revalidate: 60,
+				})
+			: Promise.resolve(null),
+	]);
 
 	// Filter to exact name matches only
 	const otherPrintings = otherPrintingsResult?.edges
 		.map((e) => e.node)
 		.filter((p) => p.name === product.name) ?? [];
-
-	// Fetch related products from the same category
-	const relatedProducts = product.category?.id
-		? await executeGraphQL(RelatedProductsDocument, {
-				variables: {
-					channel: params.channel,
-					categoryId: product.category.id,
-					first: 12,
-				},
-				revalidate: 60,
-			})
-		: null;
 
 	// Filter out the current product from related products
 	const filteredRelatedProducts = relatedProducts?.products?.edges
