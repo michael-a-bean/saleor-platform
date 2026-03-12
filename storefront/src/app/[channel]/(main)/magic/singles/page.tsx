@@ -164,20 +164,26 @@ export default async function SinglesPage(props: {
 			extraFilterParts,
 		});
 
-		return (
-			<SinglesPageLayout
-				totalCount={result.estimatedTotalHits}
-				activeFilterCount={activeFilterCount}
-				products={transformMeilisearchResults(result.hits)}
-				pagination={
-					<OffsetPagination
-						totalCount={result.estimatedTotalHits}
-						pageSize={ProductsPerPage}
-						currentPage={page}
-					/>
-				}
-			/>
-		);
+		// If search failed (processingTimeMs=0 is the error sentinel from searchProducts),
+		// fall through to Saleor GraphQL instead of showing an empty catalog
+		if (result.hits.length === 0 && result.processingTimeMs === 0 && offset === 0 && !query) {
+			// Fall through to Saleor fallback below
+		} else {
+			return (
+				<SinglesPageLayout
+					totalCount={result.estimatedTotalHits}
+					activeFilterCount={activeFilterCount}
+					products={transformMeilisearchResults(result.hits)}
+					pagination={
+						<OffsetPagination
+							totalCount={result.estimatedTotalHits}
+							pageSize={ProductsPerPage}
+							currentPage={page}
+						/>
+					}
+				/>
+			);
+		}
 	}
 
 	// --- Saleor GraphQL fallback path ---
