@@ -84,6 +84,7 @@ export function buildMeilisearchQuery(filters: MTGFilterState): string {
 
 /**
  * Convert sort URL param to Meilisearch sort array.
+ * Default is name:asc to match UI's "A to Z" label and Saleor fallback behavior.
  */
 export function getMeilisearchSort(sortParam?: string | string[]): string[] {
 	const sortValue = Array.isArray(sortParam) ? sortParam[0] : sortParam;
