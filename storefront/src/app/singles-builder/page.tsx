@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-const EXCLUDED_CHANNELS = ["webstore"];
+const EXCLUDED_CHANNELS = ["webstore", "default-channel"];
 
 export default async function SinglesBuilderLocationPage() {
 	const { channels } = await executeGraphQL(ChannelsListDocument, {
