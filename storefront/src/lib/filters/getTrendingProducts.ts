@@ -14,7 +14,7 @@ import type { ProductListItemFragment } from "@/gql/graphql";
  * Create these collections in Saleor Dashboard to enable manual curation.
  * The first collection found with products will be used.
  */
-const TRENDING_COLLECTION_SLUGS = ["featured", "trending", "bestsellers", "popular"];
+const TRENDING_COLLECTION_SLUGS = ["trending"];
 
 // Simple logging helper for server-side debugging
 function logError(context: string, error: unknown) {
