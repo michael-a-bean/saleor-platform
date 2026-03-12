@@ -146,7 +146,6 @@ export async function searchWithMeilisearch(
 		limit,
 		offset,
 		filters,
-		indexPrefix: "singles-builder",
 	});
 
 	return {
@@ -340,7 +339,7 @@ async function getOrCreateCheckout(channel: string): Promise<SinglesBuilderCheck
 export async function addToSinglesCart(
 	variantId: string,
 	quantity: number,
-	channel: string = "singles-builder",
+	channel: string,
 ): Promise<CartActionResult> {
 	try {
 		let checkout = await getOrCreateCheckout(channel);
@@ -381,7 +380,7 @@ export async function addToSinglesCart(
 export async function updateCartLineQuantity(
 	lineId: string,
 	quantity: number,
-	channel: string = "singles-builder",
+	channel: string,
 ): Promise<CartActionResult> {
 	try {
 		const checkoutId = await getCheckoutIdFromCookie(channel);
@@ -421,7 +420,7 @@ export async function updateCartLineQuantity(
 
 export async function removeCartLine(
 	lineId: string,
-	channel: string = "singles-builder",
+	channel: string,
 ): Promise<CartActionResult> {
 	try {
 		const checkoutId = await getCheckoutIdFromCookie(channel);
@@ -461,7 +460,7 @@ export async function removeCartLine(
 
 export async function updateCartMetadata(
 	metadata: Array<{ key: string; value: string }>,
-	channel: string = "singles-builder",
+	channel: string,
 ): Promise<CartActionResult> {
 	try {
 		const checkoutId = await getCheckoutIdFromCookie(channel);
@@ -506,7 +505,7 @@ export async function saveCartForPOS(
 	notes: string,
 	shortCode: string,
 	staffEmail: string,
-	channel: string = "singles-builder",
+	channel: string,
 ): Promise<CartActionResult> {
 	return updateCartMetadata(
 		[
@@ -514,6 +513,7 @@ export async function saveCartForPOS(
 			{ key: "singles_builder_notes", value: notes },
 			{ key: "singles_builder_code", value: shortCode },
 			{ key: "singles_builder_staff_email", value: staffEmail },
+			{ key: "singles_builder_channel", value: channel },
 			{ key: "singles_builder_created", value: new Date().toISOString() },
 		],
 		channel,

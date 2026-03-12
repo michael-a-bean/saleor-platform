@@ -73,6 +73,9 @@ interface SinglesCartState {
 	cart: SinglesCart | null;
 	checkoutId: string | null;
 
+	// Channel this cart belongs to
+	currentChannel: string | null;
+
 	// Customer info for POS handoff
 	customerInfo: CustomerInfo;
 
@@ -87,6 +90,7 @@ interface SinglesCartState {
 	// Actions
 	setCart: (cart: SinglesCart | null) => void;
 	setCheckoutId: (id: string | null) => void;
+	setChannel: (channel: string) => void;
 	setCustomerInfo: (info: Partial<CustomerInfo>) => void;
 	setShortCode: (code: string | null) => void;
 	openDrawer: () => void;
@@ -109,6 +113,7 @@ export const useSinglesCartStore = create<SinglesCartState>()(
 			// Initial state
 			cart: null,
 			checkoutId: null,
+			currentChannel: null,
 			customerInfo: {
 				name: "",
 				notes: "",
@@ -122,6 +127,23 @@ export const useSinglesCartStore = create<SinglesCartState>()(
 			setCart: (cart) => set({ cart }),
 
 			setCheckoutId: (id) => set({ checkoutId: id }),
+
+			setChannel: (channel) => {
+				const { currentChannel } = get();
+				if (currentChannel && currentChannel !== channel) {
+					// Channel changed — clear cart to prevent cross-location leakage
+					set({
+						cart: null,
+						checkoutId: null,
+						currentChannel: channel,
+						customerInfo: { name: "", notes: "" },
+						shortCode: null,
+						error: null,
+					});
+				} else {
+					set({ currentChannel: channel });
+				}
+			},
 
 			setCustomerInfo: (info) =>
 				set((state) => ({
@@ -168,6 +190,7 @@ export const useSinglesCartStore = create<SinglesCartState>()(
 			// Only persist these fields
 			partialize: (state) => ({
 				checkoutId: state.checkoutId,
+				currentChannel: state.currentChannel,
 				customerInfo: state.customerInfo,
 				shortCode: state.shortCode,
 			}),

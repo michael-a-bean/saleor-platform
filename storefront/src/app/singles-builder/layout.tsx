@@ -34,7 +34,7 @@ export default async function SinglesBuilderLayout({
 
 	// Redirect if not authenticated
 	if (!user) {
-		redirect("/webstore/login?redirect=/singles-builder/webstore");
+		redirect("/webstore/login?redirect=/singles-builder");
 	}
 
 	// Redirect if not staff

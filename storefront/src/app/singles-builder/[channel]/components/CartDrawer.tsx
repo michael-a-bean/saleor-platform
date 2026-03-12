@@ -379,6 +379,14 @@ export function CartDrawer({ channel }: CartDrawerProps) {
 							</button>
 							<button
 								type="button"
+								onClick={() => window.print()}
+								className="flex-shrink-0 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 print:hidden"
+								title="Print Pull List"
+							>
+								Print
+							</button>
+							<button
+								type="button"
 								onClick={handleGenerateCode}
 								disabled={isPending}
 								className="flex-1 rounded-md bg-green-600 px-4 py-3 text-base font-semibold text-white hover:bg-green-700 disabled:opacity-50"
