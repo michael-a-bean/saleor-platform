@@ -41,7 +41,11 @@
 		"url-join": "5.0.0",
 		"urql": "4.0.6",
 		"xss": "1.0.15",
-		"zustand": "4.4.6"
+		"zustand": "4.4.6",
+		"@vercel/otel": "1.10.0",
+		"@opentelemetry/api": "1.9.0",
+		"@grafana/faro-web-sdk": "1.12.1",
+		"@grafana/faro-web-tracing": "1.12.1"
 	},
 	"devDependencies": {
 		"@graphql-codegen/cli": "5.0.0",

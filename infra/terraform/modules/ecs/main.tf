@@ -353,26 +353,47 @@ resource "aws_ecs_task_definition" "storefront" {
         }
       ]
       essential = true
-      environment = [
-        { name = "HOSTNAME", value = "0.0.0.0" },
-        { name = "PORT", value = "3000" },
-        { name = "NEXT_PUBLIC_SALEOR_API_URL", value = "${var.public_api_base_url}/graphql/" },
-        { name = "SALEOR_API_URL", value = "${var.public_api_base_url}/graphql/" },
-        { name = "NEXT_PUBLIC_STOREFRONT_URL", value = var.public_storefront_base_url },
-        { name = "NEXT_PUBLIC_DEFAULT_CHANNEL", value = "webstore" },
-        { name = "MEILISEARCH_URL", value = var.meilisearch_url },
-        # P4-1: Enable Next.js image optimization in production
-        { name = "NEXT_IMAGE_UNOPTIMIZED", value = "false" },
-        # Disable upgrade-insecure-requests CSP for HTTP-only environments
-        { name = "ENABLE_HTTPS", value = var.enable_https ? "true" : "false" }
-      ]
-      # Meilisearch API key secret (for staging/production auth)
-      secrets = var.meilisearch_api_key_secret_arn != "" ? [
-        {
-          name      = "MEILISEARCH_API_KEY"
-          valueFrom = var.meilisearch_api_key_secret_arn
-        }
-      ] : []
+      environment = concat(
+        [
+          { name = "HOSTNAME", value = "0.0.0.0" },
+          { name = "PORT", value = "3000" },
+          { name = "NEXT_PUBLIC_SALEOR_API_URL", value = "${var.public_api_base_url}/graphql/" },
+          { name = "SALEOR_API_URL", value = "${var.public_api_base_url}/graphql/" },
+          { name = "NEXT_PUBLIC_STOREFRONT_URL", value = var.public_storefront_base_url },
+          { name = "NEXT_PUBLIC_DEFAULT_CHANNEL", value = "webstore" },
+          { name = "MEILISEARCH_URL", value = var.meilisearch_url },
+          # P4-1: Enable Next.js image optimization in production
+          { name = "NEXT_IMAGE_UNOPTIMIZED", value = "false" },
+          # Disable upgrade-insecure-requests CSP for HTTP-only environments
+          { name = "ENABLE_HTTPS", value = var.enable_https ? "true" : "false" }
+        ],
+        # OpenTelemetry → Grafana Cloud (SSR trace instrumentation)
+        var.otel_exporter_endpoint != "" ? [
+          { name = "OTEL_SERVICE_NAME", value = "storefront" },
+          { name = "OTEL_EXPORTER_OTLP_PROTOCOL", value = "http/protobuf" },
+          { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = var.otel_exporter_endpoint }
+        ] : [],
+        # Grafana Faro RUM (client-side Core Web Vitals)
+        var.grafana_faro_url != "" ? [
+          { name = "NEXT_PUBLIC_GRAFANA_FARO_URL", value = var.grafana_faro_url }
+        ] : []
+      )
+      secrets = concat(
+        # Meilisearch API key secret (for staging/production auth)
+        var.meilisearch_api_key_secret_arn != "" ? [
+          {
+            name      = "MEILISEARCH_API_KEY"
+            valueFrom = var.meilisearch_api_key_secret_arn
+          }
+        ] : [],
+        # OpenTelemetry auth header (Grafana Cloud Basic auth)
+        var.otel_exporter_endpoint != "" ? [
+          {
+            name      = "OTEL_EXPORTER_OTLP_HEADERS"
+            valueFrom = "${var.ssm_path_prefix}/api/OTEL_EXPORTER_OTLP_HEADERS"
+          }
+        ] : []
+      )
       logConfiguration = {
         logDriver = "awslogs"
         options = {

@@ -385,6 +385,12 @@ variable "otel_exporter_endpoint" {
   default     = ""
 }
 
+variable "grafana_faro_url" {
+  description = "Grafana Faro collector URL for frontend RUM. Empty string disables Faro."
+  type        = string
+  default     = ""
+}
+
 # =============================================================================
 # Alerting
 # =============================================================================

@@ -427,6 +427,7 @@ module "ecs" {
 
   # OpenTelemetry → Grafana Cloud
   otel_exporter_endpoint = var.otel_exporter_endpoint
+  grafana_faro_url       = var.grafana_faro_url
 
   # Alerting
   enable_alerting     = var.alert_email != ""
