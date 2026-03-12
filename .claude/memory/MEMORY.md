@@ -31,11 +31,13 @@
 - **`productBulkUpdate` DOES NOT EXIST** in Saleor 3.22. Use individual `productUpdate` with concurrency. `productVariantBulkUpdate` does exist.
 - Always introspect live schema before writing mutations.
 
-### MTG Import App
-- Port: 3005, shared Prisma schema with inventory-ops (symlink). Use `@prisma/client` (NOT `@/generated/prisma`).
-- ECS `desired_count=0` (batch importer, run on-demand). UI components: `src/ui/components/`
+### MTG Import (CONSOLIDATED into inventory-ops, Mar 2026)
+- **App consolidation**: buylist + mtg-import merged into inventory-ops (commit `2563f7fb`). mtg-import app is a hollow shell — import-router.ts is empty.
+- Import UI: `/src/pages/import/` (jobs list, new import, job detail), `/src/pages/sets.tsx`, `/src/pages/settings.tsx`
+- Import router: `src/modules/import/import-router.ts`, settings: `src/modules/import/settings-router.ts`
 - **Sentinel `saleorProductId: "existing"`**: Duplicate products get this placeholder. ALL queries must filter `{ not: "existing" }`. ~16% of rows.
-- **Backfill product attributes** (2026-02-27): Full session doc at `memory/backfill-product-attributes.md`. Uses `productUpdate` with concurrency 10, batches of 25.
+- **installationId scoping**: All import tables (ImportJob, ImportedProduct, SetAudit, ImportSettings) are scoped by `installationId`. After consolidation, data had to be migrated from old mtg-import installationId (`8ee6e7db-...`) to inventory-ops installationId (`c7c54359-...`).
+- **Staging App IDs in inventory_ops DB**: MTG Import=`8ee6e7db-...` (QXBwOjMw), Inventory Ops=`c7c54359-...` (QXBwOjMx), Buylist=`e1fb4a52-...` (QXBwOjMy), POS=`10f56d07-...` (QXBwOjMz)
 
 ### Key File Locations
 - WAC service: `saleor-apps/apps/inventory-ops/src/modules/cost-layers/wac-service.ts` (~820 LOC)
@@ -95,7 +97,7 @@
 
 ### Infrastructure (as of Feb 2026)
 - **AWS Region**: `us-west-1` (NOT us-east-1) — per `staging.tfvars`
-- **ECS Cluster**: `saleor-platform-staging` — 11 services (api, worker, dashboard, storefront, pos, inventory-ops, beat, meilisearch, buylist, stripe, mtg-import)
+- **ECS Cluster**: `saleor-platform-staging` — 9 services after consolidation (api, worker, dashboard, storefront, pos, inventory-ops, beat, meilisearch, stripe)
 - Staging domain: `staging.michaelbean.org` (HTTPS via ACM wildcard cert)
 - Route53 hosted zone: `Z04460563Q0BF3J4587VW` (michaelbean.org)
 - Staging URLs: `https://api.staging.michaelbean.org`, `https://staging.michaelbean.org`, `https://dashboard.staging.michaelbean.org`
@@ -110,6 +112,15 @@
 - Single-service deploy: `scripts/deploy/aws/deploy-single.sh staging <service>`
 - **Auto-scaling**: min=0, max=2 (default). Midnight PST scheduled action sets max=0 to save costs. Manual spin-up: `aws ecs update-service --desired-count 1` (must set max>0 first via Application Auto Scaling)
 - **ECS one-off tasks**: Use `saleor-platform-staging-migrate` task def with command overrides. Subnets: `subnet-0885b491c2d394fb6,subnet-0917a8f4d0d7b7080`, SG: `sg-0210b4854c817f8ac`, assignPublicIp=DISABLED
+
+### PR-First Workflow (enforced Mar 2026)
+- **All changes go through PRs on saleor-platform** targeting `platform/main`. Never push directly.
+- Flow: feature branch on platform → commit (with submodule pointer update) → PR → `test-platform` CI → `auto-merge.yml` squash-merges → `deploy-staging.yml` deploys to AWS.
+- Add label `auto-merge` to PRs for automatic merge after CI passes.
+- `auto-merge.yml` triggers on `test-platform` workflow_run completion. Required checks: Storefront, Apps, Container Builds, Docker Compose, Migration, Terraform.
+- **Default branch changed to `platform/main`** (Mar 2026). Required because `workflow_run` only reads workflow files from the default branch. `main` still exists for upstream sync.
+- saleor-apps PRs are for submodule-internal changes only. The deploy path is always through the platform repo.
+- Both repos have `allow_auto_merge=true` and `delete_branch_on_merge=true`.
 
 ### CI/CD Patterns (as of Mar 2026)
 - Prisma migrations: ONLY inventory-ops runs `prisma migrate deploy`. Other apps (mtg-import, POS, buylist) share the schema via symlink but must NOT run their own migrations — causes P3009 poisoning cycle.
