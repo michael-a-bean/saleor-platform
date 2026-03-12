@@ -499,6 +499,37 @@ export async function updateCartMetadata(
 	}
 }
 
+// ----- Stable Server Actions for Client Components -----
+// These are top-level exports with stable IDs that survive deployments.
+// Do NOT use inline "use server" closures in server components — they get
+// unique IDs per build and break after redeployment.
+
+export interface FetchMoreFilters {
+	conditions?: string[];
+	finishes?: string[];
+	rarity?: string[];
+	inStockOnly?: boolean;
+	priceMin?: number | null;
+	priceMax?: number | null;
+}
+
+export async function fetchMoreProducts(
+	channel: string,
+	search: string,
+	after: string | null,
+	filters: FetchMoreFilters,
+): Promise<SinglesBuilderSearchQuery["products"]> {
+	return fetchMoreWithMeilisearch(search, channel, after, filters);
+}
+
+export async function addToCart(
+	variantId: string,
+	quantity: number,
+	channel: string,
+): Promise<CartActionResult> {
+	return addToSinglesCart(variantId, quantity, channel);
+}
+
 // POS handoff: Set customer name, notes, short code, and staff email for auto-import
 export async function saveCartForPOS(
 	customerName: string,

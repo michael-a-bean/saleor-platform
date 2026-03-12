@@ -6,8 +6,8 @@ import type { SinglesBuilderProductFragment, SinglesBuilderSearchQuery } from "@
 import { SinglesResults } from "./SinglesResults";
 import type { CartLineInfo } from "./SinglesResultItem";
 import { useSinglesCartStore, type CartLine } from "../store";
-import type { CartActionResult } from "../actions";
-import { updateCartLineQuantity, removeCartLine } from "../actions";
+import type { CartActionResult, FetchMoreFilters } from "../actions";
+import { fetchMoreProducts, addToCart, updateCartLineQuantity, removeCartLine } from "../actions";
 import type { SinglesFilterState } from "./filterTypes";
 import { matchesVariantFilters } from "./buildSinglesFilter";
 
@@ -31,12 +31,6 @@ interface SinglesResultsWrapperProps {
 	channel: string;
 	searchQuery: string;
 	filterState?: SinglesFilterState;
-	fetchMoreAction: (
-		channel: string,
-		search: string,
-		after: string | null,
-	) => Promise<SinglesBuilderSearchQuery["products"]>;
-	addToCartAction: (variantId: string, quantity: number) => Promise<CartActionResult>;
 }
 
 export function SinglesResultsWrapper({
@@ -44,8 +38,6 @@ export function SinglesResultsWrapper({
 	channel,
 	searchQuery,
 	filterState,
-	fetchMoreAction,
-	addToCartAction,
 }: SinglesResultsWrapperProps) {
 	const [products, setProducts] = useState<SinglesBuilderProductFragment[]>(
 		initialData?.edges.map((e) => e.node) || [],
@@ -101,12 +93,22 @@ export function SinglesResultsWrapper({
 		return result;
 	}, [products, searchQuery, filterState, hasVariantFilters]);
 
+	// Build filter params from filterState for the stable server action
+	const fetchMoreFilters: FetchMoreFilters = useMemo(() => ({
+		conditions: filterState?.condition,
+		finishes: filterState?.finish,
+		rarity: filterState?.rarity,
+		inStockOnly: filterState?.inStockOnly,
+		priceMin: filterState?.priceMin,
+		priceMax: filterState?.priceMax,
+	}), [filterState]);
+
 	const handleLoadMore = useCallback(() => {
 		if (!pageInfo?.hasNextPage || !pageInfo?.endCursor || isPending) return;
 
 		startTransition(async () => {
 			try {
-				const moreData = await fetchMoreAction(channel, searchQuery, pageInfo.endCursor ?? null);
+				const moreData = await fetchMoreProducts(channel, searchQuery, pageInfo.endCursor ?? null, fetchMoreFilters);
 				if (moreData) {
 					setProducts((prev) => [...prev, ...moreData.edges.map((e) => e.node)]);
 					setPageInfo(moreData.pageInfo);
@@ -116,7 +118,7 @@ export function SinglesResultsWrapper({
 				toast.error("Failed to load more results");
 			}
 		});
-	}, [channel, searchQuery, pageInfo, isPending, fetchMoreAction]);
+	}, [channel, searchQuery, pageInfo, isPending, fetchMoreFilters]);
 
 	const { cart, setCart } = useSinglesCartStore();
 
@@ -157,14 +159,14 @@ export function SinglesResultsWrapper({
 	const handleQuickAdd = useCallback(
 		async (variantId: string, quantity: number) => {
 			try {
-				const result = await addToCartAction(variantId, quantity);
+				const result = await addToCart(variantId, quantity, channel);
 				handleCartResult(result, "Added to cart!");
 			} catch (error) {
 				console.error("Failed to add to cart:", error);
 				toast.error("Failed to add to cart");
 			}
 		},
-		[addToCartAction, handleCartResult],
+		[channel, handleCartResult],
 	);
 
 	const handleUpdateQuantity = useCallback(
