@@ -12,10 +12,8 @@ import {
 } from "./components";
 import { buildSinglesFilter } from "./components/buildSinglesFilter";
 import {
-	addToSinglesCart,
 	searchWithMeilisearch,
 	transformMeilisearchToGraphQL,
-	fetchMoreWithMeilisearch,
 } from "./actions";
 
 interface PageProps {
@@ -75,36 +73,12 @@ async function SearchResults({
 	// Transform to GraphQL-compatible format
 	const products = await transformMeilisearchToGraphQL(meilisearchResult);
 
-	// Bind the channel and filters to the action for "load more" using Meilisearch
-	const boundFetchMore = async (
-		channel: string,
-		search: string,
-		after: string | null,
-	) => {
-		"use server";
-		return fetchMoreWithMeilisearch(search, channel, after, {
-			conditions: filterState.condition,
-			finishes: filterState.finish,
-			rarity: filterState.rarity,
-			inStockOnly: filterState.inStockOnly,
-			priceMin: filterState.priceMin,
-			priceMax: filterState.priceMax,
-		});
-	};
-
-	const boundAddToCart = async (variantId: string, quantity: number) => {
-		"use server";
-		return addToSinglesCart(variantId, quantity, channel);
-	};
-
 	return (
 		<SinglesResultsWrapper
 			initialData={products}
 			channel={channel}
 			searchQuery={searchQuery}
 			filterState={filterState}
-			fetchMoreAction={boundFetchMore}
-			addToCartAction={boundAddToCart}
 		/>
 	);
 }
