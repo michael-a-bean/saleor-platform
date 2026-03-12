@@ -173,6 +173,11 @@ grafana_external_id    = "1533536"
 grafana_url = "https://michaelbean.grafana.net/"
 # grafana_api_token: pass via TF_VAR_grafana_api_token (never commit tokens)
 
+# Grafana Faro RUM (Frontend Observability)
+# To get the URL: Grafana Cloud → Frontend → Applications → New Application → "storefront"
+# Format: https://faro-collector-prod-us-west-0.grafana.net/collect/<app-key>
+# grafana_faro_url = ""
+
 # Grafana Cloud OTEL data sources (pre-existing, managed by Grafana Cloud)
 tempo_datasource_uid      = "grafanacloud-traces"
 prometheus_datasource_uid = "grafanacloud-prom"

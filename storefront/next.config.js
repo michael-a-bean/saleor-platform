@@ -3,6 +3,7 @@ const config = {
 	reactCompiler: true,
 	experimental: {
 		optimizePackageImports: ["lucide-react", "lodash-es"],
+		instrumentationHook: true,
 	},
 	images: {
 		remotePatterns: [

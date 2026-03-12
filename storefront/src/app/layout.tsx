@@ -3,6 +3,7 @@ import "./globals.css";
 import { Suspense, type ReactNode } from "react";
 import { type Metadata } from "next";
 import { DraftModeNotification } from "@/ui/components/DraftModeNotification";
+import { FaroObservability } from "@/ui/components/FaroObservability";
 
 // Google Fonts as fallbacks for Polymath (loaded via @font-face in globals.css)
 const montserrat = Montserrat({
@@ -68,6 +69,7 @@ export default function RootLayout(props: { children: ReactNode }) {
 				<Suspense>
 					<DraftModeNotification />
 				</Suspense>
+				<FaroObservability />
 			</body>
 		</html>
 	);

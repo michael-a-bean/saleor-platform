@@ -487,6 +487,12 @@ variable "otel_exporter_endpoint" {
   default     = ""
 }
 
+variable "grafana_faro_url" {
+  description = "Grafana Faro collector URL for storefront RUM (Core Web Vitals). Empty string disables Faro."
+  type        = string
+  default     = ""
+}
+
 variable "tempo_datasource_uid" {
   description = "UID of the Grafana Cloud Tempo data source for OTEL trace dashboards. Empty = skip OTEL dashboards."
   type        = string
