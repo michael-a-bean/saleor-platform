@@ -197,3 +197,44 @@ body {
 	font-style: italic;
 	font-display: swap;
 }
+
+/* Print styles for Singles Builder Pull List */
+@media print {
+	/* Hide everything except the cart drawer */
+	body > * {
+		display: none !important;
+	}
+
+	/* Show the cart drawer content */
+	body > div:last-child {
+		display: block !important;
+	}
+
+	/* Hide non-printable elements */
+	.print\:hidden,
+	button,
+	input,
+	textarea,
+	[aria-hidden="true"] {
+		display: none !important;
+	}
+
+	/* Clean layout for pull list */
+	.fixed {
+		position: static !important;
+		width: 100% !important;
+		max-width: 100% !important;
+		box-shadow: none !important;
+	}
+
+	/* Add pull list header via CSS */
+	.fixed::before {
+		content: "Pull List — " attr(data-location) " — " attr(data-date);
+		display: block;
+		font-size: 18px;
+		font-weight: bold;
+		margin-bottom: 16px;
+		border-bottom: 2px solid #000;
+		padding-bottom: 8px;
+	}
+}

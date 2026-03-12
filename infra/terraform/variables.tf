@@ -537,6 +537,12 @@ variable "meilisearch_master_key" {
   sensitive   = true
 }
 
+variable "meilisearch_channels" {
+  description = "JSON array of Meilisearch channel configs. Each entry: {slug, warehouseId (null for aggregate)}."
+  type        = string
+  default     = "[{\"slug\":\"webstore\",\"warehouseId\":null},{\"slug\":\"singles-builder\",\"warehouseId\":null}]"
+}
+
 # =============================================================================
 # Monitoring & Alerting
 # =============================================================================
