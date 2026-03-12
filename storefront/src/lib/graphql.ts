@@ -2,7 +2,6 @@ import { invariant } from "ts-invariant";
 import { type TypedDocumentString } from "../gql/graphql";
 import { getServerAuthClient } from "@/app/config";
 import { withRetry } from "./fetch-retry";
-import { requestQueue } from "./request-queue";
 
 type GraphQLErrorResponse = {
 	errors: readonly {
@@ -42,14 +41,14 @@ export async function executeGraphQL<Result, Variables>(
 		next: { revalidate },
 	};
 
-	const response = await requestQueue.enqueue(async () => {
+	const response = await (async () => {
 		if (withAuth) {
 			const authClient = await getServerAuthClient();
 			const authFetch = withRetry(authClient.fetchWithAuth.bind(authClient));
 			return authFetch(apiUrl, input);
 		}
 		return resilientFetch(apiUrl, input);
-	});
+	})();
 
 	if (!response.ok) {
 		const body = await (async () => {
