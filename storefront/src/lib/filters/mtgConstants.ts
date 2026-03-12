@@ -77,6 +77,9 @@ export const ATTRIBUTE_SLUGS = {
 	condition: "mtg-condition",
 	typeLine: "mtg-type-line",
 	manaValue: "mtg-mana-value",
+	setName: "mtg-set-name",
+	setCode: "mtg-set-code",
+	collectorNumber: "mtg-collector-number",
 } as const;
 
 // URL parameter names

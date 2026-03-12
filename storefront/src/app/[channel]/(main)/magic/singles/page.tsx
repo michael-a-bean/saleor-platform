@@ -1,16 +1,27 @@
-import { Suspense } from "react";
+import { type ReactNode, Suspense } from "react";
 import { notFound } from "next/navigation";
 import { type Metadata } from "next";
-import { ProductListFilteredDocument, OrderDirection, ProductOrderField } from "@/gql/graphql";
+import { ProductListFilteredDocument, OrderDirection, ProductOrderField, type ProductListItemFragment } from "@/gql/graphql";
 import { executeGraphQL } from "@/lib/graphql";
-import { Pagination } from "@/ui/components/Pagination";
 import { ProductList } from "@/ui/components/ProductList";
 import { getPaginatedListVariables } from "@/lib/utils";
+import { ProductsPerPage } from "@/app/config";
+import { Pagination } from "@/ui/components/Pagination";
+import { OffsetPagination } from "@/ui/components/OffsetPagination";
 import { SortBy } from "@/ui/components/SortBy";
 import { FilterSidebar, MobileFilterModal, ActiveFilters } from "@/ui/components/filters";
 import { parseFiltersFromURL, buildProductFilter, getActiveFilterCount } from "@/lib/filters";
 import { Breadcrumb } from "@/ui/components/Breadcrumb";
 import { MagicSubNav } from "@/ui/components/MagicSubNav";
+import { searchProducts, isMeilisearchHealthy } from "@/lib/meilisearch";
+import { transformMeilisearchResults } from "@/lib/filters/transformMeilisearchResults";
+import {
+	buildMeilisearchFilters,
+	buildExtraFilterParts,
+	buildMeilisearchQuery,
+	getMeilisearchSort,
+	hasMeilisearchUnsupportedFilters,
+} from "@/lib/filters/buildMeilisearchFilter";
 
 export const metadata: Metadata = {
 	title: "Magic: The Gathering Singles",
@@ -35,6 +46,81 @@ const getSortVariables = (sortParam?: string | string[]) => {
 	}
 };
 
+function SinglesPageLayout({
+	totalCount,
+	activeFilterCount,
+	products,
+	pagination,
+}: {
+	totalCount: number;
+	activeFilterCount: number;
+	products: readonly ProductListItemFragment[];
+	pagination: ReactNode;
+}) {
+	return (
+		<section className="mx-auto max-w-7xl p-8 pb-16">
+			<Breadcrumb
+				items={[
+					{ label: "Magic: The Gathering", href: "/magic" },
+					{ label: "Singles" },
+				]}
+				className="mb-4"
+			/>
+			<MagicSubNav />
+
+			<div className="mb-6">
+				<h1 className="text-2xl font-bold">Magic: The Gathering Singles</h1>
+				<p className="mt-1 text-neutral-500">
+					{totalCount.toLocaleString()} cards available
+				</p>
+			</div>
+
+			<div className="flex gap-8">
+				<div className="hidden lg:block">
+					<Suspense fallback={<div className="w-64" />}>
+						<FilterSidebar />
+					</Suspense>
+				</div>
+
+				<div className="flex-1">
+					<div className="mb-6 flex items-center justify-between gap-4">
+						<div className="flex items-center gap-4">
+							<Suspense fallback={null}>
+								<MobileFilterModal />
+							</Suspense>
+							{activeFilterCount > 0 && (
+								<span className="hidden text-sm text-neutral-500 lg:inline">
+									{totalCount} {totalCount === 1 ? "result" : "results"}
+								</span>
+							)}
+						</div>
+						<SortBy />
+					</div>
+
+					<Suspense fallback={null}>
+						<ActiveFilters />
+					</Suspense>
+
+					<h2 className="sr-only">Product list</h2>
+					{products.length > 0 ? (
+						<>
+							<ProductList products={products} />
+							{pagination}
+						</>
+					) : (
+						<div className="py-12 text-center">
+							<p className="text-lg text-neutral-600">No cards found</p>
+							<p className="mt-2 text-sm text-neutral-500">
+								Try adjusting your filters or search criteria
+							</p>
+						</div>
+					)}
+				</div>
+			</div>
+		</section>
+	);
+}
+
 export default async function SinglesPage(props: {
 	params: Promise<{ channel: string }>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -52,10 +138,48 @@ export default async function SinglesPage(props: {
 
 	// Parse filters from URL
 	const filters = parseFiltersFromURL(urlSearchParams);
-	const productFilter = buildProductFilter(filters);
 	const activeFilterCount = getActiveFilterCount(filters);
 
-	// Add category filter to restrict to MTG singles
+	// Determine if we can use Meilisearch or need Saleor fallback
+	const needsSaleorFallback = hasMeilisearchUnsupportedFilters(filters);
+	const meilisearchHealthy = needsSaleorFallback ? false : await isMeilisearchHealthy();
+	const useMeilisearch = meilisearchHealthy && !needsSaleorFallback;
+
+	if (useMeilisearch) {
+		const page = Math.max(1, parseInt(String(searchParams.page ?? "1"), 10) || 1);
+		const offset = (page - 1) * ProductsPerPage;
+
+		const meilisearchFilters = buildMeilisearchFilters(filters);
+		const extraFilterParts = buildExtraFilterParts(filters);
+		const query = buildMeilisearchQuery(filters);
+		const sort = getMeilisearchSort(searchParams.sort);
+
+		const result = await searchProducts(query, params.channel, {
+			limit: ProductsPerPage,
+			offset,
+			filters: meilisearchFilters,
+			sort,
+			extraFilterParts,
+		});
+
+		return (
+			<SinglesPageLayout
+				totalCount={result.estimatedTotalHits}
+				activeFilterCount={activeFilterCount}
+				products={transformMeilisearchResults(result.hits)}
+				pagination={
+					<OffsetPagination
+						totalCount={result.estimatedTotalHits}
+						pageSize={ProductsPerPage}
+						currentPage={page}
+					/>
+				}
+			/>
+		);
+	}
+
+	// --- Saleor GraphQL fallback path ---
+	const productFilter = buildProductFilter(filters);
 	productFilter.categories = [MTG_CARDS_CATEGORY_ID];
 
 	const paginationVariables = getPaginatedListVariables({ params: searchParams });
@@ -76,70 +200,11 @@ export default async function SinglesPage(props: {
 	}
 
 	return (
-		<section className="mx-auto max-w-7xl p-8 pb-16">
-			<Breadcrumb
-				items={[
-					{ label: "Magic: The Gathering", href: "/magic" },
-					{ label: "Singles" },
-				]}
-				className="mb-4"
-			/>
-			<MagicSubNav />
-
-			<div className="mb-6">
-				<h1 className="text-2xl font-bold">Magic: The Gathering Singles</h1>
-				<p className="mt-1 text-neutral-500">
-					{products.totalCount?.toLocaleString()} cards available
-				</p>
-			</div>
-
-			<div className="flex gap-8">
-				{/* Desktop Sidebar - hidden on mobile */}
-				<div className="hidden lg:block">
-					<Suspense fallback={<div className="w-64" />}>
-						<FilterSidebar />
-					</Suspense>
-				</div>
-
-				{/* Main content */}
-				<div className="flex-1">
-					{/* Header with mobile filter button and sort */}
-					<div className="mb-6 flex items-center justify-between gap-4">
-						<div className="flex items-center gap-4">
-							<Suspense fallback={null}>
-								<MobileFilterModal />
-							</Suspense>
-							{activeFilterCount > 0 && (
-								<span className="hidden text-sm text-neutral-500 lg:inline">
-									{products.totalCount} {products.totalCount === 1 ? "result" : "results"}
-								</span>
-							)}
-						</div>
-						<SortBy />
-					</div>
-
-					{/* Active filters display */}
-					<Suspense fallback={null}>
-						<ActiveFilters />
-					</Suspense>
-
-					{/* Product list */}
-					<h2 className="sr-only">Product list</h2>
-					{products.edges.length > 0 ? (
-						<>
-							<ProductList products={products.edges.map((e) => e.node)} />
-							<Pagination pageInfo={products.pageInfo} />
-						</>
-					) : (
-						<div className="py-12 text-center">
-							<p className="text-lg text-neutral-600">No cards found</p>
-							<p className="mt-2 text-sm text-neutral-500">
-								Try adjusting your filters or search criteria
-							</p>
-						</div>
-					)}
-				</div>
-			</div>
-		</section>
+		<SinglesPageLayout
+			totalCount={products.totalCount ?? 0}
+			activeFilterCount={activeFilterCount}
+			products={products.edges.map((e) => e.node)}
+			pagination={<Pagination pageInfo={products.pageInfo} />}
+		/>
 	);
 }

@@ -6,3 +6,5 @@ export * from "./getAvailableSets";
 export * from "./getAllSets";
 export * from "./getLatestSets";
 export * from "./getTrendingProducts";
+export * from "./buildMeilisearchFilter";
+export * from "./transformMeilisearchResults";

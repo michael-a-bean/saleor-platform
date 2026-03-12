@@ -154,9 +154,10 @@ export async function searchProducts(
 		filters?: SearchFilters;
 		sort?: string[];
 		indexPrefix?: string;
+		extraFilterParts?: string[];
 	} = {},
 ): Promise<MeilisearchSearchResult> {
-	const { limit = 50, offset = 0, filters = {}, sort, indexPrefix } = options;
+	const { limit = 50, offset = 0, filters = {}, sort, indexPrefix, extraFilterParts } = options;
 	const indexName = getIndexName(channel, indexPrefix);
 
 	const searchParams: Record<string, unknown> = {
@@ -187,8 +188,9 @@ export async function searchProducts(
 	};
 
 	const filterString = buildFilterString(filters);
-	if (filterString) {
-		searchParams.filter = filterString;
+	const allFilterParts = [filterString, ...(extraFilterParts ?? [])].filter(Boolean);
+	if (allFilterParts.length > 0) {
+		searchParams.filter = allFilterParts.join(" AND ");
 	}
 
 	if (sort && sort.length > 0) {
@@ -230,15 +232,26 @@ export async function searchProducts(
 
 /**
  * Check if Meilisearch is available and healthy.
+ * Cached for 30 seconds to avoid a health check round-trip on every page load.
  */
+let healthCache: { healthy: boolean; checkedAt: number } | null = null;
+const HEALTH_CACHE_TTL_MS = 30_000;
+
 export async function isMeilisearchHealthy(): Promise<boolean> {
+	if (healthCache && Date.now() - healthCache.checkedAt < HEALTH_CACHE_TTL_MS) {
+		return healthCache.healthy;
+	}
+
 	try {
 		const response = await fetch(`${MEILISEARCH_URL}/health`, {
 			headers: getMeilisearchHeaders(),
 			cache: "no-store",
 		});
-		return response.ok;
+		const healthy = response.ok;
+		healthCache = { healthy, checkedAt: Date.now() };
+		return healthy;
 	} catch {
+		healthCache = { healthy: false, checkedAt: Date.now() };
 		return false;
 	}
 }
