@@ -508,13 +508,14 @@ module "ecs" {
         ] : []
       )
       environment = {
-        APL                = "redis"
-        REDIS_URL          = module.elasticache.cache_url
-        MEILISEARCH_URL    = var.meilisearch_enabled ? module.meilisearch[0].service_url : "http://meilisearch.${local.name_prefix}.local:7700"
-        SCRYFALL_CACHE_DIR = "/tmp/scryfall-cache"
-        DEFAULT_CURRENCY   = "USD"
-        IMPORT_BATCH_SIZE  = "50"
-        IMPORT_CONCURRENCY = "5"
+        APL                  = "redis"
+        REDIS_URL            = module.elasticache.cache_url
+        MEILISEARCH_URL      = var.meilisearch_enabled ? module.meilisearch[0].service_url : "http://meilisearch.${local.name_prefix}.local:7700"
+        MEILISEARCH_CHANNELS = var.meilisearch_channels
+        SCRYFALL_CACHE_DIR   = "/tmp/scryfall-cache"
+        DEFAULT_CURRENCY     = "USD"
+        IMPORT_BATCH_SIZE    = "50"
+        IMPORT_CONCURRENCY   = "5"
       }
     }
 
