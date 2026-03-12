@@ -29,8 +29,8 @@ jobs:
                 console.log(`PR targets ${pr.base.ref}, not platform/main — skipping`);
                 return;
               }
-              if (context.payload.label?.name !== 'auto-merge') {
-                console.log(`Label "${context.payload.label?.name}" added, not auto-merge — skipping`);
+              if (context.payload.label?.name !== 'automerge') {
+                console.log(`Label "${context.payload.label?.name}" added, not automerge — skipping`);
                 return;
               }
               core.setOutput('number', pr.number);
@@ -81,10 +81,10 @@ jobs:
               return;
             }
 
-            // Check for auto-merge label
-            const hasLabel = pr.labels.some(l => l.name === 'auto-merge');
+            // Check for automerge label
+            const hasLabel = pr.labels.some(l => l.name === 'automerge');
             if (!hasLabel) {
-              console.log('PR does not have auto-merge label, skipping');
+              console.log('PR does not have automerge label, skipping');
               return;
             }
 
