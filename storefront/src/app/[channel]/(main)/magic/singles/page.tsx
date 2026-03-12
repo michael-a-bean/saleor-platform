@@ -151,6 +151,8 @@ export default async function SinglesPage(props: {
 
 		const meilisearchFilters = buildMeilisearchFilters(filters);
 		const extraFilterParts = buildExtraFilterParts(filters);
+		// Restrict to MTG products — all MTG cards have a set_code, non-MTG products don't
+		extraFilterParts.push("set_code EXISTS");
 		const query = buildMeilisearchQuery(filters);
 		const sort = getMeilisearchSort(searchParams.sort);
 

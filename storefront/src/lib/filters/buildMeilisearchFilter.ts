@@ -84,8 +84,10 @@ export function buildMeilisearchQuery(filters: MTGFilterState): string {
 
 /**
  * Convert sort URL param to Meilisearch sort array.
+ * Returns undefined for the default case to use Meilisearch's default ordering,
+ * avoiding errors if "name" isn't in sortableAttributes.
  */
-export function getMeilisearchSort(sortParam?: string | string[]): string[] {
+export function getMeilisearchSort(sortParam?: string | string[]): string[] | undefined {
 	const sortValue = Array.isArray(sortParam) ? sortParam[0] : sortParam;
 
 	switch (sortValue) {
@@ -94,7 +96,7 @@ export function getMeilisearchSort(sortParam?: string | string[]): string[] {
 		case "price-desc":
 			return ["min_price:desc"];
 		default:
-			return ["name:asc"];
+			return undefined;
 	}
 }
 
