@@ -88,14 +88,9 @@ jobs:
               return;
             }
 
-            // Only check required status checks (non-required failures should not block merge)
+            // Only check the CI Gate job (aggregates all conditional checks)
             const requiredChecks = [
-              'Storefront Checks',
-              'Apps Checks',
-              'Container Builds',
-              'Docker Compose Validation',
-              'Migration Validation',
-              'Terraform Validation',
+              'CI Gate',
             ];
 
             const { data: checks } = await github.rest.checks.listForRef({
