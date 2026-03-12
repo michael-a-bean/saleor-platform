@@ -48,14 +48,14 @@ Add the new channel to the `MEILISEARCH_CHANNELS` environment variable on the in
 
 ```json
 [
-  {"slug": "webstore", "warehouseId": null},
-  {"slug": "singles-builder", "warehouseId": null},
-  {"slug": "retail-store", "warehouseId": "V2FyZWhvdXNlOjE="}
+  {"slug": "webstore", "warehouseIds": null},
+  {"slug": "singles-builder", "warehouseIds": ["<retail-id>", "<brea-id>"]},
+  {"slug": "frank-and-sons", "warehouseIds": ["<franks-id>"]}
 ]
 ```
 
-`warehouseId: null` = aggregated stock across all warehouses.
-`warehouseId: "<id>"` = stock scoped to that specific warehouse.
+`warehouseIds: null` = aggregated stock across all warehouses.
+`warehouseIds: ["<id>"]` = stock scoped to specific warehouse(s). Multiple IDs sum stock across those warehouses.
 
 Get the warehouse ID from Saleor Dashboard (URL contains the base64 ID) or via GraphQL:
 ```graphql

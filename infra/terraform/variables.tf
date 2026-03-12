@@ -538,9 +538,9 @@ variable "meilisearch_master_key" {
 }
 
 variable "meilisearch_channels" {
-  description = "JSON array of Meilisearch channel configs. Each entry: {slug, warehouseId (null for aggregate)}."
+  description = "JSON array of Meilisearch channel configs. Each entry: {slug, warehouseIds (null for aggregate, array of IDs for scoped)}."
   type        = string
-  default     = "[{\"slug\":\"webstore\",\"warehouseId\":null},{\"slug\":\"singles-builder\",\"warehouseId\":null}]"
+  default     = "[{\"slug\":\"webstore\",\"warehouseIds\":null},{\"slug\":\"singles-builder\",\"warehouseIds\":null}]"
 }
 
 # =============================================================================

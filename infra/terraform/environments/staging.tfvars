@@ -141,6 +141,10 @@ ecr_image_tag_mutability = "MUTABLE"
 meilisearch_enabled = true
 # meilisearch_master_key = "" # Leave empty to auto-generate
 
+# Meilisearch channel configs: warehouseIds scopes stock per-location
+# Retail + Brea warehouses for Shuffle & Cut, Franks warehouse for Frank & Sons
+meilisearch_channels = "[{\"slug\":\"webstore\",\"warehouseIds\":null},{\"slug\":\"singles-builder\",\"warehouseIds\":[\"V2FyZWhvdXNlOjVkM2VjOTMyLWE5MTItNGY1Yy04ZDVlLTFkZTE4NGMzZGI3NQ==\",\"V2FyZWhvdXNlOmU5NmEzN2EzLWMzM2YtNDNiZS1hMjdjLTk0ZDkxYWQ2YjI1Nw==\"]},{\"slug\":\"frank-and-sons\",\"warehouseIds\":[\"V2FyZWhvdXNlOmExMGE1ZTFhLTZhZjEtNGRjMS05NTNkLTNlYWJiM2U2OTM4Zg==\"]}]"
+
 # S3 Media Security (locked to CloudFront-only access 2026-01-27)
 cloudfront_only_media_access = true
 
