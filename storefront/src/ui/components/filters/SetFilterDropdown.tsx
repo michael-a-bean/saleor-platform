@@ -39,9 +39,16 @@ export const SetFilterDropdown = ({ value, onChange, channel = "webstore" }: Set
 		if (!isOpen && hasLoaded) return;
 
 		startTransition(async () => {
-			const sets = await getAvailableSetsForSearch(searchQuery, channel);
-			setOptions(sets);
-			setHasLoaded(true);
+			try {
+				const sets = await getAvailableSetsForSearch(searchQuery, channel);
+				setOptions(sets);
+				setHasLoaded(true);
+			} catch {
+				// Server action may fail after deployment (stale action ID).
+				// Gracefully show empty sets instead of crashing.
+				setOptions([]);
+				setHasLoaded(true);
+			}
 		});
 	}, [searchQuery, channel, isOpen, hasLoaded]);
 

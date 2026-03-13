@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
   try {
     const response = await fetch(scryfallUrl, {
       next: { revalidate: CACHE_MAX_AGE },
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!response.ok) {
