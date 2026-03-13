@@ -109,13 +109,18 @@ export function SinglesResultsWrapper({
 		startTransition(async () => {
 			try {
 				const moreData = await fetchMoreProducts(channel, searchQuery, pageInfo.endCursor ?? null, fetchMoreFilters);
-				if (moreData) {
+				if (moreData && moreData.edges.length > 0) {
 					setProducts((prev) => [...prev, ...moreData.edges.map((e) => e.node)]);
 					setPageInfo(moreData.pageInfo);
+				} else {
+					// No more results — stop pagination to prevent infinite loop
+					setPageInfo((prev) => prev ? { ...prev, hasNextPage: false, endCursor: null } : prev);
 				}
 			} catch (error) {
 				console.error("Failed to load more:", error);
 				toast.error("Failed to load more results");
+				// Stop retrying on error to prevent toast spam
+				setPageInfo((prev) => prev ? { ...prev, hasNextPage: false, endCursor: null } : prev);
 			}
 		});
 	}, [channel, searchQuery, pageInfo, isPending, fetchMoreFilters]);
