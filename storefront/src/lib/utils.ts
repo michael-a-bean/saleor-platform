@@ -57,13 +57,15 @@ export type PaginatedListVariables = {
 
 export const getPaginatedListVariables = ({
 	params,
+	pageSize = ProductsPerPage,
 }: {
 	params: { [key: string]: unknown };
+	pageSize?: number;
 }): PaginatedListVariables => {
 	const cursor = typeof params?.cursor === "string" ? params?.cursor : null;
 	const direction = params?.direction === "prev" ? "prev" : "next";
 
 	return direction === "prev"
-		? { last: ProductsPerPage, before: cursor }
-		: { first: ProductsPerPage, after: cursor };
+		? { last: pageSize, before: cursor }
+		: { first: pageSize, after: cursor };
 };

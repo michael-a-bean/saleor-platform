@@ -97,7 +97,17 @@ export function middleware(request: NextRequest) {
   // Cache-Control: cache catalog pages, skip auth/transactional routes
   const isDynamic = DYNAMIC_PATHS.some((p) => pathname.startsWith(p));
   if (!isDynamic && !pathname.startsWith("/api")) {
-    response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+    // Longer cache for stable catalog pages (sets, categories, board-games)
+    const isStableCatalog =
+      /\/magic\/sets(\/|$)/.test(pathname) ||
+      /\/categories\//.test(pathname) ||
+      /\/board-games\//.test(pathname);
+
+    if (isStableCatalog) {
+      response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=300");
+    } else {
+      response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+    }
   }
 
   return response;

@@ -2,9 +2,11 @@ import { type ResolvingMetadata, type Metadata } from "next";
 import Link from "next/link";
 import { ProductListByCategoryDocument } from "@/gql/graphql";
 import { executeGraphQL } from "@/lib/graphql";
+import { getPaginatedListVariables } from "@/lib/utils";
 import { Breadcrumb } from "@/ui/components/Breadcrumb";
 import { BoardGamesSubNav } from "@/ui/components/BoardGamesSubNav";
 import { ProductList } from "@/ui/components/ProductList";
+import { Pagination } from "@/ui/components/Pagination";
 import { Clock, ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -39,10 +41,14 @@ export const generateMetadata = async (
 
 export default async function BoardGamesCategoryPage(props: {
 	params: Promise<{ category: string; channel: string }>;
+	searchParams: Promise<{ cursor?: string; direction?: string }>;
 }) {
-	const params = await props.params;
+	const [params, searchParams] = await Promise.all([props.params, props.searchParams]);
+
+	const paginationVars = getPaginatedListVariables({ params: searchParams, pageSize: 24 });
+
 	const { category } = await executeGraphQL(ProductListByCategoryDocument, {
-		variables: { slug: params.category, channel: params.channel },
+		variables: { slug: params.category, channel: params.channel, ...paginationVars },
 		revalidate: 60,
 	});
 
@@ -135,7 +141,10 @@ export default async function BoardGamesCategoryPage(props: {
 					</div>
 
 					{products.edges.length > 0 ? (
-						<ProductList products={products.edges.map((e) => e.node)} />
+						<>
+							<ProductList products={products.edges.map((e) => e.node)} />
+							<Pagination pageInfo={products.pageInfo} />
+						</>
 					) : (
 						<div className="rounded-lg border border-neutral-200 bg-neutral-50 p-8 text-center">
 							<p className="text-neutral-500">No games found in this category.</p>

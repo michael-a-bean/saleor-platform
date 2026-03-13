@@ -1,15 +1,29 @@
-query ProductListByCollection($slug: String!, $channel: String!, $first: Int = 100) {
+query ProductListByCollection(
+	$slug: String!
+	$channel: String!
+	$first: Int = 24
+	$after: String
+	$last: Int
+	$before: String
+) {
 	collection(slug: $slug, channel: $channel) {
 		name
 		description
 		seoDescription
 		seoTitle
-		products(first: $first) {
+		products(first: $first, after: $after, last: $last, before: $before) {
 			edges {
 				node {
 					...ProductListItem
 				}
 			}
+			pageInfo {
+				hasNextPage
+				hasPreviousPage
+				startCursor
+				endCursor
+			}
+			totalCount
 		}
 	}
 }
