@@ -10,11 +10,11 @@ import { EssentialCardInfo } from "@/ui/components/EssentialCardInfo";
 import { MTGCardAttributes } from "@/ui/components/MTGCardAttributes";
 import { executeGraphQL } from "@/lib/graphql";
 import { formatMoney, formatMoneyRange } from "@/lib/utils";
-import { CheckoutAddLineDocument, ProductDetailsDocument, ProductListDocument, OtherPrintingsDocument, RelatedProductsDocument } from "@/gql/graphql";
+import { CheckoutAddLineDocument, ProductDetailsDocument, ProductListDocument } from "@/gql/graphql";
 import * as Checkout from "@/lib/checkout";
 import { AvailabilityMessage } from "@/ui/components/AvailabilityMessage";
-import { OtherPrintings } from "@/ui/components/OtherPrintings";
-import { RelatedProductsCarousel } from "@/ui/components/RelatedProductsCarousel";
+import { LazyOtherPrintings } from "@/ui/components/LazyOtherPrintings";
+import { LazyRelatedProducts } from "@/ui/components/LazyRelatedProducts";
 
 export const dynamic = "force-dynamic";
 
@@ -101,38 +101,6 @@ export default async function Page(props: {
 	if (!product) {
 		notFound();
 	}
-
-	// Fetch other printings and related products in parallel (both depend on product, not each other)
-	const [{ products: otherPrintingsResult }, relatedProducts] = await Promise.all([
-		executeGraphQL(OtherPrintingsDocument, {
-			variables: {
-				search: product.name,
-				channel: params.channel,
-				first: 50,
-			},
-			revalidate: 60,
-		}),
-		product.category?.id
-			? executeGraphQL(RelatedProductsDocument, {
-					variables: {
-						channel: params.channel,
-						categoryId: product.category.id,
-						first: 12,
-					},
-					revalidate: 60,
-				})
-			: Promise.resolve(null),
-	]);
-
-	// Filter to exact name matches only
-	const otherPrintings = otherPrintingsResult?.edges
-		.map((e) => e.node)
-		.filter((p) => p.name === product.name) ?? [];
-
-	// Filter out the current product from related products
-	const filteredRelatedProducts = relatedProducts?.products?.edges
-		.map((e) => e.node)
-		.filter((p) => p.id !== product.id) ?? [];
 
 	// Prefer media URL (external images) over thumbnail URL (Saleor-generated)
 	const firstImage = product.media?.[0] || product.thumbnail;
@@ -300,14 +268,12 @@ export default async function Page(props: {
 						/>
 					</div>
 
-					{/* Other printings of this card */}
-					{otherPrintings.length > 1 && (
-						<OtherPrintings
-							printings={otherPrintings}
-							currentProductId={product.id}
-							channel={params.channel}
-						/>
-					)}
+					{/* Other printings of this card (loaded client-side) */}
+					<LazyOtherPrintings
+						productName={product.name}
+						currentProductId={product.id}
+						channel={params.channel}
+					/>
 				</div>
 			</div>
 
@@ -318,11 +284,13 @@ export default async function Page(props: {
 				</div>
 			)}
 
-			{/* Related Products Carousel */}
-			{filteredRelatedProducts.length > 0 && (
-				<RelatedProductsCarousel
-					products={filteredRelatedProducts}
-					title={product.category?.name ? `More from ${product.category.name}` : "Related Products"}
+			{/* Related Products Carousel (loaded client-side) */}
+			{product.category?.id && (
+				<LazyRelatedProducts
+					categoryId={product.category.id}
+					categoryName={product.category.name ?? undefined}
+					productId={product.id}
+					channel={params.channel}
 				/>
 			)}
 		</section>
