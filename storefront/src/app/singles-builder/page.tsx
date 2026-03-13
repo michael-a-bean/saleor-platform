@@ -6,7 +6,14 @@ export const dynamic = "force-dynamic";
 
 const EXCLUDED_CHANNELS = ["webstore", "default-channel"];
 
-export default async function SinglesBuilderLocationPage() {
+interface PageProps {
+	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function SinglesBuilderLocationPage({ searchParams }: PageProps) {
+	const resolvedSearchParams = await searchParams;
+	const forcePicker = resolvedSearchParams.pick === "true";
+
 	const { channels } = await executeGraphQL(ChannelsListDocument, {
 		cache: "no-cache",
 	});
@@ -15,8 +22,8 @@ export default async function SinglesBuilderLocationPage() {
 		(ch) => ch.isActive && !EXCLUDED_CHANNELS.includes(ch.slug),
 	);
 
-	if (locations.length === 1) {
-		// Single location — redirect directly
+	if (locations.length === 1 && !forcePicker) {
+		// Single location — redirect directly (unless user explicitly wants the picker)
 		const { redirect } = await import("next/navigation");
 		redirect(`/singles-builder/${locations[0].slug}`);
 	}

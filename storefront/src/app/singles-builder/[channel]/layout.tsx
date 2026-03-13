@@ -31,7 +31,7 @@ export default async function SinglesBuilderChannelLayout({
 						Location: {locationName}
 					</span>
 					<Link
-						href="/singles-builder"
+						href="/singles-builder?pick=true"
 						className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
 					>
 						Change Location
