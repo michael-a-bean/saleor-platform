@@ -1,18 +1,23 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useRouter } from "next/navigation";
 import { SearchIcon } from "lucide-react";
 
 export const SearchBar = ({ channel }: { channel: string }) => {
-	async function onSubmit(formData: FormData) {
-		"use server";
+	const router = useRouter();
+
+	function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+		e.preventDefault();
+		const formData = new FormData(e.currentTarget);
 		const search = formData.get("search") as string;
 		if (search && search.trim().length > 0) {
-			redirect(`/${encodeURIComponent(channel)}/search?query=${encodeURIComponent(search)}`);
+			router.push(`/${encodeURIComponent(channel)}/search?query=${encodeURIComponent(search)}`);
 		}
 	}
 
 	return (
 		<form
-			action={onSubmit}
+			onSubmit={onSubmit}
 			className="group relative my-2 flex w-full items-center justify-items-center text-sm lg:w-80"
 		>
 			<label className="w-full">
