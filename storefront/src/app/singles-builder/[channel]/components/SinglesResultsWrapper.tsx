@@ -109,19 +109,18 @@ export function SinglesResultsWrapper({
 		if (!pageInfo?.hasNextPage || !pageInfo?.endCursor || isPending || exhausted) return;
 
 		startTransition(async () => {
+			let moreData: Awaited<ReturnType<typeof fetchMoreProducts>> = null;
 			try {
-				const moreData = await fetchMoreProducts(channel, searchQuery, pageInfo.endCursor ?? null, fetchMoreFilters);
-				if (moreData && moreData.edges.length > 0) {
-					setProducts((prev) => [...prev, ...moreData.edges.map((e) => e.node)]);
-					setPageInfo(moreData.pageInfo);
-				} else {
-					// No more results — stop pagination
-					setExhausted(true);
-				}
+				moreData = await fetchMoreProducts(channel, searchQuery, pageInfo.endCursor ?? null, fetchMoreFilters);
 			} catch (error) {
 				console.error("Failed to load more:", error);
-				toast.error("Failed to load more results");
-				// Stop retrying on error
+			}
+
+			if (moreData && moreData.edges.length > 0) {
+				setProducts((prev) => [...prev, ...moreData.edges.map((e) => e.node)]);
+				setPageInfo(moreData.pageInfo);
+			} else {
+				// No more results or fetch failed — stop pagination silently
 				setExhausted(true);
 			}
 		});
