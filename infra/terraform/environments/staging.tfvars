@@ -176,7 +176,7 @@ grafana_url = "https://michaelbean.grafana.net/"
 # Grafana Faro RUM (Frontend Observability)
 # To get the URL: Grafana Cloud → Frontend → Applications → New Application → "storefront"
 # Format: https://faro-collector-prod-us-west-0.grafana.net/collect/<app-key>
-# grafana_faro_url = ""
+grafana_faro_url = "https://faro-collector-prod-us-west-0.grafana.net/collect/5fdc8fffb376243bea13f2ad1287e2bc"
 
 # Grafana Cloud OTEL data sources (pre-existing, managed by Grafana Cloud)
 tempo_datasource_uid      = "grafanacloud-traces"
