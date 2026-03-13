@@ -44,6 +44,7 @@ export function SinglesResultsWrapper({
 	);
 	const [pageInfo, setPageInfo] = useState(initialData?.pageInfo);
 	const [isPending, startTransition] = useTransition();
+	const [exhausted, setExhausted] = useState(false);
 
 	// Sync products when initialData changes (e.g., filters applied) — render-time adjustment
 	const [prevInitialData, setPrevInitialData] = useState(initialData);
@@ -51,6 +52,7 @@ export function SinglesResultsWrapper({
 		setPrevInitialData(initialData);
 		setProducts(initialData?.edges.map((e) => e.node) || []);
 		setPageInfo(initialData?.pageInfo);
+		setExhausted(false);
 	}
 
 	// Check if we have variant-level filters active
@@ -104,7 +106,7 @@ export function SinglesResultsWrapper({
 	}), [filterState]);
 
 	const handleLoadMore = useCallback(() => {
-		if (!pageInfo?.hasNextPage || !pageInfo?.endCursor || isPending) return;
+		if (!pageInfo?.hasNextPage || !pageInfo?.endCursor || isPending || exhausted) return;
 
 		startTransition(async () => {
 			try {
@@ -113,17 +115,17 @@ export function SinglesResultsWrapper({
 					setProducts((prev) => [...prev, ...moreData.edges.map((e) => e.node)]);
 					setPageInfo(moreData.pageInfo);
 				} else {
-					// No more results — stop pagination to prevent infinite loop
-					setPageInfo((prev) => prev ? { ...prev, hasNextPage: false, endCursor: null } : prev);
+					// No more results — stop pagination
+					setExhausted(true);
 				}
 			} catch (error) {
 				console.error("Failed to load more:", error);
 				toast.error("Failed to load more results");
-				// Stop retrying on error to prevent toast spam
-				setPageInfo((prev) => prev ? { ...prev, hasNextPage: false, endCursor: null } : prev);
+				// Stop retrying on error
+				setExhausted(true);
 			}
 		});
-	}, [channel, searchQuery, pageInfo, isPending, fetchMoreFilters]);
+	}, [channel, searchQuery, pageInfo, isPending, exhausted, fetchMoreFilters]);
 
 	const { cart, setCart } = useSinglesCartStore();
 
@@ -207,7 +209,7 @@ export function SinglesResultsWrapper({
 		<SinglesResults
 			products={filteredProducts}
 			totalCount={displayCount}
-			hasNextPage={pageInfo?.hasNextPage || false}
+			hasNextPage={!exhausted && (pageInfo?.hasNextPage || false)}
 			onLoadMore={handleLoadMore}
 			isLoadingMore={isPending}
 			onQuickAdd={handleQuickAdd}
