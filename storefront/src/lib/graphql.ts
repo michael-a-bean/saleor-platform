@@ -27,6 +27,10 @@ export async function executeGraphQL<Result, Variables>(
 	const apiUrl = process.env.SALEOR_API_URL || process.env.NEXT_PUBLIC_SALEOR_API_URL;
 	const { variables, headers, cache, revalidate, withAuth = true } = options;
 
+	// Extract operation name from query string for Saleor metrics visibility
+	const query = operation.toString();
+	const operationName = query.match(/(?:query|mutation|subscription)\s+(\w+)/)?.[1];
+
 	const input = {
 		method: "POST",
 		headers: {
@@ -34,7 +38,8 @@ export async function executeGraphQL<Result, Variables>(
 			...headers,
 		},
 		body: JSON.stringify({
-			query: operation.toString(),
+			query,
+			...(operationName && { operationName }),
 			...(variables && { variables }),
 		}),
 		cache: cache,
