@@ -23,6 +23,7 @@ const getProduct = cache(async (slug: string, channel: string) => {
 	const { product } = await executeGraphQL(ProductDetailsDocument, {
 		variables: { slug, channel },
 		revalidate: 60,
+		withAuth: false, // Product data is public — skipping auth enables fetch dedup
 	});
 	return product;
 });
