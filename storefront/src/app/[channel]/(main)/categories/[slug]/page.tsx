@@ -42,15 +42,20 @@ export default async function Page(props: {
 	}
 
 	const { name, products } = category;
+	// Type assertion: codegen types are stale (missing pageInfo/totalCount that exist in .graphql source)
+	const productsWithPagination = products as typeof products & {
+		totalCount?: number;
+		pageInfo?: { hasNextPage: boolean; hasPreviousPage: boolean; startCursor?: string | null; endCursor?: string | null };
+	};
 
 	return (
 		<div className="mx-auto max-w-7xl p-8 pb-16">
 			<h1 className="pb-8 text-xl font-semibold">{name}</h1>
-			{products.totalCount != null && (
-				<p className="pb-4 text-sm text-neutral-500">{products.totalCount} products</p>
+			{productsWithPagination.totalCount != null && (
+				<p className="pb-4 text-sm text-neutral-500">{productsWithPagination.totalCount} products</p>
 			)}
 			<ProductList products={products.edges.map((e) => e.node)} />
-			<Pagination pageInfo={products.pageInfo} />
+			{productsWithPagination.pageInfo && <Pagination pageInfo={productsWithPagination.pageInfo} />}
 		</div>
 	);
 }

@@ -15,13 +15,8 @@ fragment OrderDetails on Order {
 			product {
 				id
 				name
-				description
 				slug
 				thumbnail(size: 256, format: WEBP) {
-					url
-					alt
-				}
-				media {
 					url
 					alt
 				}

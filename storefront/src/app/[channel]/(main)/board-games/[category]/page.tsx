@@ -93,6 +93,10 @@ export default async function BoardGamesCategoryPage(props: {
 	}
 
 	const { name, products } = category;
+	// Type assertion: codegen types are stale (missing pageInfo that exists in .graphql source)
+	const productsWithPagination = products as typeof products & {
+		pageInfo?: { hasNextPage: boolean; hasPreviousPage: boolean; startCursor?: string | null; endCursor?: string | null };
+	};
 
 	return (
 		<div className="mx-auto max-w-7xl p-8 pb-16">
@@ -143,7 +147,7 @@ export default async function BoardGamesCategoryPage(props: {
 					{products.edges.length > 0 ? (
 						<>
 							<ProductList products={products.edges.map((e) => e.node)} />
-							<Pagination pageInfo={products.pageInfo} />
+							{productsWithPagination.pageInfo && <Pagination pageInfo={productsWithPagination.pageInfo} />}
 						</>
 					) : (
 						<div className="rounded-lg border border-neutral-200 bg-neutral-50 p-8 text-center">

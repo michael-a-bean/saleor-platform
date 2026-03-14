@@ -1,5 +1,4 @@
-import { CurrentUserDocument } from "@/gql/graphql";
-import { executeGraphQL } from "@/lib/graphql";
+import { getCurrentUser } from "@/lib/currentUser";
 import { LoginForm } from "@/ui/components/LoginForm";
 import { StatusBanner } from "@/ui/components/StatusBanner";
 import { StoreCreditBadge } from "@/ui/components/StoreCreditBadge";
@@ -20,9 +19,7 @@ export default async function AccountPage({
 	const { channel } = await params;
 	const { status } = await searchParams;
 
-	const { me: user } = await executeGraphQL(CurrentUserDocument, {
-		cache: "no-cache",
-	});
+	const user = await getCurrentUser();
 
 	if (!user) {
 		return <LoginForm redirectTo={`/${channel}/account`} />;
