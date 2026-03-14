@@ -43,6 +43,10 @@ export function ProductElement({
 	const setCode = getAttributeValue(product, "mtg-set-code");
 	const setName = getAttributeValue(product, "mtg-set-name");
 	const rarity = getAttributeValue(product, "mtg-rarity");
+	const colorIdentity = product.attributes
+		?.find((a) => a.attribute.slug === "mtg-color-identity")
+		?.values.map((v) => v.slug)
+		.filter(Boolean) as string[] | undefined;
 	const quantity = getTotalQuantity(product);
 	const isOutOfStock = quantity === 0;
 
@@ -59,6 +63,7 @@ export function ProductElement({
 							height={680}
 							sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 256px"
 							priority={priority}
+							colorIdentity={colorIdentity}
 						/>
 					) : (
 						<div className="flex aspect-square items-center justify-center rounded-lg bg-neutral-100">
