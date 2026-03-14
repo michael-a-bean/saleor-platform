@@ -79,8 +79,8 @@ export const OrderListItem = ({ order }: Props) => {
 									}
 
 									const product = item.variant.product;
-									const imageUrl = product.media?.[0]?.url || product.thumbnail?.url;
-									const imageAlt = product.media?.[0]?.alt || product.thumbnail?.alt || "";
+									const imageUrl = product.thumbnail?.url;
+									const imageAlt = product.thumbnail?.alt || "";
 
 									return (
 										<tr key={product.id}>
