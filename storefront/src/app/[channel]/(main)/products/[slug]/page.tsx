@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { type ResolvingMetadata, type Metadata } from "next";
@@ -18,6 +19,14 @@ import { LazyRelatedProducts } from "@/ui/components/LazyRelatedProducts";
 
 export const dynamic = "force-dynamic";
 
+const getProduct = cache(async (slug: string, channel: string) => {
+	const { product } = await executeGraphQL(ProductDetailsDocument, {
+		variables: { slug, channel },
+		revalidate: 60,
+	});
+	return product;
+});
+
 export async function generateMetadata(
 	props: {
 		params: Promise<{ slug: string; channel: string }>;
@@ -27,13 +36,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
 	const [searchParams, params] = await Promise.all([props.searchParams, props.params]);
 
-	const { product } = await executeGraphQL(ProductDetailsDocument, {
-		variables: {
-			slug: decodeURIComponent(params.slug),
-			channel: params.channel,
-		},
-		revalidate: 60,
-	});
+	const product = await getProduct(decodeURIComponent(params.slug), params.channel);
 
 	if (!product) {
 		notFound();
@@ -90,13 +93,7 @@ export default async function Page(props: {
 	searchParams: Promise<{ variant?: string }>;
 }) {
 	const [searchParams, params] = await Promise.all([props.searchParams, props.params]);
-	const { product } = await executeGraphQL(ProductDetailsDocument, {
-		variables: {
-			slug: decodeURIComponent(params.slug),
-			channel: params.channel,
-		},
-		revalidate: 60,
-	});
+	const product = await getProduct(decodeURIComponent(params.slug), params.channel);
 
 	if (!product) {
 		notFound();

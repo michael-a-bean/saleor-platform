@@ -232,26 +232,18 @@ export async function searchProducts(
 
 /**
  * Check if Meilisearch is available and healthy.
- * Cached for 30 seconds to avoid a health check round-trip on every page load.
+ * Uses Next.js data cache with 5-minute revalidation — stale responses served
+ * while background revalidation runs. Search failures fall back to GraphQL
+ * regardless, so a brief stale "healthy" result is harmless.
  */
-let healthCache: { healthy: boolean; checkedAt: number } | null = null;
-const HEALTH_CACHE_TTL_MS = 30_000;
-
 export async function isMeilisearchHealthy(): Promise<boolean> {
-	if (healthCache && Date.now() - healthCache.checkedAt < HEALTH_CACHE_TTL_MS) {
-		return healthCache.healthy;
-	}
-
 	try {
 		const response = await fetch(`${MEILISEARCH_URL}/health`, {
 			headers: getMeilisearchHeaders(),
-			cache: "no-store",
+			next: { revalidate: 300 },
 		});
-		const healthy = response.ok;
-		healthCache = { healthy, checkedAt: Date.now() };
-		return healthy;
+		return response.ok;
 	} catch {
-		healthCache = { healthy: false, checkedAt: Date.now() };
 		return false;
 	}
 }
