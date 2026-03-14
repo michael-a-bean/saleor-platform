@@ -19,13 +19,14 @@ export async function executeGraphQL<Result, Variables>(
 		headers?: HeadersInit;
 		cache?: RequestCache;
 		revalidate?: number;
+		tags?: string[];
 		withAuth?: boolean;
 	} & (Variables extends Record<string, never> ? { variables?: never } : { variables: Variables }),
 ): Promise<Result> {
 	invariant(process.env.NEXT_PUBLIC_SALEOR_API_URL, "Missing NEXT_PUBLIC_SALEOR_API_URL env variable");
 	// Use server-side URL for server actions (Docker network), fallback to public URL
 	const apiUrl = process.env.SALEOR_API_URL || process.env.NEXT_PUBLIC_SALEOR_API_URL;
-	const { variables, headers, cache, revalidate, withAuth = true } = options;
+	const { variables, headers, cache, revalidate, tags, withAuth = true } = options;
 
 	// Extract operation name from query string for Saleor metrics visibility
 	const query = operation.toString();
@@ -43,7 +44,7 @@ export async function executeGraphQL<Result, Variables>(
 			...(variables && { variables }),
 		}),
 		cache: cache,
-		next: { revalidate },
+		next: { revalidate, tags },
 	};
 
 	const response = await (async () => {
