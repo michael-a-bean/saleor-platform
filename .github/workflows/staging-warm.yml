@@ -1,0 +1,72 @@
+# Staging Warming Cron
+# Keeps staging services warm by hitting key URLs every 10 minutes.
+# Prevents cold-start latency during active development and MVP demos.
+#
+# TO REMOVE AFTER MVP: See docs/ops/runbooks/remove-warming-cron.md
+
+name: Staging Warm
+
+on:
+  schedule:
+    # Every 10 minutes during business hours (8 AM – 11 PM PST = 16:00–07:00 UTC next day)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  warm:
+    name: Warm Staging
+    runs-on: ubuntu-latest
+    # Skip if services are scaled to 0 (midnight–8 AM PST)
+    # The schedule runs 24/7 but the job is cheap (curl only) and will
+    # simply get connection-refused during off-hours — no harm done.
+    steps:
+      - name: Warm storefront pages
+        run: |
+          URLS=(
+            "https://staging.michaelbean.org/"
+            "https://staging.michaelbean.org/webstore/products"
+            "https://staging.michaelbean.org/webstore/categories/mtg-singles"
+            "https://staging.michaelbean.org/webstore/board-games"
+            "https://staging.michaelbean.org/webstore/magic/sets"
+          )
+
+          echo "### Staging Warm Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "| URL | Status | Time |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-----|--------|------|" >> "$GITHUB_STEP_SUMMARY"
+
+          FAILURES=0
+          for URL in "${URLS[@]}"; do
+            RESULT=$(curl -sf -o /dev/null -w "%{http_code} %{time_total}s" \
+              --max-time 30 "$URL" 2>&1) || RESULT="FAIL 0s"
+            STATUS=$(echo "$RESULT" | awk '{print $1}')
+            TIME=$(echo "$RESULT" | awk '{print $2}')
+            SHORT_URL="${URL#https://staging.michaelbean.org}"
+            [ -z "$SHORT_URL" ] && SHORT_URL="/"
+            echo "| \`$SHORT_URL\` | $STATUS | $TIME |" >> "$GITHUB_STEP_SUMMARY"
+            echo "$SHORT_URL → $STATUS ($TIME)"
+            if [ "$STATUS" = "FAIL" ]; then
+              FAILURES=$((FAILURES + 1))
+            fi
+          done
+
+      - name: Warm API (GraphQL introspection)
+        run: |
+          RESULT=$(curl -sf -o /dev/null -w "%{http_code} %{time_total}s" \
+            --max-time 30 \
+            -H "Content-Type: application/json" \
+            -d '{"query": "{ shop { name } }"}' \
+            "https://api.staging.michaelbean.org/graphql/" 2>&1) || RESULT="FAIL 0s"
+          STATUS=$(echo "$RESULT" | awk '{print $1}')
+          TIME=$(echo "$RESULT" | awk '{print $2}')
+          echo "API → $STATUS ($TIME)"
+          echo "| \`/graphql/\` | $STATUS | $TIME |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Warm Dashboard
+        run: |
+          RESULT=$(curl -sf -o /dev/null -w "%{http_code} %{time_total}s" \
+            --max-time 30 \
+            "https://dashboard.staging.michaelbean.org/" 2>&1) || RESULT="FAIL 0s"
+          STATUS=$(echo "$RESULT" | awk '{print $1}')
+          TIME=$(echo "$RESULT" | awk '{print $2}')
+          echo "Dashboard → $STATUS ($TIME)"
+          echo "| \`dashboard/\` | $STATUS | $TIME |" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,59 @@
+name: Sync Set Icons
+
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Re-download all icons (even existing)"
+        type: boolean
+        default: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: platform/main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync set icons from Scryfall
+        run: |
+          chmod +x scripts/sync-set-icons.sh
+          if [ "${{ inputs.force }}" = "true" ]; then
+            ./scripts/sync-set-icons.sh --force
+          else
+            ./scripts/sync-set-icons.sh
+          fi
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add storefront/public/set-icons/ storefront/src/lib/set-icons-manifest.ts
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: sync set icons from Scryfall
+
+          Automated sync via workflow_dispatch.
+
+          Co-Authored-By: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          git push
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.changes.outputs.changed }}" = "true" ]; then
+            echo "### Set Icons Synced" >> "$GITHUB_STEP_SUMMARY"
+            echo "New icons committed to \`platform/main\`." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### No Changes" >> "$GITHUB_STEP_SUMMARY"
+            echo "All set icons are already up to date." >> "$GITHUB_STEP_SUMMARY"
+          fi
