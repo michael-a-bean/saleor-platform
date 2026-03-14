@@ -1,4 +1,4 @@
-import { cache } from "react";
+import { cache, Suspense } from "react";
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { type ResolvingMetadata, type Metadata } from "next";
@@ -266,12 +266,14 @@ export default async function Page(props: {
 						/>
 					</div>
 
-					{/* Other printings of this card (loaded client-side) */}
-					<LazyOtherPrintings
-						productName={product.name}
-						currentProductId={product.id}
-						channel={params.channel}
-					/>
+					{/* Other printings — Suspense for code-splitting + PPR prep */}
+					<Suspense fallback={<div className="mt-8 h-48 animate-pulse rounded bg-neutral-100" />}>
+						<LazyOtherPrintings
+							productName={product.name}
+							currentProductId={product.id}
+							channel={params.channel}
+						/>
+					</Suspense>
 				</div>
 			</div>
 
@@ -282,14 +284,16 @@ export default async function Page(props: {
 				</div>
 			)}
 
-			{/* Related Products Carousel (loaded client-side) */}
+			{/* Related Products — Suspense for code-splitting + PPR prep */}
 			{product.category?.id && (
-				<LazyRelatedProducts
-					categoryId={product.category.id}
-					categoryName={product.category.name ?? undefined}
-					productId={product.id}
-					channel={params.channel}
-				/>
+				<Suspense fallback={<div className="mt-12 h-64 animate-pulse rounded bg-neutral-100" />}>
+					<LazyRelatedProducts
+						categoryId={product.category.id}
+						categoryName={product.category.name ?? undefined}
+						productId={product.id}
+						channel={params.channel}
+					/>
+				</Suspense>
 			)}
 		</section>
 	);
