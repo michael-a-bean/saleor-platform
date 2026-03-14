@@ -6,6 +6,9 @@ import {
 	type MeilisearchProduct,
 	type SearchFilters,
 } from "@/lib/meilisearch";
+// Note: isMeilisearchHealthy is used by checkMeilisearchHealth() export below.
+// The page.tsx caller checks health before calling searchWebstore, so searchWebstore
+// no longer checks health internally (removed redundant double-check).
 
 export interface WebstoreSearchResult {
 	products: MeilisearchProduct[];
@@ -48,18 +51,6 @@ export async function searchWebstore(
 	} = {},
 ): Promise<WebstoreSearchResult> {
 	const { limit = 50, offset = 0, filters = {}, sort } = options;
-
-	// Check Meilisearch health first
-	const isHealthy = await isMeilisearchHealthy();
-	if (!isHealthy) {
-		console.warn("Meilisearch is not available, returning empty results");
-		return {
-			products: [],
-			totalCount: 0,
-			hasNextPage: false,
-			processingTimeMs: 0,
-		};
-	}
 
 	// Build Meilisearch filters
 	const meilisearchFilters: SearchFilters = {};

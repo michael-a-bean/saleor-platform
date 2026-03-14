@@ -217,18 +217,22 @@ export default async function Page(props: {
 				}}
 			/>
 			<div className="lg:flex lg:gap-12">
-				{/* Product Image */}
-				<div className="lg:w-[45%] lg:flex-shrink-0">
-					{firstImage && (
+				{/* Product Image — aspect-square reserves space to prevent CLS */}
+				<div className="aspect-square lg:w-[45%] lg:flex-shrink-0">
+					{firstImage ? (
 						<ProductImageWrapper
 							priority={true}
 							alt={firstImage.alt ?? ""}
 							width={672}
-							height={936}
+							height={672}
 							sizes="(max-width: 1024px) 100vw, 45vw"
 							src={firstImage.url}
 							fallbackSrc={fallbackImageUrl}
 						/>
+					) : (
+						<div className="flex h-full w-full items-center justify-center rounded-lg border border-neutral-100 bg-neutral-50">
+							<span className="text-neutral-300">No image</span>
+						</div>
 					)}
 				</div>
 
