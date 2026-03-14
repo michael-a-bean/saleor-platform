@@ -2,8 +2,7 @@ import { redirect } from "next/navigation";
 import { type ReactNode } from "react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { executeGraphQL } from "@/lib/graphql";
-import { CurrentUserDocument } from "@/gql/graphql";
+import { getCurrentUser } from "@/lib/currentUser";
 import { StaffProvider } from "./StaffContext";
 
 export const dynamic = "force-dynamic";
@@ -23,10 +22,7 @@ export default async function SinglesBuilderLayout({
 	// Fetch current user with staff status
 	let user = null;
 	try {
-		const { me } = await executeGraphQL(CurrentUserDocument, {
-			cache: "no-cache",
-		});
-		user = me;
+		user = await getCurrentUser();
 	} catch {
 		// User not authenticated
 		user = null;

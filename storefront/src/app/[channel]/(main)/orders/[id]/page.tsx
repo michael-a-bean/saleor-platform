@@ -2,7 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { executeGraphQL } from "@/lib/graphql";
-import { CurrentUserDocument, OrderByIdDocument } from "@/gql/graphql";
+import { OrderByIdDocument } from "@/gql/graphql";
+import { getCurrentUser } from "@/lib/currentUser";
 import { formatDate, formatMoney, getHrefForVariant } from "@/lib/utils";
 import { PaymentStatus } from "@/ui/components/PaymentStatus";
 import { LinkWithChannel } from "@/ui/atoms/LinkWithChannel";
@@ -22,20 +23,18 @@ export default async function OrderDetailPage(props: {
 	const params = await props.params;
 	const { channel, id } = params;
 
-	// Check if user is logged in
-	const { me: user } = await executeGraphQL(CurrentUserDocument, {
-		cache: "no-cache",
-	});
+	// Fetch user and order in parallel (both use auth token from same session)
+	const [user, { order }] = await Promise.all([
+		getCurrentUser(),
+		executeGraphQL(OrderByIdDocument, {
+			variables: { id },
+			cache: "no-cache",
+		}),
+	]);
 
 	if (!user) {
 		redirect(`/${channel}/orders`);
 	}
-
-	// Fetch order details
-	const { order } = await executeGraphQL(OrderByIdDocument, {
-		variables: { id },
-		cache: "no-cache",
-	});
 
 	if (!order) {
 		notFound();
@@ -76,10 +75,8 @@ export default async function OrderDetailPage(props: {
 						</div>
 						<ul className="divide-y">
 							{order.lines.map((line) => {
-								const imageUrl =
-									line.variant?.product?.media?.[0]?.url || line.thumbnail?.url;
-								const imageAlt =
-									line.variant?.product?.media?.[0]?.alt || line.thumbnail?.alt || "";
+								const imageUrl = line.thumbnail?.url;
+								const imageAlt = line.thumbnail?.alt || "";
 
 								return (
 									<li key={line.id} className="flex gap-4 px-6 py-4">

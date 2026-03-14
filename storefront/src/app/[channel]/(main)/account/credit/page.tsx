@@ -1,5 +1,4 @@
-import { CurrentUserDocument } from "@/gql/graphql";
-import { executeGraphQL } from "@/lib/graphql";
+import { getCurrentUser } from "@/lib/currentUser";
 import { getStoreCredit, getCreditHistory } from "@/lib/customer-api";
 import { formatMoney } from "@/lib/utils";
 import { LoginForm } from "@/ui/components/LoginForm";
@@ -25,9 +24,7 @@ function formatDate(dateString: string): string {
 }
 
 export default async function StoreCreditPage() {
-	const { me: user } = await executeGraphQL(CurrentUserDocument, {
-		cache: "no-cache",
-	});
+	const user = await getCurrentUser();
 
 	if (!user) {
 		return <LoginForm />;

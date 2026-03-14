@@ -78,10 +78,6 @@ query OrderById($id: ID!) {
 				id
 				product {
 					slug
-					media {
-						url
-						alt
-					}
 				}
 			}
 		}
