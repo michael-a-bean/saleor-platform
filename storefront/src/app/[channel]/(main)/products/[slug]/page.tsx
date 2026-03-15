@@ -106,7 +106,11 @@ export default async function Page(props: {
 
 	const variants = product.variants;
 	const selectedVariantID = searchParams.variant;
-	const selectedVariant = variants?.find(({ id }) => id === selectedVariantID);
+	// Use URL variant if present, otherwise auto-select the best available.
+	// No redirect — RSC redirects cause blank pages during client-side navigation.
+	const selectedVariant =
+		variants?.find(({ id }) => id === selectedVariantID) ??
+		(variants && variants.length >= 1 ? pickDefaultVariant(variants) : undefined);
 
 	// Auto-select best variant before any JSX renders — redirect at the page
 	// level fires at the top of the RSC response, avoiding blank pages during
@@ -222,10 +226,10 @@ export default async function Page(props: {
 							{price}
 						</p>
 						<AddToCartForm
-							variantId={selectedVariantID}
+							variantId={selectedVariant?.id}
 							channel={params.channel}
 							quantityAvailable={selectedVariant?.quantityAvailable ?? 0}
-							disabled={!selectedVariantID || !selectedVariant?.quantityAvailable}
+							disabled={!selectedVariant?.id || !selectedVariant?.quantityAvailable}
 							maxQuantity={selectedVariant?.quantityAvailable ?? undefined}
 						/>
 					</div>
