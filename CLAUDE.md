@@ -26,7 +26,7 @@ Key extensions live in `saleor-apps/apps/` and integrate tightly with pricing, i
 |------|---------|
 | **Never commit to `main`** | `main` mirrors upstream `saleor/saleor-platform` — exists only for pulling Saleor updates |
 | **PR-first workflow** | All changes go through PRs targeting `platform/main`. Never push directly. See `.claude/rules/git-workflow.md` |
-| **Work on `feature/*` branches** | Create off `platform/main`, merge back via PR with `auto-merge` label |
+| **Work on `feature/*` branches** | Create off `platform/main`, merge back via PR with `automerge` label |
 | **Prefer extension over modification** | Use Saleor Apps, webhooks, workers, env configuration |
 | **Always verify the active branch** | `git branch --show-current` before any changes |
 | **No untracked infrastructure changes** | Manual AWS changes must be logged and reconciled with Terraform |

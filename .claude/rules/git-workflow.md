@@ -27,7 +27,7 @@ feature/* branch → push → PR targeting platform/main → test-platform CI �
 
 1. Create a `feature/*` branch off `platform/main`
 2. Make changes, commit, push the feature branch
-3. Create a PR targeting `platform/main` with the `auto-merge` label
+3. Create a PR targeting `platform/main` with the `automerge` label
 4. `test-platform` CI runs automatically (lint, tests, builds, security)
 5. `auto-merge.yml` fires on `test-platform` completion — squash-merges if all required checks pass
 6. `deploy-staging.yml` triggers on merge to `platform/main` — deploys to AWS
