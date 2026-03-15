@@ -75,7 +75,13 @@ resource "aws_cloudfront_cache_policy" "dynamic_pages" {
       cookie_behavior = "none"
     }
     headers_config {
-      header_behavior = "none"
+      header_behavior = "whitelist"
+      headers {
+        items = [
+          "RSC",                    # React Server Components — response format differs from HTML
+          "Next-Router-State-Tree", # RSC navigation context
+        ]
+      }
     }
     query_strings_config {
       query_string_behavior = "all" # Forward query strings for search, pagination
@@ -101,7 +107,16 @@ resource "aws_cloudfront_origin_request_policy" "alb_forwarding" {
   headers_config {
     header_behavior = "whitelist"
     headers {
-      items = ["Host", "Accept", "Accept-Language", "Referer"]
+      items = [
+        "Host",
+        "Accept",
+        "Accept-Language",
+        "Referer",
+        "Next-Action",         # Server action ID — without this, Next.js returns HTML instead of action response
+        "Next-Router-State-Tree", # RSC navigation state
+        "RSC",                 # React Server Components request marker
+        "Content-Type",        # POST body content type
+      ]
     }
   }
 
