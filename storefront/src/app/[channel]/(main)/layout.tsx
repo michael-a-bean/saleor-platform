@@ -1,7 +1,8 @@
-import { type ReactNode } from "react";
+import { type ReactNode, Suspense } from "react";
 import { Footer } from "@/ui/components/Footer";
 import { Header } from "@/ui/components/Header";
 import { CookieConsent } from "@/ui/components/CookieConsent";
+import { NavigationProgress } from "@/ui/components/NavigationProgress";
 
 export const metadata = {
 	title: "Saleor Storefront example",
@@ -16,6 +17,9 @@ export default async function RootLayout(props: {
 
 	return (
 		<>
+			<Suspense>
+				<NavigationProgress />
+			</Suspense>
 			<Header channel={channel} />
 			<div className="flex min-h-[calc(100dvh-64px)] flex-col">
 				<main className="flex-1">{props.children}</main>
