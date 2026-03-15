@@ -95,7 +95,9 @@ export function middleware(request: NextRequest) {
   });
 
   // Cache-Control: cache catalog pages, skip auth/transactional routes
-  const isDynamic = DYNAMIC_PATHS.some((p) => pathname.startsWith(p));
+  // Paths include a channel prefix (e.g., /webstore/cart), so check path segments
+  const segments = pathname.split("/");
+  const isDynamic = DYNAMIC_PATHS.some((p) => segments.some((seg) => `/${seg}` === p));
   if (!isDynamic && !pathname.startsWith("/api")) {
     // Longer cache for stable catalog pages (sets, categories, board-games)
     const isStableCatalog =
