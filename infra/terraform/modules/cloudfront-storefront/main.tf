@@ -112,10 +112,10 @@ resource "aws_cloudfront_origin_request_policy" "alb_forwarding" {
         "Accept",
         "Accept-Language",
         "Referer",
-        "Next-Action",         # Server action ID — without this, Next.js returns HTML instead of action response
+        "Next-Action",            # Server action ID — without this, Next.js returns HTML instead of action response
         "Next-Router-State-Tree", # RSC navigation state
-        "RSC",                 # React Server Components request marker
-        "Content-Type",        # POST body content type
+        "RSC",                    # React Server Components request marker
+        "Content-Type",           # POST body content type
       ]
     }
   }
