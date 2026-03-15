@@ -210,7 +210,6 @@ export const createMockCostEvent = (overrides = {}) => ({
 pnpm test:ci
 
 # Run specific app tests
-pnpm --filter saleor-app-buylist test
 pnpm --filter saleor-app-inventory-ops test
 pnpm --filter saleor-app-pos test
 
@@ -218,7 +217,7 @@ pnpm --filter saleor-app-pos test
 pnpm test:ci -- --coverage
 
 # Watch mode for development
-pnpm --filter saleor-app-buylist test -- --watch
+pnpm --filter saleor-app-inventory-ops test -- --watch
 ```
 
 ---
@@ -245,8 +244,7 @@ When adding tests, prioritize:
 | App | Test Files | Notes |
 |-----|------------|-------|
 | pos | 1 | `register-router.test.ts` |
-| inventory-ops | 0 | No tests |
-| buylist | 0 | No tests |
+| inventory-ops | 12+ | WAC, price-sync, card-matcher, import pipeline |
 | storefront | 0 | No tests |
 
 This document captures patterns for future test writing, not a backlog to clear.

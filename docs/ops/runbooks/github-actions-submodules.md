@@ -12,9 +12,7 @@ When using `submodules: recursive`, GitHub Actions attempts to clone:
 2. `saleor-apps` submodule - works with default token
 3. Nested submodules in `saleor-apps/apps/` - **fails** because these are separate private repos:
    - `michael-a-bean/saleor-app-inventory-ops`
-   - `michael-a-bean/saleor-app-buylist`
    - `michael-a-bean/saleor-app-pos`
-   - `michael-a-bean/saleor-app-price-sync`
 
 ## Solution
 
@@ -34,9 +32,7 @@ A `SUBMODULES_TOKEN` secret provides cross-repo access.
      - `saleor-platform`
      - `saleor-apps`
      - `saleor-app-inventory-ops`
-     - `saleor-app-buylist`
      - `saleor-app-pos`
-     - `saleor-app-price-sync`
    - **Permissions:**
      - Repository permissions → **Contents: Read-only**
 4. Click **Generate token**

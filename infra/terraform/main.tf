@@ -486,7 +486,7 @@ module "ecs" {
     inventory-ops = {
       port             = 3002
       cpu              = 256
-      memory           = 1024 # Bumped: now handles inventory-ops + buylist + mtg-import workloads
+      memory           = 1024 # Bumped: consolidated app (inventory-ops absorbs buylist + import)
       base_path        = "/apps/inventory"
       image            = "${module.ecr.inventory_ops_app_repository_url}:${var.inventory_ops_app_image_tag}"
       target_group_arn = module.alb.inventory_ops_app_target_group_arn

@@ -109,7 +109,7 @@ fi
 
 # Step 10: Start app services
 log_info "Starting Saleor apps..."
-docker compose up -d stripe-app inventory-ops-app buylist-app pos-app
+docker compose up -d stripe-app inventory-ops-app pos-app
 
 # Final status
 echo ""
