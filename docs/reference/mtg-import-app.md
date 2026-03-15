@@ -1,7 +1,11 @@
-# MTG Import App — Definitive Reference
+# MTG Import App — Definitive Reference (LEGACY)
 
-> Generated from exhaustive source code analysis, 2026-02-20.
-> Source: `saleor-apps/apps/mtg-import/`
+> **DEPRECATED**: The standalone mtg-import app was consolidated into `inventory-ops` (Mar 2026).
+> Import functionality now lives at `saleor-apps/apps/inventory-ops/src/modules/import/`.
+> This document is retained for historical context only.
+>
+> Originally generated from source code analysis, 2026-02-20.
+> Original source: `saleor-apps/apps/mtg-import/` (deleted)
 
 ## Overview
 

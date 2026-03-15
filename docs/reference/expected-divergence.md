@@ -17,8 +17,7 @@ All ECS services use `lifecycle { ignore_changes = [task_definition] }` to allow
 - `storefront` - Next.js storefront
 - `dashboard` - Saleor Dashboard
 - `stripe` - Stripe payment app
-- `inventory-ops` - Inventory operations app
-- `buylist` - Customer buylist app
+- `inventory-ops` - Inventory operations app (includes buylist + import functionality)
 - `pos` - Point of sale app
 - `meilisearch` - Search service
 
@@ -110,7 +109,7 @@ The Terraform-managed storefront task definition sets `SALEOR_API_URL` and `NEXT
 
 ## Prisma Shared Schema (Intentional — CI/CD Pattern)
 
-**inventory-ops**, **POS**, **buylist**, and **mtg-import** share a single Prisma schema via symlinks. All point to `inventory-ops/prisma/schema.prisma` and share the same `inventory_ops` database.
+**inventory-ops** and **POS** share a single Prisma schema via symlinks. Both point to `inventory-ops/prisma/schema.prisma` and share the same `inventory_ops` database. (buylist and mtg-import were consolidated into inventory-ops, Mar 2026.)
 
 **CI/CD Rule:** Only **inventory-ops** runs `prisma migrate deploy`. Other apps must NOT run migrations independently because:
 

@@ -259,13 +259,13 @@ wait_and_commit_workers() {
       ((failed++))
     else
       # Commit changes through nested submodule chain:
-      # saleor-apps/apps/{pos,inventory-ops,buylist} → saleor-apps → main worktree
+      # saleor-apps/apps/{pos,inventory-ops} → saleor-apps → main worktree
       local worktree_path="${WORKTREE_BASE}/${name}"
       local sub="${worktree_path}/saleor-apps"
       local has_changes=false
 
       # Step 1: Commit inside each nested app submodule
-      for app in apps/pos apps/inventory-ops apps/buylist; do
+      for app in apps/pos apps/inventory-ops; do
         local appdir="${sub}/${app}"
         if [[ -d "${appdir}" ]] && [[ -n "$(git -C "${appdir}" status --porcelain 2>/dev/null)" ]]; then
           git -C "${appdir}" add -A
@@ -532,8 +532,8 @@ IMPLEMENT:
    - cashSummary hides expected cash when enabled
    - Variance still calculated and revealed after close
 
-NOTE: Buylist app is at saleor-apps/apps/buylist/src/modules/
-The pricing rule engine is in buylist/src/modules/pricing/rule-engine/rule-stacker.ts"
+NOTE: Buylist modules are now in saleor-apps/apps/inventory-ops/src/modules/buylist/
+The pricing rule engine is in inventory-ops/src/modules/buylist/pricing/rule-engine/rule-stacker.ts"
   launch_worker "product-catalog" "feature/pos-product-catalog" "${COMMON_PROMPT}
 
 YOUR DOMAIN: Product Catalog (3.3 — Service / Non-Inventory Item)

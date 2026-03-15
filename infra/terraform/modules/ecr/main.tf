@@ -10,9 +10,7 @@ locals {
     "storefront",
     "stripe-app",
     "inventory-ops-app",
-    "buylist-app",
     "pos-app",
-    "mtg-import-app",
   ])
 }
 

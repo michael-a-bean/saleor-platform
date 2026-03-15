@@ -39,7 +39,6 @@ if [[ -d "$APPS_DIR" ]]; then
   APPS_LINT_EXIT=0
   LINT_OUTPUT=$(pnpm turbo run lint \
     --filter=saleor-app-inventory-ops \
-    --filter=saleor-app-buylist \
     --filter=saleor-app-pos 2>&1) || APPS_LINT_EXIT=$?
 
   if [[ $APPS_LINT_EXIT -ne 0 ]]; then
