@@ -1,32 +1,13 @@
-import { redirect } from "next/navigation";
-import { getServerAuthClient } from "@/app/config";
+import { loginAction } from "./login-actions";
 
 export async function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
 	return (
 		<div className="mx-auto mt-16 w-full max-w-lg">
 			<form
 				className="rounded border p-8 shadow-md"
-				action={async (formData) => {
-					"use server";
-
-					const email = formData.get("email")?.toString();
-					const password = formData.get("password")?.toString();
-
-					if (!email || !password) {
-						throw new Error("Email and password are required");
-					}
-
-					const { data } = await (
-						await getServerAuthClient()
-					).signIn({ email, password }, { cache: "no-store" });
-
-					if (data.tokenCreate.errors.length > 0) {
-						throw new Error(data.tokenCreate.errors.map((e) => e.message).join(", "));
-					}
-
-					redirect(redirectTo);
-				}}
+				action={loginAction}
 			>
+				<input type="hidden" name="redirectTo" value={redirectTo} />
 				<div className="mb-2">
 					<label className="sr-only" htmlFor="email">
 						Email
