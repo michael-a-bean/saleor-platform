@@ -2,20 +2,23 @@
 
 import { useActionState, useState } from "react";
 import { AddButton } from "./AddButton";
+import { addToWebstoreCart } from "./actions";
 
 type ActionResult = { success: boolean; error?: string };
 
 interface AddToCartFormProps {
-	addItemAction: (quantity: number) => Promise<ActionResult>;
+	variantId: string | undefined;
+	channel: string;
+	quantityAvailable: number;
 	disabled: boolean;
 	maxQuantity?: number;
 }
 
-export function AddToCartForm({ addItemAction, disabled, maxQuantity }: AddToCartFormProps) {
+export function AddToCartForm({ variantId, channel, quantityAvailable, disabled, maxQuantity }: AddToCartFormProps) {
 	const [quantity, setQuantity] = useState(1);
 	const [state, formAction] = useActionState(
 		async (_prevState: ActionResult | null): Promise<ActionResult> => {
-			return await addItemAction(quantity);
+			return await addToWebstoreCart(variantId ?? "", quantity, channel, quantityAvailable);
 		},
 		null,
 	);

@@ -1,8 +1,6 @@
 import { cache, Suspense } from "react";
-import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { type ResolvingMetadata, type Metadata } from "next";
-import { invariant } from "ts-invariant";
 import { type WithContext, type Product } from "schema-dts";
 import { AddToCartForm } from "./AddToCartForm";
 import { VariantSelector } from "@/ui/components/VariantSelector";
@@ -11,8 +9,7 @@ import { EssentialCardInfo } from "@/ui/components/EssentialCardInfo";
 import { MTGCardAttributes } from "@/ui/components/MTGCardAttributes";
 import { executeGraphQL } from "@/lib/graphql";
 import { formatMoney, formatMoneyRange } from "@/lib/utils";
-import { CheckoutAddLineDocument, ProductDetailsDocument, ProductListDocument } from "@/gql/graphql";
-import * as Checkout from "@/lib/checkout";
+import { ProductDetailsDocument, ProductListDocument } from "@/gql/graphql";
 import { AvailabilityMessage } from "@/ui/components/AvailabilityMessage";
 import { LazyOtherPrintings } from "@/ui/components/LazyOtherPrintings";
 import { LazyRelatedProducts } from "@/ui/components/LazyRelatedProducts";
@@ -110,56 +107,6 @@ export default async function Page(props: {
 	const variants = product.variants;
 	const selectedVariantID = searchParams.variant;
 	const selectedVariant = variants?.find(({ id }) => id === selectedVariantID);
-
-	async function addItem(quantity: number): Promise<{ success: boolean; error?: string }> {
-		"use server";
-
-		// Validate stock is available before adding to cart
-		if (!selectedVariantID) {
-			return { success: false, error: "Please select a variant" };
-		}
-
-		if (!selectedVariant?.quantityAvailable) {
-			return { success: false, error: "This item is out of stock" };
-		}
-
-		if (quantity > (selectedVariant?.quantityAvailable || 0)) {
-			return { success: false, error: `Only ${selectedVariant?.quantityAvailable} available` };
-		}
-
-		try {
-			const checkout = await Checkout.findOrCreate({
-				checkoutId: await Checkout.getIdFromCookies(params.channel),
-				channel: params.channel,
-			});
-			invariant(checkout, "This should never happen");
-
-			await Checkout.saveIdToCookie(params.channel, checkout.id);
-
-			const result = await executeGraphQL(CheckoutAddLineDocument, {
-				variables: {
-					id: checkout.id,
-					productVariantId: decodeURIComponent(selectedVariantID),
-					quantity,
-				} as { id: string; productVariantId: string; quantity?: number },
-				cache: "no-cache",
-			});
-
-			// Check for GraphQL errors
-			const errors = result.checkoutLinesAdd?.errors;
-			if (errors && errors.length > 0) {
-				const errorMessage = errors.map((e) => e.message).join(", ");
-				return { success: false, error: errorMessage || "Failed to add item to cart" };
-			}
-
-			revalidatePath("/cart");
-			return { success: true };
-		} catch (e) {
-			console.error("[AddToCart Error]", e);
-			const message = e instanceof Error ? e.message : "Unknown error";
-			return { success: false, error: `Failed to add item to cart: ${message}` };
-		}
-	}
 
 	const isAvailable = variants?.some((variant) => variant.quantityAvailable) ?? false;
 
@@ -264,7 +211,9 @@ export default async function Page(props: {
 							{price}
 						</p>
 						<AddToCartForm
-							addItemAction={addItem}
+							variantId={selectedVariantID}
+							channel={params.channel}
+							quantityAvailable={selectedVariant?.quantityAvailable ?? 0}
 							disabled={!selectedVariantID || !selectedVariant?.quantityAvailable}
 							maxQuantity={selectedVariant?.quantityAvailable ?? undefined}
 						/>
