@@ -135,7 +135,7 @@ export default async function SinglesBuilderPage({ params, searchParams }: PageP
 						</p>
 					</div>
 
-					<Suspense fallback={<SearchResultsSkeleton />}>
+					<Suspense key={`${searchQuery}-${urlSearchParams.toString()}`} fallback={<SearchResultsSkeleton />}>
 						<SearchResults channel={channel} searchQuery={searchQuery} filter={graphqlFilter} filterState={filterState} />
 					</Suspense>
 				</section>
