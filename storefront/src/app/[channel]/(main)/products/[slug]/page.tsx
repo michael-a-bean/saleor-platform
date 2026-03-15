@@ -1,14 +1,14 @@
 import { cache, Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { type ResolvingMetadata, type Metadata } from "next";
 import { type WithContext, type Product } from "schema-dts";
 import { AddToCartForm } from "./AddToCartForm";
-import { VariantSelector } from "@/ui/components/VariantSelector";
+import { VariantSelector, pickDefaultVariant } from "@/ui/components/VariantSelector";
 import { ProductImageWrapper } from "@/ui/atoms/ProductImageWrapper";
 import { EssentialCardInfo } from "@/ui/components/EssentialCardInfo";
 import { MTGCardAttributes } from "@/ui/components/MTGCardAttributes";
 import { executeGraphQL } from "@/lib/graphql";
-import { formatMoney, formatMoneyRange } from "@/lib/utils";
+import { formatMoney, formatMoneyRange, getHrefForVariant } from "@/lib/utils";
 import { ProductDetailsDocument, ProductListDocument } from "@/gql/graphql";
 import { AvailabilityMessage } from "@/ui/components/AvailabilityMessage";
 import { LazyOtherPrintings } from "@/ui/components/LazyOtherPrintings";
@@ -108,6 +108,18 @@ export default async function Page(props: {
 	const selectedVariantID = searchParams.variant;
 	const selectedVariant = variants?.find(({ id }) => id === selectedVariantID);
 
+	// Auto-select best variant before any JSX renders — redirect at the page
+	// level fires at the top of the RSC response, avoiding blank pages during
+	// client-side navigation (redirect mid-render breaks RSC streaming).
+	if (!selectedVariant && variants && variants.length >= 1) {
+		const best = pickDefaultVariant(variants);
+		if (best) {
+			redirect(
+				`/${params.channel}${getHrefForVariant({ productSlug: product.slug, variantId: best.id })}`,
+			);
+		}
+	}
+
 	const isAvailable = variants?.some((variant) => variant.quantityAvailable) ?? false;
 
 	const price = selectedVariant?.pricing?.price?.gross
@@ -198,7 +210,6 @@ export default async function Page(props: {
 							selectedVariant={selectedVariant}
 							variants={variants}
 							product={product}
-							channel={params.channel}
 						/>
 					)}
 

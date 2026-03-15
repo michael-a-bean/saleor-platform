@@ -1,5 +1,4 @@
 import { clsx } from "clsx";
-import { redirect } from "next/navigation";
 import { LinkWithChannel } from "../atoms/LinkWithChannel";
 import { type ProductListItemFragment, type VariantDetailsFragment } from "@/gql/graphql";
 import { getHrefForVariant } from "@/lib/utils";
@@ -111,6 +110,17 @@ function sortVariantsByCondition(variants: readonly VariantDetailsFragment[]): V
 }
 
 /**
+ * Pick the default variant to auto-select when none is specified.
+ * Prefers in-stock NM Non-Foil, falls back by condition/finish order.
+ * Exported so the page component can redirect before rendering.
+ */
+export function pickDefaultVariant(
+	variants: readonly VariantDetailsFragment[],
+): VariantDetailsFragment | undefined {
+	return findBestAvailableVariant(variants) ?? sortVariantsByCondition(variants)[0];
+}
+
+/**
  * Find the best available variant by condition order within a finish.
  */
 function findBestAvailableVariant(
@@ -152,26 +162,16 @@ export function VariantSelector({
 	variants,
 	product,
 	selectedVariant,
-	channel,
 }: {
 	variants: readonly VariantDetailsFragment[];
 	product: ProductListItemFragment;
 	selectedVariant?: VariantDetailsFragment;
-	channel: string;
 }) {
 	// Get available finishes for this product
 	const availableFinishes = getAvailableFinishes(variants);
 	// Determine current finish and condition from selected variant
 	const currentFinish = selectedVariant ? getFinishFromVariant(selectedVariant) : availableFinishes[0] || "Non-Foil";
 	const currentCondition = selectedVariant ? getConditionFromVariant(selectedVariant) : null;
-
-	// Auto-select best available variant if none selected (prefer NM, fall back to first by condition order)
-	if (!selectedVariant && variants.length >= 1) {
-		const bestVariant = findBestAvailableVariant(variants) ?? sortVariantsByCondition(variants)[0];
-		if (bestVariant) {
-			redirect("/" + channel + getHrefForVariant({ productSlug: product.slug, variantId: bestVariant.id }));
-		}
-	}
 
 	// Filter variants by selected finish for condition display
 	const variantsForFinish = variants.filter((v) => getFinishFromVariant(v) === currentFinish);
