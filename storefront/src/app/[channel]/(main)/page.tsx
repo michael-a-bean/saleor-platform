@@ -1,9 +1,9 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { SearchIcon, Package, Sparkles, Users, Calendar } from "lucide-react";
 import { ProductList } from "@/ui/components/ProductList";
 import { SetIconImage } from "@/ui/components/SetIconImage";
 import { getLatestSets, getTrendingProducts } from "@/lib/filters";
+import { handleSearchAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -89,14 +89,6 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 		getTrendingProducts(params.channel, 8),
 		getLatestSets(params.channel, 6),
 	]);
-
-	async function handleSearch(formData: FormData) {
-		"use server";
-		const search = formData.get("search") as string;
-		if (search && search.trim().length > 0) {
-			redirect(`/${encodeURIComponent(params.channel)}/search?query=${encodeURIComponent(search)}`);
-		}
-	}
 
 	return (
 		<>
@@ -241,7 +233,8 @@ export default async function Page(props: { params: Promise<{ channel: string }>
 				<div className="mx-auto max-w-3xl px-8 text-center">
 					<h2 className="font-display text-xl font-bold text-neutral-900">Find Your Cards</h2>
 					<p className="mt-2 text-neutral-600">Search over 100,000 Magic: The Gathering cards</p>
-					<form action={handleSearch} className="mx-auto mt-6 max-w-xl">
+					<form action={handleSearchAction} className="mx-auto mt-6 max-w-xl">
+						<input type="hidden" name="channel" value={params.channel} />
 						<div className="relative">
 							<input
 								type="text"
