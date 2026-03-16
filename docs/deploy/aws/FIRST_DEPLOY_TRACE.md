@@ -74,7 +74,7 @@ Pushing to: {ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com/saleor-platform/storefr
 - GraphQL codegen errors: API not reachable during build (expected - baked URLs)
 - `Error pushing image`: ECR repository doesn't exist or IAM permissions
 
-#### Step 1.5: Build App Images (stripe-app, inventory-ops-app, buylist-app, pos-app)
+#### Step 1.5: Build App Images (stripe-app, inventory-ops-app, pos-app)
 ```
 Building and pushing each app image...
 ```
@@ -225,7 +225,7 @@ aws logs tail /ecs/saleor-platform-staging/api --follow
 
 **Duration**: ~5-10 minutes per service
 
-Matrix services: `stripe-app`, `inventory-ops-app`, `buylist-app`, `pos-app`
+Matrix services: `stripe-app`, `inventory-ops-app`, `pos-app`
 
 **BLOCKER ON FIRST DEPLOY**: These task definitions and services don't exist in Terraform yet.
 

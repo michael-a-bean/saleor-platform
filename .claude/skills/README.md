@@ -15,10 +15,8 @@ Skills provide detailed procedures for specific tasks. Read only the skills rele
 
 | Skill | When to Use |
 |-------|-------------|
-| [inventory-ops](./inventory-ops.md) | Purchase orders, goods receipts, WAC calculation, COGS tracking |
-| [buylist](./buylist.md) | Customer card buybacks, FOH/BOH workflow, quote management |
+| [inventory-ops](./inventory-ops.md) | Purchase orders, goods receipts, WAC, COGS, buylist, MTG import |
 | [price-sync](./price-sync.md) | Scryfall price imports, market price synchronization |
-| [mtg-catalog](./mtg-catalog.md) | Card queries, attributes, catalog data model |
 
 ## Validation
 

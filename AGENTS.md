@@ -13,7 +13,7 @@ Focus on issues that matter in production. Do not nitpick formatting, whitespace
 ### Project context
 
 - This is a Saleor Platform fork for hobby gaming (MTG secondary market).
-- Saleor Apps live in `saleor-apps/` (submodule). Custom apps: inventory-ops, buylist, mtg-import, pos.
+- Saleor Apps live in `saleor-apps/` (submodule). Custom apps: inventory-ops (includes buylist & MTG import), pos.
 - Backend: Django + GraphQL. Frontend: Next.js. Apps: tRPC + Prisma + Meilisearch.
 - Extend Saleor via apps and webhooks, not core modification.
 - `main` branch mirrors upstream — all work targets `platform/main`.

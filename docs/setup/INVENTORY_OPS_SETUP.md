@@ -157,45 +157,30 @@ The app uses these environment variables (configured in docker-compose.yml):
 - [ ] Phase 11: Unit Tests (optional)
 - [ ] Phase 12: E2E Tests (optional)
 
-## Cross-App Integration
+## Consolidated App Architecture
 
-Inventory Ops integrates with other apps (like Buylist) for cost tracking:
+> **As of March 2026**, buylist and MTG import functionality have been consolidated into inventory-ops. All cost layer events, buylist workflows, and import pipelines run within a single app.
 
-### How It Works
+### Cost Layer Event Types
 
-1. **Shared Database**: Both apps store `CostLayerEvent` records in the same PostgreSQL database
-2. **Installation IDs**: Each app has its own `installationId`, but they share the same `saleorApiUrl`
-3. **Cross-App Queries**: Inventory Ops queries cost layer events from ALL installations for the same Saleor API URL
-
-### Cost Layer Event Types by App
-
-| App | Event Types |
-|-----|-------------|
-| Inventory Ops | `GOODS_RECEIPT`, `GOODS_RECEIPT_REVERSAL`, `LANDED_COST_ADJUSTMENT`, `SALE`, `SALE_RETURN`, `STOCK_ADJUSTMENT`, `STOCK_ADJUSTMENT_REVERSAL` |
-| Buylist | `BUYLIST_RECEIPT`, `BUYLIST_RECEIPT_REVERSAL` |
+| Event Types | Description |
+|-------------|-------------|
+| `GOODS_RECEIPT`, `GOODS_RECEIPT_REVERSAL`, `LANDED_COST_ADJUSTMENT` | Purchase order receiving |
+| `BUYLIST_RECEIPT`, `BUYLIST_RECEIPT_REVERSAL` | Customer card buybacks |
+| `SALE`, `SALE_RETURN` | Order fulfillment COGS |
+| `STOCK_ADJUSTMENT`, `STOCK_ADJUSTMENT_REVERSAL` | Manual corrections |
 
 ### WAC Calculation
 
-When calculating Weighted Average Cost (WAC), the system aggregates cost layer events from all apps:
+When calculating Weighted Average Cost (WAC), the system aggregates all cost layer events:
 
 ```sql
--- Events from both inventory-ops and buylist are included
+-- All event types are within the same app (inventory-ops)
 SELECT * FROM "CostLayerEvent"
 WHERE "saleorVariantId" = 'variant-id'
   AND "saleorWarehouseId" = 'warehouse-id'
-  AND "installationId" IN (
-    SELECT id FROM "AppInstallation"
-    WHERE "saleorApiUrl" = 'http://api:8000/graphql/'
-  )
 ORDER BY "eventTimestamp";
 ```
-
-### Key Code Changes for Cross-App Support
-
-1. **`protected-client-procedure.ts`**: Middleware fetches `allInstallationIds` for the saleorApiUrl
-2. **`wac-service.ts`**: WAC functions accept `string | string[]` for installationId
-3. **`order-fulfilled/route.ts`**: Webhook handler passes all installation IDs for WAC calculation
-4. **All routers**: Use `ctx.allInstallationIds` for queries that need cross-app visibility
 
 ## Required Permissions
 
@@ -212,15 +197,15 @@ The app requires these Saleor permissions:
 
 **Working Features:**
 - Full PO → GR → Stock posting workflow
-- WAC calculation across inventory-ops and buylist apps
+- WAC calculation across all cost event types (PO receipts, buylist receipts, sales)
 - ORDER_FULFILLED webhook creating SALE events with COGS
-- Buylist integration for TCG singles receiving
-- All reports showing cross-app cost data
+- Buylist workflow for TCG singles receiving (consolidated into inventory-ops, Mar 2026)
+- MTG card import pipeline (consolidated into inventory-ops, Mar 2026)
+- All reports showing unified cost data
 
 **Database:**
-- Shared schema between inventory-ops and buylist
-- Cost layer events track source app via `installationId`
-- WAC queries aggregate across all related app installations
+- Single schema for all inventory-ops functionality (including buylist and MTG import)
+- Cost layer events track source via event type
 
 ## Files Reference
 

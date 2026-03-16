@@ -29,7 +29,7 @@ RDS PostgreSQL Instance(s)
 └── Database: inventory_ops
     ├── Owner: saleor or inventory (user)
     ├── Schema: public (Prisma-managed)
-    └── Used by: inventory-ops-app, buylist-app, pos-app
+    └── Used by: inventory-ops-app, pos-app
 ```
 
 **Staging**: Both databases on same RDS instance

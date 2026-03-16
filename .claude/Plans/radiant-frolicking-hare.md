@@ -1,3 +1,5 @@
+> **ARCHIVED** — Feature now in inventory-ops (Mar 2026). Attribute creation handled within consolidated app.
+
 # Plan: Auto-Create Missing Attributes from MTG Import Dashboard
 
 ## Context

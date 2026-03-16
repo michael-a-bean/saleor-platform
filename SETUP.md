@@ -60,8 +60,7 @@ docker compose build
 This builds all custom images including:
 - `storefront` - Next.js webstore
 - `stripe-app` - Payment processing
-- `inventory-ops-app` - Inventory management
-- `buylist-app` - Card buyback system
+- `inventory-ops-app` - Inventory management (includes buylist & MTG import)
 - `pos-app` - Point of sale
 - `saleor-mcp` - AI assistant integration
 
@@ -89,7 +88,7 @@ docker compose run --rm api python3 manage.py populatedb --createsuperuser
 docker compose up -d api worker dashboard jaeger mailpit meilisearch
 
 # Start Saleor apps
-docker compose up -d stripe-app inventory-ops-app buylist-app pos-app
+docker compose up -d stripe-app inventory-ops-app pos-app
 
 # Build and start storefront
 docker compose up -d storefront
@@ -118,8 +117,7 @@ docker compose up -d dynamodb-local
 | Jaeger | http://localhost:16686 | Distributed tracing |
 | Meilisearch | http://localhost:7700 | Search engine UI |
 | Stripe App | http://localhost:3001 | Payment processor |
-| Inventory Ops | http://localhost:3002 | Inventory management |
-| Buylist App | http://localhost:3003 | Card buybacks |
+| Inventory Ops | http://localhost:3002 | Inventory management (includes buylist & MTG import) |
 | POS App | http://localhost:3004 | Point of sale |
 
 ## Common Commands
