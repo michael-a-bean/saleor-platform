@@ -277,14 +277,27 @@ export function CartDrawer({ channel }: CartDrawerProps) {
 				{showSuccess && shortCode && (
 					<div className="mx-4 mt-4 rounded-lg border-2 border-green-500 bg-green-50 p-6 text-center">
 						<div className="text-sm font-medium uppercase tracking-wider text-green-600">
-							Ready for POS
+							Sent to POS
 						</div>
 						<div className="mt-3 font-mono text-4xl font-bold tracking-[0.3em] text-green-800">
 							{shortCode}
 						</div>
-						<div className="mt-3 text-xs text-green-600">
-							Enter this code at the register
+						<div className="mt-2 text-xs text-green-600">
+							Cart will auto-import at the register
 						</div>
+						<button
+							type="button"
+							onClick={() => {
+								const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || "https://dashboard.staging.michaelbean.org";
+								window.open(`${dashboardUrl}/apps/QXBwOjMz/transaction`, "_blank");
+							}}
+							className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+						>
+							Open POS
+							<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+							</svg>
+						</button>
 					</div>
 				)}
 
@@ -405,9 +418,9 @@ export function CartDrawer({ channel }: CartDrawerProps) {
 										Saving...
 									</span>
 								) : shortCode ? (
-									"Refresh POS Code"
+									"Resend to POS"
 								) : (
-									"Send to Register"
+									"Send to POS"
 								)}
 							</button>
 						</div>
