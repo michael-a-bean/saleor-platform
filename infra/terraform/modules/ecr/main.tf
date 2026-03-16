@@ -2,8 +2,6 @@
 # Creates ECR repositories for custom-built images
 
 locals {
-  name_prefix = "${var.project_name}-${var.environment}"
-
   # List of custom images that need ECR repos
   # Note: api, worker, dashboard, meilisearch use official images
   repositories = toset([

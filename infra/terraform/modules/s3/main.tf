@@ -2,7 +2,6 @@
 # Creates S3 bucket for media storage with proper security settings
 
 locals {
-  name_prefix = "${var.project_name}-${var.environment}"
   bucket_name = "${var.project_name}-media-${var.environment}-${var.account_id}"
 }
 
