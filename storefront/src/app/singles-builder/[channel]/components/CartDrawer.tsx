@@ -12,6 +12,7 @@ import {
 	type CartActionResult,
 } from "../actions";
 import { useStaff } from "../../StaffContext";
+import { PullListPrint } from "./PullListPrint";
 
 // Convert full condition name to abbreviation
 function abbreviateCondition(condition: string): string {
@@ -413,6 +414,21 @@ export function CartDrawer({ channel }: CartDrawerProps) {
 					</div>
 				)}
 			</div>
+
+			{/* Pull list — hidden on screen, shown only by @media print CSS */}
+			{cart && cart.lines.length > 0 && (
+				<div className="pull-list-screen-hide">
+					<PullListPrint
+						lines={cart.lines}
+						channel={channel}
+						customerName={customerInfo.name}
+						notes={customerInfo.notes}
+						shortCode={shortCode}
+						totalAmount={cart.totalPrice?.gross?.amount ?? 0}
+						totalCurrency={cart.totalPrice?.gross?.currency ?? "USD"}
+					/>
+				</div>
+			)}
 		</>
 	);
 }
