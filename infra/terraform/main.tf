@@ -109,7 +109,6 @@ module "cloudfront" {
   environment  = var.environment
 
   s3_bucket_name                 = module.s3.bucket_name
-  s3_bucket_arn                  = module.s3.bucket_arn
   s3_bucket_regional_domain_name = module.s3.bucket_regional_domain_name
 
   price_class = var.cloudfront_price_class
@@ -137,7 +136,6 @@ module "ecr" {
   source = "./modules/ecr"
 
   project_name         = var.project_name
-  environment          = var.environment
   image_tag_mutability = var.ecr_image_tag_mutability
 }
 
@@ -373,7 +371,6 @@ module "ecs" {
   project_name     = var.project_name
   environment      = var.environment
   aws_region       = var.aws_region
-  domain_name      = var.domain_name
   use_fargate_spot = var.use_fargate_spot
 
   # Public URLs for applications (supports overrides for staging without DNS)

@@ -15,11 +15,6 @@ variable "aws_region" {
   type        = string
 }
 
-variable "domain_name" {
-  description = "Domain name"
-  type        = string
-}
-
 # Public URLs (supports overrides for staging without DNS)
 variable "public_api_base_url" {
   description = "Public API base URL (e.g., https://api.example.com or http://alb-dns)"
