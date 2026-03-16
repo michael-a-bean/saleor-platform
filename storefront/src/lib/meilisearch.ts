@@ -65,6 +65,9 @@ export interface MeilisearchProduct {
 	conditions_available: string[];
 	finishes_available: string[];
 	variants: MeilisearchVariant[];
+	category_id: string;
+	category_name: string;
+	category_slug: string;
 }
 
 export interface MeilisearchSearchResult {
@@ -84,7 +87,15 @@ export interface SearchFilters {
 	setName?: string;
 	rarity?: string | string[];
 	typeLine?: string;
+	categorySlug?: string;
 	priceRange?: { min?: number; max?: number };
+}
+
+/**
+ * Escape special characters in Meilisearch filter values.
+ */
+function escapeFilter(v: string): string {
+	return v.replace(/["\\]/g, "\\$&");
 }
 
 /**
@@ -98,36 +109,37 @@ function buildFilterString(filters: SearchFilters): string | undefined {
 	}
 
 	if (filters.conditions && filters.conditions.length > 0) {
-		// Match any of the conditions
-		const conditionFilters = filters.conditions.map((c) => `conditions_available = "${c}"`);
+		const conditionFilters = filters.conditions.map((c) => `conditions_available = "${escapeFilter(c)}"`);
 		parts.push(`(${conditionFilters.join(" OR ")})`);
 	}
 
 	if (filters.finishes && filters.finishes.length > 0) {
-		const finishFilters = filters.finishes.map((f) => `finishes_available = "${f}"`);
+		const finishFilters = filters.finishes.map((f) => `finishes_available = "${escapeFilter(f)}"`);
 		parts.push(`(${finishFilters.join(" OR ")})`);
 	}
 
 	if (filters.setCode) {
-		parts.push(`set_code = "${filters.setCode.toUpperCase()}"`);
+		parts.push(`set_code = "${escapeFilter(filters.setCode.toUpperCase())}"`);
 	}
 
 	if (filters.setName) {
-		parts.push(`set_name = "${filters.setName}"`);
+		parts.push(`set_name = "${escapeFilter(filters.setName)}"`);
 	}
 
 	if (filters.rarity) {
-		// Handle single string or array of rarities
 		const rarities = Array.isArray(filters.rarity) ? filters.rarity : [filters.rarity];
 		if (rarities.length > 0) {
-			const rarityFilters = rarities.map((r) => `rarity = "${r.toLowerCase()}"`);
+			const rarityFilters = rarities.map((r) => `rarity = "${escapeFilter(r.toLowerCase())}"`);
 			parts.push(`(${rarityFilters.join(" OR ")})`);
 		}
 	}
 
 	if (filters.typeLine) {
-		// Match partial type line (e.g., "Creature" matches "Legendary Creature — Dragon")
-		parts.push(`type_line = "${filters.typeLine}"`);
+		parts.push(`type_line = "${escapeFilter(filters.typeLine)}"`);
+	}
+
+	if (filters.categorySlug) {
+		parts.push(`category_slug = "${escapeFilter(filters.categorySlug)}"`);
 	}
 
 	if (filters.priceRange) {
@@ -184,6 +196,8 @@ export async function searchProducts(
 			"conditions_available",
 			"finishes_available",
 			"variants",
+			"category_slug",
+			"category_name",
 		],
 	};
 
