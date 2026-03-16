@@ -1,7 +1,7 @@
 ## Saleor Platform Key Patterns
 
 ### Architecture
-- Prisma schema is shared via symlink: `inventory-ops/prisma/schema.prisma` is the source, symlinked to POS and Buylist apps. Edit inventory-ops, run migration, regenerate in POS/Buylist.
+- Prisma schema is shared via symlink: `inventory-ops/prisma/schema.prisma` is the source, symlinked to POS app. Edit inventory-ops, run migration, regenerate in POS. (Buylist consolidated into inventory-ops, Mar 2026.)
 - SKU format: `{scryfall_uuid}-{condition}-{finish}` (e.g., `ff1b8fc5-NM-NF`). Used in price sync cron to parse condition/finish.
 - Both `price_amount` AND `discounted_price_amount` must be set on channel listings. NULL `discounted_price_amount` causes currency AttributeError crash.
 - **Research & reports go in `docs-private`** (submodule at `michael-a-bean/saleor-platform-docs`). Commit+push docs-private first, then update ref in saleor-platform.
@@ -123,7 +123,7 @@
 - Both repos have `allow_auto_merge=true` and `delete_branch_on_merge=true`.
 
 ### CI/CD Patterns (as of Mar 2026)
-- Prisma migrations: ONLY inventory-ops runs `prisma migrate deploy`. Other apps (mtg-import, POS, buylist) share the schema via symlink but must NOT run their own migrations — causes P3009 poisoning cycle.
+- Prisma migrations: ONLY inventory-ops runs `prisma migrate deploy`. POS shares the schema via symlink but must NOT run its own migrations — causes P3009 poisoning cycle. (Buylist and mtg-import consolidated into inventory-ops, Mar 2026.)
 - If Prisma P3009 occurs: `DELETE FROM _prisma_migrations WHERE finished_at IS NULL;` via `npx prisma db execute --stdin`
 - Deploy script (`deploy-service.sh`): gracefully skips services when SHA-tagged image not found in ECR (service wasn't rebuilt).
 - **Dashboard uses `IMAGE="KEEP"`** in deploy-service.sh — copies current task def as-is, including env vars. Stale API_URL in task def persists across deploys until manually updated.

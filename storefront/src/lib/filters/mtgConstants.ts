@@ -65,7 +65,7 @@ export const CONDITION_OPTIONS: FilterOption[] = [
 	{ value: "damaged", label: "Damaged" },
 ];
 
-// Attribute slugs as defined in Saleor (must match attribute-map.ts in mtg-import)
+// Attribute slugs as defined in Saleor (must match attribute-map.ts in inventory-ops import module)
 export const ATTRIBUTE_SLUGS = {
 	rarity: "mtg-rarity",
 	colorIdentity: "mtg-color-identity",

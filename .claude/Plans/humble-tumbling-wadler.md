@@ -1,3 +1,5 @@
+> **ARCHIVED** — mtg-import consolidated into inventory-ops (Mar 2026). This plan is no longer applicable.
+
 # Plan: Decouple mtg-import Prisma Schema from inventory-ops
 
 ## Context

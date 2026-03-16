@@ -73,12 +73,7 @@ Create with `aws ssm put-parameter --type SecureString`:
 | `/saleor/{env}/inventory-ops-app/SECRET_KEY` | `ghi789...` | `openssl rand -hex 32` | Annually |
 | `/saleor/{env}/inventory-ops-app/DATABASE_URL` | `postgresql://saleor:PASSWORD@rds-endpoint:5432/inventory_ops` | Terraform outputs | On password rotation |
 
-### Buylist App
-
-| Parameter Path | Example Value | Generation | Rotation |
-|----------------|---------------|------------|----------|
-| `/saleor/{env}/buylist-app/SECRET_KEY` | `jkl012...` | `openssl rand -hex 32` | Annually |
-| `/saleor/{env}/buylist-app/DATABASE_URL` | `postgresql://saleor:PASSWORD@rds-endpoint:5432/inventory_ops` | Terraform outputs | On password rotation |
+### Buylist App — OBSOLETE (consolidated into inventory-ops, Mar 2026)
 
 ### POS App
 
@@ -119,7 +114,7 @@ Create with `aws ssm put-parameter --type SecureString`:
 
 ```bash
 # Generate all app secrets at once
-for app in api stripe-app inventory-ops-app buylist-app pos-app; do
+for app in api stripe-app inventory-ops-app pos-app; do
   echo "${app}: $(openssl rand -hex 32)"
 done
 ```
@@ -149,8 +144,6 @@ aws ssm put-parameter --name "/saleor/${ENV}/api/CELERY_BROKER_URL" --type Secur
 aws ssm put-parameter --name "/saleor/${ENV}/stripe-app/SECRET_KEY" --type SecureString --value "$(openssl rand -hex 32)"
 aws ssm put-parameter --name "/saleor/${ENV}/inventory-ops-app/SECRET_KEY" --type SecureString --value "$(openssl rand -hex 32)"
 aws ssm put-parameter --name "/saleor/${ENV}/inventory-ops-app/DATABASE_URL" --type SecureString --value "postgresql://saleor:${DB_PASSWORD}@${RDS_ENDPOINT}/inventory_ops"
-aws ssm put-parameter --name "/saleor/${ENV}/buylist-app/SECRET_KEY" --type SecureString --value "$(openssl rand -hex 32)"
-aws ssm put-parameter --name "/saleor/${ENV}/buylist-app/DATABASE_URL" --type SecureString --value "postgresql://saleor:${DB_PASSWORD}@${RDS_ENDPOINT}/inventory_ops"
 aws ssm put-parameter --name "/saleor/${ENV}/pos-app/SECRET_KEY" --type SecureString --value "$(openssl rand -hex 32)"
 aws ssm put-parameter --name "/saleor/${ENV}/pos-app/DATABASE_URL" --type SecureString --value "postgresql://saleor:${DB_PASSWORD}@${RDS_ENDPOINT}/inventory_ops"
 ```

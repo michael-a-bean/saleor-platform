@@ -1,3 +1,5 @@
+> **ARCHIVED** — Pre-consolidation audit (Feb 2026). Buylist and mtg-import have since been consolidated into inventory-ops.
+
 # Pipeline Audit: MTG Import -> Buylist -> Inventory-Ops -> Webstore/Singles-Builder
 
 **Date:** 2026-02-23

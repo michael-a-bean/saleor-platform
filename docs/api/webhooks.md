@@ -26,7 +26,7 @@ Saleor webhooks enable real-time integration between Saleor and external systems
 | `ORDER_FULFILLED` | `/api/webhooks/saleor/order-fulfilled` | Trigger COGS calculation |
 | `PRODUCT_VARIANT_STOCK_UPDATED` | `/api/webhooks/saleor/stock-updated` | Detect stock discrepancies |
 
-### buylist App
+### buylist (now within inventory-ops)
 
 | Event | Endpoint | Purpose |
 |-------|----------|---------|

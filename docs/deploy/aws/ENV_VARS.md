@@ -101,17 +101,11 @@ Uses the same variables as API (shares configuration).
 /saleor/{env}/inventory-ops-app/DATABASE_URL
 ```
 
-### Buylist App (`buylist-app`)
+### Buylist App (`buylist-app`) — OBSOLETE
 
-Same as Inventory Ops App, plus:
+> **Consolidated into inventory-ops (March 2026).** These SSM parameters may still exist but are no longer used by any running service.
 
-| Variable | Source | Type | Description |
-|----------|--------|------|-------------|
-| `DEFAULT_CHANNEL_SLUG` | Plain | String | `webstore` |
-| `SCRYFALL_API_BASE_URL` | Plain | String | `https://api.scryfall.com` |
-| `SCRYFALL_RATE_LIMIT_MS` | Plain | String | `100` |
-
-**SSM Paths:**
+**Legacy SSM Paths (can be cleaned up):**
 ```
 /saleor/{env}/buylist-app/SECRET_KEY
 /saleor/{env}/buylist-app/DATABASE_URL
@@ -171,9 +165,9 @@ For a new environment, create these SSM parameters:
 /saleor/{env}/inventory-ops-app/SECRET_KEY    # SecureString
 /saleor/{env}/inventory-ops-app/DATABASE_URL  # SecureString
 
-# Buylist App
-/saleor/{env}/buylist-app/SECRET_KEY    # SecureString
-/saleor/{env}/buylist-app/DATABASE_URL  # SecureString
+# Buylist App (OBSOLETE — consolidated into inventory-ops)
+# /saleor/{env}/buylist-app/SECRET_KEY    # Can be removed
+# /saleor/{env}/buylist-app/DATABASE_URL  # Can be removed
 
 # POS App
 /saleor/{env}/pos-app/SECRET_KEY    # SecureString
@@ -187,7 +181,7 @@ For a new environment, create these SSM parameters:
 postgresql://saleor:<password>@<rds-endpoint>:5432/saleor
 ```
 
-**Inventory Ops (shared by inventory-ops, buylist, pos):**
+**Inventory Ops (shared by inventory-ops and pos):**
 ```
 postgresql://inventory:<password>@<rds-endpoint>:5432/inventory_ops
 ```

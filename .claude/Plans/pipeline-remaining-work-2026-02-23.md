@@ -1,3 +1,5 @@
+> **ARCHIVED** — Pre-consolidation follow-up (Feb 2026). Buylist and mtg-import have since been consolidated into inventory-ops.
+
 # Pipeline Remaining Work: Post-Audit Follow-Up
 
 **Date:** 2026-02-23

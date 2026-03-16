@@ -63,10 +63,8 @@ This file stays intentionally lean. Detailed procedures live elsewhere and shoul
 - `infra/terraform/` — AWS infrastructure (Terraform) — **read `.claude/rules/infrastructure.md` first**
 
 ### Domain-Specific Logic
-- `.claude/skills/inventory-ops` — Purchase orders, goods receipts, WAC, COGS
-- `.claude/skills/buylist` — Customer card buybacks, FOH/BOH workflow
+- `.claude/skills/inventory-ops` — Purchase orders, goods receipts, WAC, COGS, buylist, MTG import
 - `.claude/skills/price-sync` — Scryfall market price synchronization
-- `.claude/skills/mtg-catalog` — MTG card data and attributes
 
 ### Architecture & Rules
 - `docs/reference/architecture.md` — Full platform architecture
