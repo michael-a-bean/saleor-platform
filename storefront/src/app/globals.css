@@ -198,43 +198,164 @@ body {
 	font-display: swap;
 }
 
-/* Print styles for Singles Builder Pull List */
+/* Pull list: hide on screen, show on print */
+@media screen {
+	.pull-list-screen-hide {
+		display: none;
+	}
+}
+
+/* Print styles for Singles Builder Pull List — 8.5 x 11 US Letter */
 @media print {
-	/* Hide everything except the cart drawer */
+	@page {
+		size: letter portrait;
+		margin: 0.5in;
+	}
+
+	/* Hide everything except the pull list */
 	body > * {
 		display: none !important;
 	}
 
-	/* Show the cart drawer content */
-	body > div:last-child {
+	/* The pull list component renders inside a portal-like structure;
+	   target it by ID for reliability */
+	#pull-list-print,
+	#pull-list-print * {
+		visibility: visible !important;
+	}
+
+	body {
 		display: block !important;
 	}
 
-	/* Hide non-printable elements */
+	.pull-list-print {
+		display: block !important;
+		position: absolute !important;
+		top: 0;
+		left: 0;
+		width: 100% !important;
+		font-family: Arial, Helvetica, sans-serif;
+		font-size: 11px;
+		color: #000;
+		background: #fff;
+	}
+
+	/* Header */
+	.pull-list-header {
+		margin-bottom: 12px;
+		border-bottom: 2px solid #000;
+		padding-bottom: 8px;
+	}
+
+	.pull-list-title {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+	}
+
+	.pull-list-title h1 {
+		font-size: 20px;
+		font-weight: bold;
+		margin: 0;
+	}
+
+	.pull-list-location {
+		font-size: 14px;
+		font-weight: 600;
+		text-transform: uppercase;
+	}
+
+	.pull-list-meta {
+		margin-top: 4px;
+	}
+
+	.pull-list-meta-row {
+		display: flex;
+		gap: 24px;
+		font-size: 11px;
+		line-height: 1.6;
+	}
+
+	.pull-list-code {
+		font-weight: bold;
+		font-family: monospace;
+		font-size: 13px;
+		letter-spacing: 0.1em;
+	}
+
+	/* Table */
+	.pull-list-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 11px;
+	}
+
+	.pull-list-table thead {
+		border-bottom: 2px solid #000;
+	}
+
+	.pull-list-table th {
+		text-align: left;
+		font-weight: bold;
+		padding: 3px 6px;
+		font-size: 10px;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+	}
+
+	.pull-list-table td {
+		padding: 4px 6px;
+		border-bottom: 1px solid #ddd;
+		vertical-align: top;
+	}
+
+	.pull-list-table tbody tr:nth-child(even) {
+		background: #f8f8f8;
+	}
+
+	/* Column widths */
+	.pull-list-col-check { width: 20px; text-align: center; }
+	.pull-list-col-qty   { width: 30px; text-align: center; }
+	.pull-list-col-cond  { width: 40px; }
+	.pull-list-col-finish { width: 55px; }
+	.pull-list-col-set   { width: 40px; font-family: monospace; text-transform: uppercase; }
+	.pull-list-col-num   { width: 35px; text-align: right; font-family: monospace; }
+	.pull-list-col-name  { /* flex */ }
+	.pull-list-col-price { width: 55px; text-align: right; font-family: monospace; }
+
+	/* Checkbox */
+	.pull-list-checkbox {
+		display: inline-block;
+		width: 12px;
+		height: 12px;
+		border: 1.5px solid #000;
+		vertical-align: middle;
+	}
+
+	/* Footer */
+	.pull-list-footer {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 8px;
+		padding-top: 6px;
+		border-top: 2px solid #000;
+		font-size: 12px;
+	}
+
+	.pull-list-total {
+		font-weight: bold;
+		font-size: 13px;
+	}
+
+	/* Hide screen-only elements */
 	.print\:hidden,
 	button,
 	input,
 	textarea,
-	[aria-hidden="true"] {
+	[aria-hidden="true"],
+	nav,
+	header,
+	footer {
 		display: none !important;
-	}
-
-	/* Clean layout for pull list */
-	.fixed {
-		position: static !important;
-		width: 100% !important;
-		max-width: 100% !important;
-		box-shadow: none !important;
-	}
-
-	/* Add pull list header via CSS */
-	.fixed::before {
-		content: "Pull List — " attr(data-location) " — " attr(data-date);
-		display: block;
-		font-size: 18px;
-		font-weight: bold;
-		margin-bottom: 16px;
-		border-bottom: 2px solid #000;
-		padding-bottom: 8px;
 	}
 }
