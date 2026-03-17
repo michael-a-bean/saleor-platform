@@ -23,12 +23,7 @@ resource "aws_security_group" "redis" {
     security_groups = [var.ecs_backend_security_group_id]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # No egress rules — ElastiCache does not initiate outbound connections
 
   tags = {
     Name = "${local.name_prefix}-redis-sg"

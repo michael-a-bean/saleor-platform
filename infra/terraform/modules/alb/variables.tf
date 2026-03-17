@@ -42,3 +42,8 @@ variable "enable_deletion_protection" {
   type        = bool
   default     = false
 }
+
+variable "vpc_cidr" {
+  description = "VPC CIDR block for scoping egress rules"
+  type        = string
+}

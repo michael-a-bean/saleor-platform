@@ -94,13 +94,7 @@ resource "aws_security_group" "efs" {
     security_groups = [var.backend_security_group_id]
   }
 
-  egress {
-    description = "All outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # No egress rules — EFS does not initiate outbound connections
 
   tags = {
     Name    = "${local.name_prefix}-meilisearch-efs"
