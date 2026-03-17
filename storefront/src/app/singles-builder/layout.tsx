@@ -63,7 +63,7 @@ export default async function SinglesBuilderLayout({
 				</header>
 				<main>{children}</main>
 				<ToastContainer
-					position="bottom-right"
+					position="top-right"
 					autoClose={3000}
 					hideProgressBar={false}
 					newestOnTop

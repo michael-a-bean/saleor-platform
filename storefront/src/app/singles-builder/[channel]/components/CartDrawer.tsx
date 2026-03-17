@@ -222,9 +222,14 @@ export function CartDrawer({ channel }: CartDrawerProps) {
 			const result = await saveCartForPOS(customerInfo.name, customerInfo.notes, code, staff.email, channel);
 			if (result.success) {
 				setShortCode(code);
-				handleCartUpdate(result);
 				setShowSuccess(true);
-				setTimeout(() => setShowSuccess(false), 5000);
+				// Clear local cart state — the Saleor checkout stays intact for POS to import from
+				clearCart();
+				setShortCode(code); // Re-set after clearCart so the success banner can show it
+				setTimeout(() => {
+					setShowSuccess(false);
+					setShortCode(null);
+				}, 8000);
 			} else {
 				setError(result.error || "Failed to save cart");
 			}
