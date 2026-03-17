@@ -1,5 +1,6 @@
 # Trivy IaC scan ignore list
 # Format: check ID per line, with optional comment
+# Each entry has a documented justification per red team review (2026-03-16)
 
 # ECS tasks use awsvpc networking with security groups — public IP not a risk in private subnets
 AVD-AWS-0034
@@ -12,3 +13,18 @@ AVD-AWS-0013
 
 # RDS performance insights — not needed for staging
 AVD-AWS-0133
+
+# ALB must be public — this is an e-commerce platform serving storefront, API, and dashboard.
+# Host-based routing with TLS 1.3 (ELBSecurityPolicy-TLS13-1-2-2021-06) on HTTPS listener.
+# Trivy flags internal=false as HIGH but public ingress is architecturally required.
+AVD-AWS-0053
+
+# ECR mutable tags: staging uses MUTABLE for CI/CD staging-latest overwrites.
+# Production uses IMMUTABLE (enforced in production.tfvars). Staging-only trade-off
+# to avoid CI/CD rework for the tag overwrite pattern.
+AVD-AWS-0031
+
+# ElastiCache transit encryption: plumbing added (redis_transit_encryption variable),
+# but enabling requires cluster replacement + auth token provisioning.
+# Tracked for follow-up activation with coordinated downtime window.
+AVD-AWS-0051

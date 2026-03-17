@@ -194,6 +194,19 @@ variable "redis_multi_az" {
   default     = false
 }
 
+variable "redis_transit_encryption" {
+  description = "Enable transit encryption (TLS) for ElastiCache. Requires auth_token. WARNING: Enabling on existing cluster forces replacement."
+  type        = bool
+  default     = false
+}
+
+variable "redis_auth_token" {
+  description = "Auth token for Redis (required when transit encryption is enabled). Must be 16-128 chars."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 # Separate cache for Celery broker (recommended by Gemini review)
 variable "create_separate_celery_cache" {
   description = "Create a separate ElastiCache cluster for Celery broker (prevents eviction issues)"

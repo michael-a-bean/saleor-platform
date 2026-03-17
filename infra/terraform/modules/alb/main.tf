@@ -34,10 +34,11 @@ resource "aws_security_group" "alb" {
   }
 
   egress {
+    description = "Outbound to VPC (ECS targets)"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   tags = {
@@ -61,11 +62,27 @@ resource "aws_security_group" "ecs_frontend" {
   }
 
   egress {
-    description = "Outbound to anywhere (API calls, etc)"
+    description = "HTTPS outbound (external APIs, CDN)"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "DNS resolution"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "VPC internal traffic (API, Meilisearch)"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   tags = {
@@ -117,11 +134,27 @@ resource "aws_security_group" "ecs_backend" {
   }
 
   egress {
-    description = "Outbound to anywhere"
+    description = "HTTPS outbound (Stripe, Scryfall, webhooks)"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "DNS resolution"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "VPC internal traffic (RDS, ElastiCache, Meilisearch)"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   tags = {
@@ -154,10 +187,11 @@ resource "aws_security_group" "ecs_internal" {
   }
 
   egress {
+    description = "VPC internal traffic only"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   tags = {

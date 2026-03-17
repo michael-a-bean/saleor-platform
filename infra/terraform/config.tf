@@ -24,14 +24,36 @@ resource "aws_s3_bucket_versioning" "config" {
   }
 }
 
+resource "aws_kms_key" "config_bucket" {
+  count = var.enable_config_rules ? 1 : 0
+
+  description             = "KMS key for AWS Config S3 bucket encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = merge(local.common_tags, {
+    Name    = "${local.name_prefix}-config-bucket-key"
+    Service = "aws-config"
+  })
+}
+
+resource "aws_kms_alias" "config_bucket" {
+  count = var.enable_config_rules ? 1 : 0
+
+  name          = "alias/${local.name_prefix}-config-bucket"
+  target_key_id = aws_kms_key.config_bucket[0].key_id
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "config" {
   count  = var.enable_config_rules ? 1 : 0
   bucket = aws_s3_bucket.config[0].id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.config_bucket[0].arn
     }
+    bucket_key_enabled = true
   }
 }
 
@@ -155,6 +177,14 @@ resource "aws_iam_role_policy" "config_s3" {
         Effect   = "Allow"
         Action   = "s3:GetBucketAcl"
         Resource = aws_s3_bucket.config[0].arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey"
+        ]
+        Resource = aws_kms_key.config_bucket[0].arn
       }
     ]
   })

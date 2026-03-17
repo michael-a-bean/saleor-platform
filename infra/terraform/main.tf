@@ -149,6 +149,7 @@ module "alb" {
   project_name      = var.project_name
   environment       = var.environment
   vpc_id            = local.vpc_id
+  vpc_cidr          = var.vpc_cidr
   public_subnet_ids = local.public_subnet_ids
   domain_name       = var.domain_name
   certificate_arn   = var.create_acm_certificate ? aws_acm_certificate.main[0].arn : ""
@@ -207,6 +208,9 @@ module "elasticache" {
 
   node_type = var.redis_node_type
   multi_az  = var.redis_multi_az
+
+  transit_encryption_enabled = var.redis_transit_encryption
+  auth_token                 = var.redis_auth_token
 
   create_separate_celery_cache = var.create_separate_celery_cache
 }
