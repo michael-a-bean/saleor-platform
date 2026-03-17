@@ -28,3 +28,10 @@ AVD-AWS-0031
 # but enabling requires cluster replacement + auth token provisioning.
 # Tracked for follow-up activation with coordinated downtime window.
 AVD-AWS-0051
+
+# SG egress 0.0.0.0/0: Trivy flags ANY egress to 0.0.0.0/0 regardless of port scoping.
+# Dangerous pattern (all-ports/all-protocols egress) eliminated — RDS, ElastiCache, EFS, ALB
+# egress removed or scoped to VPC CIDR. Remaining 0.0.0.0/0 rules are port-restricted:
+# HTTPS (443/tcp) for external APIs (Stripe, Scryfall) and DNS (53/udp) for resolution.
+# ECS Fargate tasks require these to function. VPC endpoints would be overkill ($29/mo).
+AVD-AWS-0104
