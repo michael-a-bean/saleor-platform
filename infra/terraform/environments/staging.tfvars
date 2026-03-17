@@ -117,9 +117,9 @@ apps_scaling_min_capacity = 1 # Always-on apps stay running; batch jobs (desired
 apps_scaling_max_capacity = 1 # 1 instance per app in staging
 
 # Images (pin by digest in production, use tags in staging)
-# Updated 2026-03-03: API 3.22.39, Dashboard 3.22.34
-saleor_api_image       = "ghcr.io/saleor/saleor:3.22.39"
-saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.22.34"
+# Updated 2026-03-16: API 3.22.42 (PyJWT CVE fix), Dashboard 3.22.35 (dep security fixes)
+saleor_api_image       = "ghcr.io/saleor/saleor:3.22.42"
+saleor_dashboard_image = "ghcr.io/saleor/saleor-dashboard:3.22.35"
 
 # Saleor Apps image tags
 stripe_app_image_tag = "document-polyfill-v1"
