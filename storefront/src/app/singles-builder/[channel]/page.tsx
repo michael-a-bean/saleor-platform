@@ -115,16 +115,20 @@ export default async function SinglesBuilderPage({ params, searchParams }: PageP
 
 	return (
 		<div className="mx-auto max-w-7xl px-4 py-6">
-			{/* Search Header */}
+			{/* Search Header — Suspense required for useSearchParams */}
 			<div className="mb-6">
-				<SinglesSearch />
+				<Suspense fallback={<div className="h-12 animate-pulse rounded-lg bg-gray-100" />}>
+					<SinglesSearch />
+				</Suspense>
 			</div>
 
 			{/* Main Content Area */}
 			<div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-				{/* Filter Sidebar */}
+				{/* Filter Sidebar — Suspense required for useSearchParams */}
 				<aside className="rounded-lg border bg-white p-4 shadow-sm lg:col-span-1">
-					<SinglesFilters />
+					<Suspense fallback={<div className="h-64 animate-pulse rounded bg-gray-100" />}>
+						<SinglesFilters />
+					</Suspense>
 				</aside>
 
 				{/* Results Area */}
