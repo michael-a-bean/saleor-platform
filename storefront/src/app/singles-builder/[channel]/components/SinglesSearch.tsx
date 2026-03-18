@@ -1,103 +1,92 @@
 "use client";
 
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useSearchParams, usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 const DEBOUNCE_MS = 300;
 
 export function SinglesSearch() {
-	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
-	const [isPending, startTransition] = useTransition();
 
 	const initialQuery = searchParams.get("q") || "";
 	const [inputValue, setInputValue] = useState(initialQuery);
 	const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
-	const [isFocused, setIsFocused] = useState(false);
+	const formRef = useRef<HTMLFormElement>(null);
 
 	// Focus input on mount
 	useEffect(() => {
 		inputRef.current?.focus();
 	}, []);
 
-	// Sync input with URL when navigating — render-time adjustment
-	// Only sync when the input isn't focused (avoid overwriting mid-typing)
+	// Sync input with URL on back/forward navigation
 	const urlQuery = searchParams.get("q") || "";
 	const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
 	if (urlQuery !== prevUrlQuery) {
 		setPrevUrlQuery(urlQuery);
-		if (!isFocused) {
-			setInputValue(urlQuery);
-		}
+		setInputValue(urlQuery);
 	}
-
-	const updateSearchParams = useCallback(
-		(query: string) => {
-			const params = new URLSearchParams(searchParams.toString());
-			if (query.trim()) {
-				params.set("q", query.trim());
-			} else {
-				params.delete("q");
-			}
-			// Reset pagination on new search
-			params.delete("after");
-
-			startTransition(() => {
-				router.push(`${pathname}?${params.toString()}`, { scroll: false });
-			});
-		},
-		[pathname, router, searchParams],
-	);
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value;
 		setInputValue(value);
 
-		// Clear existing timer
 		if (debounceTimer.current) {
 			clearTimeout(debounceTimer.current);
 		}
 
-		// Set new debounce timer
+		// Auto-submit form after debounce for live search
 		debounceTimer.current = setTimeout(() => {
-			updateSearchParams(value);
+			formRef.current?.requestSubmit();
 		}, DEBOUNCE_MS);
 	};
 
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === "Enter") {
-			e.preventDefault();
-			// Clear debounce and search immediately
-			if (debounceTimer.current) {
-				clearTimeout(debounceTimer.current);
-			}
-			updateSearchParams(inputValue);
+	const handleSubmit = () => {
+		// Clear debounce so we don't double-fire
+		if (debounceTimer.current) {
+			clearTimeout(debounceTimer.current);
 		}
+		// Native form GET submission handles navigation
+	};
+
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Escape") {
+			e.preventDefault();
 			setInputValue("");
-			updateSearchParams("");
+			// Submit empty to clear results
+			setTimeout(() => formRef.current?.requestSubmit(), 0);
 			inputRef.current?.blur();
 		}
+		// Enter is handled by native form submission
 	};
 
 	const handleClear = () => {
 		setInputValue("");
-		updateSearchParams("");
+		setTimeout(() => formRef.current?.requestSubmit(), 0);
 		inputRef.current?.focus();
 	};
 
+	// Preserve existing filter params as hidden fields
+	const preservedParams: Array<[string, string]> = [];
+	searchParams.forEach((value, key) => {
+		if (key !== "q" && key !== "after") {
+			preservedParams.push([key, value]);
+		}
+	});
+
 	return (
-		<div className="relative">
+		<form ref={formRef} action={pathname} method="GET" onSubmit={handleSubmit} className="relative">
+			{preservedParams.map(([key, value], i) => (
+				<input key={`${key}-${i}`} type="hidden" name={key} value={value} />
+			))}
 			<input
 				ref={inputRef}
+				name="q"
 				type="text"
 				value={inputValue}
 				onChange={handleChange}
 				onKeyDown={handleKeyDown}
-				onFocus={() => setIsFocused(true)}
-				onBlur={() => setIsFocused(false)}
 				placeholder="Search cards by name, set, collector number..."
 				className="w-full rounded-lg border border-gray-300 px-4 py-3 pl-12 pr-12 text-lg shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
 				aria-label="Search cards"
@@ -121,28 +110,7 @@ export function SinglesSearch() {
 			</svg>
 			{/* Loading/Clear indicator */}
 			<div className="absolute right-4 top-1/2 -translate-y-1/2">
-				{isPending ? (
-					<svg
-						className="h-5 w-5 animate-spin text-blue-500"
-						fill="none"
-						viewBox="0 0 24 24"
-						aria-hidden="true"
-					>
-						<circle
-							className="opacity-25"
-							cx="12"
-							cy="12"
-							r="10"
-							stroke="currentColor"
-							strokeWidth="4"
-						/>
-						<path
-							className="opacity-75"
-							fill="currentColor"
-							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-						/>
-					</svg>
-				) : inputValue ? (
+				{inputValue ? (
 					<button
 						type="button"
 						onClick={handleClear}
@@ -168,6 +136,6 @@ export function SinglesSearch() {
 					</kbd>
 				</div>
 			)}
-		</div>
+		</form>
 	);
 }
