@@ -35,9 +35,13 @@ jobs:
 
       # Shallow clone (fetch-depth: 2) doesn't give the submodule enough
       # history for `git diff --submodule=diff` to compute file-level diffs.
-      # Unshallow just the submodule so the diff step can see actual changes.
+      # Must unshallow saleor-apps AND its nested submodules (pos, inventory-ops)
+      # so git can enumerate actual file changes, not just pointer diffs.
       - name: Ensure submodule history for diff
-        run: git -C saleor-apps fetch --unshallow 2>/dev/null || true
+        run: |
+          git -C saleor-apps fetch --unshallow 2>/dev/null || true
+          git -C saleor-apps/apps/pos fetch --unshallow 2>/dev/null || true
+          git -C saleor-apps/apps/inventory-ops fetch --unshallow 2>/dev/null || true
 
       - name: Detect changed paths
         uses: dorny/paths-filter@v3
@@ -86,14 +90,20 @@ jobs:
 
           echo "Submodule diff detected, checking which apps changed..."
           CHANGED_FILES=$(echo "$DIFF" | grep '^diff --git' | sed 's|diff --git a/||; s| b/.*||; s|^saleor-apps/||')
-          echo "Changed files in submodule:"
-          echo "$CHANGED_FILES"
+
+          # Fallback: if shallow clone couldn't produce file-level diffs,
+          # detect nested submodule pointer changes from "Submodule apps/pos OLD..NEW" lines
+          POINTER_CHANGES=$(echo "$DIFF" | grep '^Submodule apps/' | sed 's|^Submodule ||; s| .*||')
+
+          ALL_CHANGES=$(printf "%s\n%s" "$CHANGED_FILES" "$POINTER_CHANGES" | sort -u | grep -v '^$')
+          echo "Changed files/pointers in submodule:"
+          echo "$ALL_CHANGES"
 
           # Match both file paths (apps/pos/src/...) and nested submodule
           # pointer changes (apps/pos without trailing slash)
           check_app() {
             local app_dir="$1"
-            if echo "$CHANGED_FILES" | grep -q "^${app_dir}\(/\|$\)"; then
+            if echo "$ALL_CHANGES" | grep -q "^${app_dir}\(/\|$\)"; then
               echo "true"
             else
               echo "false"
