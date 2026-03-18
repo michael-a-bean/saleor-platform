@@ -146,6 +146,7 @@ export async function searchWithMeilisearch(
 		limit,
 		offset,
 		filters,
+		indexPrefix: "singles-builder",
 	});
 
 	return {
