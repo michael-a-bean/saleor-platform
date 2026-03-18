@@ -89,9 +89,11 @@ jobs:
           echo "Changed files in submodule:"
           echo "$CHANGED_FILES"
 
+          # Match both file paths (apps/pos/src/...) and nested submodule
+          # pointer changes (apps/pos without trailing slash)
           check_app() {
             local app_dir="$1"
-            if echo "$CHANGED_FILES" | grep -q "^${app_dir}/"; then
+            if echo "$CHANGED_FILES" | grep -q "^${app_dir}\(/\|$\)"; then
               echo "true"
             else
               echo "false"
