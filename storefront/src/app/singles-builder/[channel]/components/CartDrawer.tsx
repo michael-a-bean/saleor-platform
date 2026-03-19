@@ -223,8 +223,10 @@ export function CartDrawer({ channel }: CartDrawerProps) {
 			if (result.success) {
 				setShortCode(code);
 				setShowSuccess(true);
-				// Clear local cart state — the Saleor checkout stays intact for POS to import from
+				// Clear local cart state AND delete the checkout cookie so
+				// refreshing doesn't reload the same items from Saleor
 				clearCart();
+				await clearSinglesCart(channel);
 				setShortCode(code); // Re-set after clearCart so the success banner can show it
 				setTimeout(() => {
 					setShowSuccess(false);
