@@ -113,8 +113,10 @@ resource "aws_ecs_task_definition" "api" {
           { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts },
           { name = "DEFAULT_CHANNEL_SLUG", value = "webstore" },
           # S3 Media Storage - AWS_MEDIA_BUCKET_NAME is required for product images
+          # AWS_MEDIA_PRIVATE_BUCKET_NAME enables S3 for webhook payloads (EventPayload.payload_file)
           { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
           { name = "AWS_MEDIA_BUCKET_NAME", value = var.media_bucket_name },
+          { name = "AWS_MEDIA_PRIVATE_BUCKET_NAME", value = var.media_bucket_name },
           { name = "AWS_S3_REGION_NAME", value = var.aws_region },
           { name = "DASHBOARD_URL", value = "${var.public_dashboard_base_url}/" },
           { name = "ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL", value = "false" },
@@ -214,8 +216,10 @@ resource "aws_ecs_task_definition" "worker" {
           { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts },
           { name = "DEFAULT_CHANNEL_SLUG", value = "webstore" },
           # S3 Media Storage - AWS_MEDIA_BUCKET_NAME is required for product images
+          # AWS_MEDIA_PRIVATE_BUCKET_NAME enables S3 for webhook payloads (EventPayload.payload_file)
           { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
           { name = "AWS_MEDIA_BUCKET_NAME", value = var.media_bucket_name },
+          { name = "AWS_MEDIA_PRIVATE_BUCKET_NAME", value = var.media_bucket_name },
           { name = "AWS_S3_REGION_NAME", value = var.aws_region },
           { name = "PUBLIC_URL", value = "${var.public_api_base_url}/" }
         ],
@@ -684,6 +688,7 @@ resource "aws_ecs_task_definition" "migrate" {
         # S3 Media Storage
         { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
         { name = "AWS_MEDIA_BUCKET_NAME", value = var.media_bucket_name },
+        { name = "AWS_MEDIA_PRIVATE_BUCKET_NAME", value = var.media_bucket_name },
         { name = "AWS_S3_REGION_NAME", value = var.aws_region }
       ]
       logConfiguration = {
