@@ -198,6 +198,12 @@
 - **Fix**: Activate channel in Dashboard. See `mtg-import-singles-builder-investigation.md` for full details.
 - **Still open**: Duplicate products from slug case mismatch (old mixed-case vs new lowercase).
 
+### Webhook Payload Storage (CRITICAL — discovered 2026-03-20)
+- See `memory/project_webhook_payload_storage.md` for full details
+- ALL webhook delivery broken: API writes payloads to `/app/media/payloads/`, worker can't read them (separate ECS tasks)
+- 426k+ pending deliveries, zero successful. Blocks COGS, Meilisearch sync, stock detection.
+- Fix: S3 media storage or shared EFS volume between API and worker
+
 ### MVP Progress (verified 2026-02-28)
 - **Overall**: ~94% complete. Full details: `memory/mvp-staging-verification.md`
 - **Remaining**: (1) Email SMTP GUI setup, (2) Buylist manual FOH→BOH test, (3) Place test order
