@@ -51,6 +51,7 @@ export function SinglesResults({
 		return () => window.removeEventListener("resize", updateHeight);
 	}, []);
 
+	// eslint-disable-next-line react-hooks/incompatible-library
 	const virtualizer = useVirtualizer({
 		count: products.length,
 		getScrollElement: () => parentRef.current,
