@@ -1,0 +1,13 @@
+mutation ConfirmEmailChange($channel: String!, $token: String!) {
+	confirmEmailChange(channel: $channel, token: $token) {
+		user {
+			id
+			email
+		}
+		errors {
+			field
+			message
+			code
+		}
+	}
+}
