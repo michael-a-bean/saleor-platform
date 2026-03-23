@@ -3,7 +3,7 @@ import { LoginForm } from "@/ui/components/LoginForm";
 import { StatusBanner } from "@/ui/components/StatusBanner";
 import { StoreCreditBadge } from "@/ui/components/StoreCreditBadge";
 import { LinkWithChannel } from "@/ui/atoms/LinkWithChannel";
-import { updateProfile, changePassword } from "./actions";
+import { updateProfile, changePassword, requestEmailChange } from "./actions";
 import { getAccountMessage } from "./messages";
 import { inputClassName, labelClassName } from "./styles";
 
@@ -28,6 +28,7 @@ export default async function AccountPage({
 	const message = getAccountMessage(status);
 	const updateProfileWithChannel = updateProfile.bind(null, channel);
 	const changePasswordWithChannel = changePassword.bind(null, channel);
+	const requestEmailChangeWithChannel = requestEmailChange.bind(null, channel);
 
 	return (
 		<div className="mx-auto max-w-7xl p-8">
@@ -82,6 +83,45 @@ export default async function AccountPage({
 							Save Changes
 						</button>
 					</form>
+					<div className="border-t px-6 py-4">
+						<details>
+							<summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800">
+								Change email
+							</summary>
+							<form action={requestEmailChangeWithChannel} className="mt-3 space-y-3">
+								<div>
+									<label htmlFor="newEmail" className={labelClassName}>
+										New Email
+									</label>
+									<input
+										id="newEmail"
+										name="newEmail"
+										type="email"
+										required
+										className={inputClassName}
+									/>
+								</div>
+								<div>
+									<label htmlFor="emailPassword" className={labelClassName}>
+										Current Password
+									</label>
+									<input
+										id="emailPassword"
+										name="password"
+										type="password"
+										required
+										className={inputClassName}
+									/>
+								</div>
+								<button
+									type="submit"
+									className="rounded bg-neutral-800 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-700"
+								>
+									Request Change
+								</button>
+							</form>
+						</details>
+					</div>
 				</div>
 
 				{/* Password Section */}

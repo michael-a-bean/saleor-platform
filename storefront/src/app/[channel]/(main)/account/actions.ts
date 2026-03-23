@@ -8,6 +8,7 @@ import {
 	AccountAddressDeleteDocument,
 	AccountAddressCreateDocument,
 	AccountAddressUpdateDocument,
+	RequestEmailChangeDocument,
 	CountryCode,
 	type AddressTypeEnum,
 } from "@/gql/graphql";
@@ -160,6 +161,33 @@ export async function updateAddress(channelSlug: string, addressId: string, form
 	}
 
 	redirect(`/${channelSlug}/account/addresses?status=address_updated`);
+}
+
+export async function requestEmailChange(channelSlug: string, formData: FormData) {
+	const newEmail = formData.get("newEmail")?.toString() ?? "";
+	const password = formData.get("password")?.toString() ?? "";
+
+	let result;
+	try {
+		result = await executeGraphQL(RequestEmailChangeDocument, {
+			variables: {
+				channel: channelSlug,
+				newEmail,
+				password,
+				redirectUrl: `${process.env.NEXT_PUBLIC_STOREFRONT_URL || ""}/${channelSlug}/account/confirm-email`,
+			},
+			cache: "no-cache",
+		});
+	} catch {
+		redirect(`/${channelSlug}/account?status=email_change_error`);
+	}
+
+	const errors = result.requestEmailChange?.errors ?? [];
+	if (errors.length > 0) {
+		redirect(`/${channelSlug}/account?status=email_change_error`);
+	}
+
+	redirect(`/${channelSlug}/account?status=email_change_requested`);
 }
 
 function extractAddressFromForm(formData: FormData) {

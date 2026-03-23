@@ -8,6 +8,10 @@ const accountMessages: Record<string, StatusMessage> = {
 	password_required: { type: "error", text: "Current password is required." },
 	passwords_mismatch: { type: "error", text: "Passwords do not match." },
 	password_too_short: { type: "error", text: "Password must be at least 8 characters." },
+	email_change_requested: { type: "success", text: "Check your new email for a confirmation link." },
+	email_change_error: { type: "error", text: "Failed to request email change. Check your password and try again." },
+	email_changed: { type: "success", text: "Email address updated successfully." },
+	email_confirm_error: { type: "error", text: "Email confirmation failed. The link may have expired." },
 };
 
 const addressMessages: Record<string, StatusMessage> = {

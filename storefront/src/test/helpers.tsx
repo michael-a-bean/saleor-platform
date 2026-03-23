@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { render, type RenderOptions } from "@testing-library/react";
+import { vi } from "vitest";
 import { FormContext } from "@/checkout/hooks/useForm/useForm";
 import { type UseFormReturn, type FormDataBase } from "@/checkout/hooks/useForm/types";
 
