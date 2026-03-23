@@ -14,11 +14,14 @@ import { UserBillingAddressSection } from "@/checkout/sections/UserBillingAddres
 import { PaymentSection, PaymentSectionSkeleton } from "@/checkout/sections/PaymentSection";
 import { GuestBillingAddressSection } from "@/checkout/sections/GuestBillingAddressSection";
 import { useUser } from "@/checkout/hooks/useUser";
+import { useGroupDiscount } from "@/checkout/hooks/useGroupDiscount";
 
 export const CheckoutForm = () => {
 	const { user } = useUser();
 	const { checkout } = useCheckout();
 	const { passwordResetToken } = getQueryParams();
+	// Auto-apply customer group discount (best discount wins)
+	useGroupDiscount();
 
 	const [showOnlyContact, setShowOnlyContact] = useState(!!passwordResetToken);
 

@@ -18,6 +18,8 @@ import {
 import { SummaryItemMoneySection } from "@/checkout/sections/Summary/SummaryItemMoneySection";
 import { type GrossMoney, type GrossMoneyWithTax } from "@/checkout/lib/globalTypes";
 
+const GROUP_VOUCHER_PREFIX = "CUSTGRP-";
+
 interface SummaryProps {
 	editable?: boolean;
 	lines: SummaryLine[];
@@ -25,6 +27,7 @@ interface SummaryProps {
 	subtotalPrice?: GrossMoney;
 	giftCards?: GiftCardFragment[];
 	voucherCode?: string | null;
+	discountName?: string | null;
 	discount?: MoneyType | null;
 	shippingPrice: GrossMoney;
 }
@@ -36,6 +39,7 @@ export const Summary: FC<SummaryProps> = ({
 	subtotalPrice,
 	giftCards = [],
 	voucherCode,
+	discountName,
 	shippingPrice,
 	discount,
 }) => {
@@ -76,7 +80,11 @@ export const Summary: FC<SummaryProps> = ({
 						editable={editable}
 						promoCode={voucherCode}
 						ariaLabel="voucher"
-						label={`Voucher code: ${voucherCode}`}
+						label={
+						voucherCode.startsWith(GROUP_VOUCHER_PREFIX) && discountName
+							? discountName
+							: `Voucher code: ${voucherCode}`
+					}
 						money={discount}
 						negative
 					/>
