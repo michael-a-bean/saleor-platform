@@ -96,6 +96,10 @@ resource "aws_ecs_task_definition" "api" {
           {
             name      = "RSA_PRIVATE_KEY"
             valueFrom = "${var.ssm_path_prefix}/api/RSA_PRIVATE_KEY"
+          },
+          {
+            name      = "EMAIL_URL"
+            valueFrom = "${var.ssm_path_prefix}/api/EMAIL_URL"
           }
         ],
         # OpenTelemetry auth header (Grafana Cloud Basic auth)
@@ -112,6 +116,7 @@ resource "aws_ecs_task_definition" "api" {
           { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
           { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts },
           { name = "DEFAULT_CHANNEL_SLUG", value = "webstore" },
+          { name = "DEFAULT_FROM_EMAIL", value = "Hobby Gaming Store <noreply@michaelbean.org>" },
           # S3 Media Storage - AWS_MEDIA_BUCKET_NAME is required for product images
           { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
           { name = "AWS_MEDIA_BUCKET_NAME", value = var.media_bucket_name },
@@ -197,6 +202,10 @@ resource "aws_ecs_task_definition" "worker" {
           {
             name      = "RSA_PRIVATE_KEY"
             valueFrom = "${var.ssm_path_prefix}/api/RSA_PRIVATE_KEY"
+          },
+          {
+            name      = "EMAIL_URL"
+            valueFrom = "${var.ssm_path_prefix}/api/EMAIL_URL"
           }
         ],
         # OpenTelemetry auth header (Grafana Cloud Basic auth)
@@ -213,6 +222,7 @@ resource "aws_ecs_task_definition" "worker" {
           { name = "ALLOWED_HOSTS", value = var.allowed_hosts },
           { name = "ALLOWED_CLIENT_HOSTS", value = var.allowed_hosts },
           { name = "DEFAULT_CHANNEL_SLUG", value = "webstore" },
+          { name = "DEFAULT_FROM_EMAIL", value = "Hobby Gaming Store <noreply@michaelbean.org>" },
           # S3 Media Storage - AWS_MEDIA_BUCKET_NAME is required for product images
           { name = "AWS_STORAGE_BUCKET_NAME", value = var.media_bucket_name },
           { name = "AWS_MEDIA_BUCKET_NAME", value = var.media_bucket_name },

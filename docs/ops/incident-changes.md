@@ -265,3 +265,11 @@ After any manual infrastructure change:
    - [ ] Check GitHub Actions drift detection results
    - [ ] Review any open drift issues
    - [ ] Close reconciled items
+
+## 2026-03-22: SES SMTP Egress Rule
+
+- **Resource**: Security Group Rule `sgr-0d13b144518789398` on `sg-0210b4854c817f8ac`
+- **Action**: Added TCP port 587 egress to 0.0.0.0/0 for SES SMTP
+- **Reason**: ECS tasks in private subnets could not reach SES SMTP endpoint (email-smtp.us-west-1.amazonaws.com:587)
+- **Terraform status**: SG not managed by Terraform — rule added via AWS CLI
+- **Tag**: ManagedBy: manual-2026-03-22
