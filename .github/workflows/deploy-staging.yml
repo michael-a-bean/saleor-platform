@@ -116,13 +116,13 @@ jobs:
           # Lines look like: "diff --git a/saleor-apps/apps/inventory-ops/... b/saleor-apps/apps/inventory-ops/..."
           # The saleor-apps/ prefix (submodule mount point) must be stripped so
           # check_app can match against bare paths like "apps/inventory-ops/".
-          CHANGED_FILES=$(echo "$DIFF" | grep '^diff --git' | sed 's|diff --git a/||; s| b/.*||; s|^saleor-apps/||')
+          CHANGED_FILES=$(echo "$DIFF" | grep '^diff --git' | sed 's|diff --git a/||; s| b/.*||; s|^saleor-apps/||' || true)
 
           # Fallback: if shallow clone couldn't produce file-level diffs,
           # detect nested submodule pointer changes from "Submodule apps/pos OLD..NEW" lines
-          POINTER_CHANGES=$(echo "$DIFF" | grep '^Submodule apps/' | sed 's|^Submodule ||; s| .*||')
+          POINTER_CHANGES=$(echo "$DIFF" | grep '^Submodule apps/' | sed 's|^Submodule ||; s| .*||' || true)
 
-          ALL_CHANGES=$(printf "%s\n%s" "$CHANGED_FILES" "$POINTER_CHANGES" | sort -u | grep -v '^$')
+          ALL_CHANGES=$(printf "%s\n%s" "$CHANGED_FILES" "$POINTER_CHANGES" | sort -u | grep -v '^$' || true)
           echo "Changed files/pointers in submodule:"
           echo "$ALL_CHANGES"
 
