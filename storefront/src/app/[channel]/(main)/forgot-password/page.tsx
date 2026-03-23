@@ -36,7 +36,7 @@ export default async function ForgotPasswordPage({
 			<div className="mx-auto mt-8 w-full max-w-lg">
 				<form action={requestResetWithChannel} className="rounded border bg-white p-8 shadow-md">
 					<p className="mb-4 text-sm text-neutral-600">
-						Enter your email address and we'll send you a link to reset your password.
+						Enter your email address and we&apos;ll send you a link to reset your password.
 					</p>
 					<div>
 						<label htmlFor="email" className={labelClassName}>
