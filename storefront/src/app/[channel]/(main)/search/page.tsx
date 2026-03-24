@@ -92,7 +92,7 @@ export default async function Page(props: {
 		if (!firstValidSearchValue) {
 			notFound();
 		}
-		redirect(`/search?${new URLSearchParams({ query: firstValidSearchValue }).toString()}`);
+		redirect(`/${params.channel}/search?${new URLSearchParams({ query: firstValidSearchValue }).toString()}`);
 	}
 
 	// Convert searchParams to URLSearchParams for filter parsing
