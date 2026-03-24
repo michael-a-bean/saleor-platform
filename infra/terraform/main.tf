@@ -535,8 +535,9 @@ module "ecs" {
         }
       ]
       environment = {
-        APL       = "redis"
-        REDIS_URL = module.elasticache.cache_url
+        APL              = "redis"
+        REDIS_URL        = module.elasticache.cache_url
+        DEFAULT_TAX_RATE = "0.0775"
       }
     }
 
