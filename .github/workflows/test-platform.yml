@@ -263,17 +263,22 @@ jobs:
           # Upstream apps (avatax, cms, klaviyo, etc.) have pre-existing lint issues
           pnpm turbo run lint --filter=saleor-app-inventory-ops --filter=saleor-app-pos
 
-      # Type check (tsc --noEmit) skipped for custom apps
-      # Source code compiles clean — remaining errors are in test files only:
-      # - Implicit any types in reduce callbacks (price-sync-router.test.ts)
-      # - Stale mock types in test files (purchase-orders-router.test.ts, goods-receipts-router.test.ts)
-      # TODO: Re-enable after fixing test file types (no source code blockers remain)
-
       - name: Generate Prisma client for inventory-ops
         working-directory: ./saleor-apps/apps/inventory-ops
         run: pnpm prisma generate
         env:
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+
+      - name: Generate Prisma client for POS
+        working-directory: ./saleor-apps/apps/pos
+        run: pnpm prisma generate
+        env:
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+
+      - name: Type check custom apps
+        run: |
+          # Matches Docker build behavior — catches TS errors before deploy
+          pnpm turbo run check-types --filter=saleor-app-inventory-ops --filter=saleor-app-pos
 
       - name: Run tests
         run: pnpm test:ci
