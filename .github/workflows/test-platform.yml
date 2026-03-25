@@ -275,10 +275,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
-      - name: Type check custom apps
+      - name: Build custom apps (type check + compile)
         run: |
-          # Matches Docker build behavior — catches TS errors before deploy
-          pnpm turbo run check-types --filter=saleor-app-inventory-ops --filter=saleor-app-pos
+          # Runs `next build` which includes TypeScript compilation.
+          # Matches Docker build behavior exactly — catches TS errors before deploy.
+          # Note: `tsc --noEmit` cannot be used because prisma-json-types-generator
+          # produces broken .d.ts syntax (unclosed array brackets in generated types).
+          # next build handles this via its own compilation pipeline.
+          SKIP_ENV_VALIDATION=true pnpm turbo run build --filter=saleor-app-inventory-ops --filter=saleor-app-pos
+        env:
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
       - name: Run tests
         run: pnpm test:ci
